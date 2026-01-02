@@ -5,48 +5,49 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 public abstract class ForwardingVertexConsumer implements VertexConsumer {
     protected abstract VertexConsumer delegate();
 
-    @Override
-    public VertexConsumer vertex(double x, double y, double z) {
-        return this.delegate().vertex(x, y, z);
+    // Implement VertexConsumer API methods - in 1.21.1, addVertex is part of the interface
+    public VertexConsumer addVertex(double x, double y, double z) {
+        return this.delegate().addVertex((float)x, (float)y, (float)z);
     }
 
     @Override
-    public VertexConsumer color(int r, int g, int b, int a) {
-        return this.delegate().color(r, g, b, a);
+    public VertexConsumer addVertex(float x, float y, float z) {
+        return this.delegate().addVertex(x, y, z);
+    }
+
+    // In 1.21.1, VertexConsumer interface has these methods - forward directly
+    @Override
+    public VertexConsumer setColor(int r, int g, int b, int a) {
+        return this.delegate().setColor(r, g, b, a);
     }
 
     @Override
-    public VertexConsumer uv(float u, float v) {
-        return this.delegate().uv(u, v);
+    public VertexConsumer setUv(float u, float v) {
+        return this.delegate().setUv(u, v);
     }
 
     @Override
-    public VertexConsumer overlayCoords(int u, int v) {
-        return this.delegate().overlayCoords(u, v);
+    public VertexConsumer setUv1(int u, int v) {
+        return this.delegate().setUv1(u, v);
     }
 
     @Override
-    public VertexConsumer uv2(int u, int v) {
-        return this.delegate().uv2(u, v);
+    public VertexConsumer setUv2(int u, int v) {
+        return this.delegate().setUv2(u, v);
     }
 
     @Override
-    public VertexConsumer normal(float x, float y, float z) {
-        return this.delegate().normal(x, y, z);
+    public VertexConsumer setOverlay(int uv) {
+        return this.delegate().setOverlay(uv);
     }
 
     @Override
-    public void endVertex() {
-        this.delegate().endVertex();
+    public VertexConsumer setLight(int uv) {
+        return this.delegate().setLight(uv);
     }
 
     @Override
-    public void defaultColor(int r, int g, int b, int a) {
-        this.delegate().defaultColor(r, g, b, a);
-    }
-
-    @Override
-    public void unsetDefaultColor() {
-        this.delegate().unsetDefaultColor();
+    public VertexConsumer setNormal(float x, float y, float z) {
+        return this.delegate().setNormal(x, y, z);
     }
 }

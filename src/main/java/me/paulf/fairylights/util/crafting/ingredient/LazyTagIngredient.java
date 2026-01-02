@@ -16,38 +16,37 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class LazyTagIngredient extends Ingredient {
+// Ingredient is final in Minecraft 1.21.1, so we use composition instead of inheritance
+public class LazyTagIngredient {
+    private final Ingredient ingredient;
     private final TagKey<Item> tag;
 
     private LazyTagIngredient(final TagKey<Item> tag) {
-        super(Stream.empty());
         this.tag = tag;
+        // Create an Ingredient from the tag
+        this.ingredient = Ingredient.of(StreamSupport.stream(BuiltInRegistries.ITEM.getTagOrEmpty(tag).spliterator(), false)
+            .map(ItemStack::new));
     }
 
-    @Override
     public ItemStack[] getItems() {
-        return StreamSupport.stream(BuiltInRegistries.ITEM.getTagOrEmpty(this.tag).spliterator(), false).map(ItemStack::new).toArray(ItemStack[]::new);
+        return this.ingredient.getItems();
     }
 
-    @Override
     public boolean test(@Nullable final ItemStack stack) {
-        return stack != null && stack.is(this.tag);
+        return this.ingredient.test(stack);
     }
 
-    @Override
     public IntList getStackingIds() {
-        final ItemStack[] stacks = this.getItems();
-        final IntList list = new IntArrayList(stacks.length);
-        for (final ItemStack stack : stacks) {
-            list.add(StackedContents.getStackingIndex(stack));
-        }
-        list.sort(IntComparators.NATURAL_COMPARATOR);
-        return list;
+        return this.ingredient.getStackingIds();
     }
 
-    @Override
     public boolean isEmpty() {
-        return !BuiltInRegistries.ITEM.getTagOrEmpty(this.tag).iterator().hasNext();
+        return this.ingredient.isEmpty();
+    }
+
+    // Get the underlying Ingredient for use in recipes
+    public Ingredient asIngredient() {
+        return this.ingredient;
     }
 
     public static LazyTagIngredient of(final TagKey<Item> tag) {

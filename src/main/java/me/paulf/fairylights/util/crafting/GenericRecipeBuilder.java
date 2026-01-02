@@ -214,7 +214,7 @@ public final class GenericRecipeBuilder {
             return new BasicRegularIngredient(Ingredient.of((ItemStack) object));
         }
         if (object instanceof TagKey<?>) {
-            return new BasicRegularIngredient(LazyTagIngredient.of((TagKey<Item>) object));
+            return new BasicRegularIngredient(LazyTagIngredient.of((TagKey<Item>) object).asIngredient());
         }
         if (object instanceof RegularIngredient) {
             return (RegularIngredient) object;

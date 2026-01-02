@@ -30,12 +30,22 @@ public class IncandescentLightModel extends LightModel<BrightnessLightBehavior> 
     }
 
     @Override
-    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final float r, final float g, final float b, final float a) {
-        super.renderToBuffer(matrix, builder, light, overlay, r, g, b, a);
+    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+        // Convert packed color to RGBA floats
+        final float r = ((packedColor >> 16) & 0xFF) / 255.0F;
+        final float g = ((packedColor >> 8) & 0xFF) / 255.0F;
+        final float b = (packedColor & 0xFF) / 255.0F;
+        final float a = ((packedColor >> 24) & 0xFF) / 255.0F;
+        super.renderToBuffer(matrix, builder, light, overlay, packedColor);
         final int emissiveLight = this.getLight(light);
         final float cr = 0.23F, cg = 0.18F, cb = 0.14F;
         final float br = this.brightness;
-        this.filament.render(matrix, builder, emissiveLight, overlay, r * (cr * (1.0F - br) + br), g * (cg * (1.0F - br) + br), b * (cb * (1.0F - br) + br), a);
+        // ModelPart.render() signature changed in 1.21.1 - pack color into int
+        final float finalR = r * (cr * (1.0F - br) + br);
+        final float finalG = g * (cg * (1.0F - br) + br);
+        final float finalB = b * (cb * (1.0F - br) + br);
+        final int filamentColor = ((int)(finalR * 255) << 16) | ((int)(finalG * 255) << 8) | (int)(finalB * 255) | ((int)(a * 255) << 24);
+        this.filament.render(matrix, builder, emissiveLight, overlay, filamentColor);
     }
 
     @Override
@@ -43,7 +53,13 @@ public class IncandescentLightModel extends LightModel<BrightnessLightBehavior> 
         final float bi = this.brightness;
         final int emissiveLight = this.getLight(light);
         final float br = 1.0F, bg = 0.73F, bb = 0.3F;
-        this.bulb.render(matrix, builder, emissiveLight, overlay, r * (br * bi + (1.0F - bi)), g * (bg * bi + (1.0F - bi)), b * (bb * bi + (1.0F - bi)), bi * 0.4F + 0.25F);
+        // ModelPart.render() signature changed in 1.21.1 - pack color into int
+        final float finalR = r * (br * bi + (1.0F - bi));
+        final float finalG = g * (bg * bi + (1.0F - bi));
+        final float finalB = b * (bb * bi + (1.0F - bi));
+        final float finalA = bi * 0.4F + 0.25F;
+        final int bulbColor = ((int)(finalR * 255) << 16) | ((int)(finalG * 255) << 8) | (int)(finalB * 255) | ((int)(finalA * 255) << 24);
+        this.bulb.render(matrix, builder, emissiveLight, overlay, bulbColor);
         super.renderTranslucent(matrix, builder, light, overlay, r, g, b, a);
     }
 

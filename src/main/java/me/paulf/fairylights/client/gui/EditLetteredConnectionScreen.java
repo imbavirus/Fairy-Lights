@@ -20,7 +20,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.glfw.GLFW;
 
 public final class EditLetteredConnectionScreen<C extends Connection & Lettered> extends Screen {
-    public static final ResourceLocation WIDGETS_TEXTURE = new ResourceLocation(FairyLights.ID, "textures/gui/widgets.png");
+    public static final ResourceLocation WIDGETS_TEXTURE = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "textures/gui/widgets.png");
 
     private final C connection;
 
@@ -52,7 +52,8 @@ public final class EditLetteredConnectionScreen<C extends Connection & Lettered>
         final int pad = 4;
         final int buttonWidth = 150;
         this.doneBtn = this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> {
-            FairyLights.NETWORK.sendToServer(new EditLetteredConnectionMessage<>(this.connection, this.textField.getValue()));
+            // TODO: Rewrite to use PayloadRegistrar API for NeoForge 1.21.1
+            // FairyLights.NETWORK.sendToServer(new EditLetteredConnectionMessage<>(this.connection, this.textField.getValue()));
             this.onClose();
         }).pos(this.width / 2 - pad - buttonWidth, this.height / 4 + 120 + 12).size(buttonWidth, 20).build());
         this.cancelBtn = this.addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> this.onClose()).pos(this.width / 2 + pad, this.height / 4 + 120 + 12).size(buttonWidth, 20).build());
@@ -148,7 +149,8 @@ public final class EditLetteredConnectionScreen<C extends Connection & Lettered>
 
     @Override
     public void render(final GuiGraphics stack, final int mouseX, final int mouseY, final float delta) {
-        this.renderBackground(stack);
+        // renderBackground() signature changed in 1.21.1 - may need different parameters
+        this.renderBackground(stack, mouseX, mouseY, delta);
         stack.drawCenteredString(this.font, Component.translatable("fairylights.editLetteredConnection"), this.width / 2, 20, 0xFFFFFF);
         super.render(stack, mouseX, mouseY, delta);
         this.textField.render(stack, mouseX, mouseY, delta);

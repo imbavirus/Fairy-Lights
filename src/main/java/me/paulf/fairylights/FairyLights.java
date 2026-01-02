@@ -21,14 +21,14 @@ import me.paulf.fairylights.server.string.StringType;
 import me.paulf.fairylights.server.string.StringTypes;
 import me.paulf.fairylights.util.CalendarEvent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.network.simple.SimpleChannel;
-import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.NewRegistryEvent;
-import net.minecraftforge.registries.RegistryBuilder;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.util.thread.EffectiveSide;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.fml.common.Mod;
+import net.minecraft.core.Registry;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
+// Network channel - will be fixed separately
 
 import java.time.Month;
 import java.util.function.Supplier;
@@ -37,12 +37,12 @@ import java.util.function.Supplier;
 public final class FairyLights {
     public static final String ID = "fairylights";
 
-    public static final ResourceLocation STRING_TYPE = new ResourceLocation(ID, "string_type");
+    public static final ResourceLocation STRING_TYPE = ResourceLocation.fromNamespaceAndPath(ID, "string_type");
 
-    public static final ResourceLocation CONNECTION_TYPE = new ResourceLocation(ID, "connection_type");
+    public static final ResourceLocation CONNECTION_TYPE = ResourceLocation.fromNamespaceAndPath(ID, "connection_type");
 
     @SuppressWarnings("Convert2MethodRef")
-    public static final SimpleChannel NETWORK = new NetBuilder(new ResourceLocation(ID, "net"))
+    public static final Object NETWORK = new NetBuilder(ResourceLocation.fromNamespaceAndPath(ID, "net"))
         .version(1).optionalServer().requiredClient()
         .clientbound(JingleMessage::new).consumer(() -> new JingleMessage.Handler())
         .clientbound(UpdateEntityFastenerMessage::new).consumer(() -> new UpdateEntityFastenerMessage.Handler())
@@ -55,21 +55,12 @@ public final class FairyLights {
 
     public static final CalendarEvent HALLOWEEN = new CalendarEvent(Month.OCTOBER, 31, 31);
 
-    public static Supplier<IForgeRegistry<ConnectionType<?>>> CONNECTION_TYPES;
+    public static Supplier<Registry<ConnectionType<?>>> CONNECTION_TYPES;
+    public static Supplier<Registry<StringType>> STRING_TYPES;
 
-    public static Supplier<IForgeRegistry<StringType>> STRING_TYPES;
-
-    public FairyLights() {
-        final IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
-        bus.addListener((NewRegistryEvent event) -> {
-            CONNECTION_TYPES = event.create(new RegistryBuilder<ConnectionType<?>>()
-                .setName(CONNECTION_TYPE)
-                .disableSaving());
-            STRING_TYPES = event.create(new RegistryBuilder<StringType>()
-                .setName(STRING_TYPE)
-                .setDefaultKey(new ResourceLocation(ID, "black_string"))
-                .disableSaving());
-        });
+    public FairyLights(final IEventBus modEventBus) {
+        final IEventBus bus = modEventBus;
+        
         FLSounds.REG.register(bus);
         FLBlocks.REG.register(bus);
         FLEntities.REG.register(bus);
@@ -78,9 +69,17 @@ public final class FairyLights {
         FLCraftingRecipes.REG.register(bus);
         ConnectionTypes.REG.register(bus);
         StringTypes.REG.register(bus);
-        final ServerProxy proxy = DistExecutor.safeRunForDist(() -> ClientProxy::new, () -> ServerProxy::new);
+        
+        // Create custom registries - ConnectionTypes and StringTypes already create the DeferredRegisters
+        // Set up registry access - will be available after registration
+        // DeferredRegister may not have getRegistry() - try accessing through registry manager
+        // For now, use a supplier that accesses the registry when needed
+        // registryOrThrow() needs a RegistryKey, not ResourceLocation
+        CONNECTION_TYPES = () -> net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY).registryOrThrow(net.minecraft.resources.ResourceKey.createRegistryKey(FairyLights.CONNECTION_TYPE));
+        STRING_TYPES = () -> net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY).registryOrThrow(net.minecraft.resources.ResourceKey.createRegistryKey(FairyLights.STRING_TYPE));
+        final ServerProxy proxy = EffectiveSide.get().isClient() ? new ClientProxy() : new ServerProxy();
         proxy.init(bus);
-        FairyLightsItemGroup.TAB_REG.register(FMLJavaModLoadingContext.get().getModEventBus());
+        FairyLightsItemGroup.TAB_REG.register(modEventBus);
 
     }
 

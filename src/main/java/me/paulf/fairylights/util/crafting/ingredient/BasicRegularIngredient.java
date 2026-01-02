@@ -15,6 +15,10 @@ public class BasicRegularIngredient implements RegularIngredient {
         this.ingredient = Objects.requireNonNull(ingredient, "ingredient");
     }
 
+    public BasicRegularIngredient(final LazyTagIngredient lazyTagIngredient) {
+        this.ingredient = Objects.requireNonNull(lazyTagIngredient, "lazyTagIngredient").asIngredient();
+    }
+
     @Override
     public final GenericRecipe.MatchResultRegular matches(final ItemStack input) {
         return new GenericRecipe.MatchResultRegular(this, input, this.ingredient.test(input), Collections.emptyList());

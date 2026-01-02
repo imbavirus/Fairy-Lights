@@ -41,7 +41,8 @@ public class BowModel extends Model {
     }
 
     @Override
-    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final float r, final float g, final float b, final float a) {
-        this.root.render(matrix, builder, light, overlay, r, g, b, a);
+    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+        // ModelPart.render() signature changed in 1.21.1 - use packed color directly
+        this.root.render(matrix, builder, light, overlay, packedColor);
     }
 }

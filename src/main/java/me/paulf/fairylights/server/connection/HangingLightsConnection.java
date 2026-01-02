@@ -29,7 +29,7 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LightBlock;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -268,7 +268,9 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         this.litBlocks.clear();
         final ListTag litBlocks = compound.getList("litBlocks", Tag.TAG_COMPOUND);
         for (int i = 0; i < litBlocks.size(); i++) {
-            this.litBlocks.add(NbtUtils.readBlockPos(litBlocks.getCompound(i)));
+            // NbtUtils.readBlockPos() API changed - takes CompoundTag and key in 1.21.1
+            final CompoundTag blockPosTag = litBlocks.getCompound(i);
+            NbtUtils.readBlockPos(blockPosTag, "Pos").ifPresent(pos -> this.litBlocks.add(pos));
         }
     }
 
@@ -278,7 +280,8 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         HangingLightsConnectionItem.setString(compound, this.string);
         final ListTag tagList = new ListTag();
         for (final ItemStack light : this.pattern) {
-            tagList.add(light.save(new CompoundTag()));
+            // ItemStack.save() API changed in 1.21.1 - use RegistryAccess from world
+            tagList.add(light.save(this.world.registryAccess()));
         }
         compound.put("pattern", tagList);
         return compound;
@@ -292,7 +295,8 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         this.pattern = new ArrayList<>();
         for (int i = 0; i < patternList.size(); i++) {
             final CompoundTag lightCompound = patternList.getCompound(i);
-            this.pattern.add(ItemStack.of(lightCompound));
+            // ItemStack.parse() API changed in 1.21.1 - use RegistryAccess from world
+            this.pattern.add(ItemStack.parse(this.world.registryAccess(), lightCompound).orElse(ItemStack.EMPTY));
         }
     }
 }

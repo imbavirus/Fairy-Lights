@@ -57,7 +57,8 @@ public final class GenericRecipe extends CustomRecipe {
     private int room;
 
     GenericRecipe(final ResourceLocation id, final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer, final ItemStack output, final RegularIngredient[] ingredients, final AuxiliaryIngredient<?>[] auxiliaryIngredients, final int width, final int height, final int outputIngredient) {
-        super(id, CraftingBookCategory.MISC);
+        // CustomRecipe constructor signature changed in 1.21.1 - may need different parameters
+        super(CraftingBookCategory.MISC);
         Preconditions.checkArgument(width > 0, "width must be greater than zero");
         Preconditions.checkArgument(height > 0, "height must be greater than zero");
         this.serializer = Objects.requireNonNull(serializer, "serializer");
@@ -152,18 +153,19 @@ public final class GenericRecipe extends CustomRecipe {
         return this.width <= width && this.height <= height && (this.getRoom() >= 0 || width * height - this.width * this.height + this.getRoom() >= 0);
     }
 
+    // matches() signature changed in 1.21.1 - now uses CraftingInput
     @Override
-    public boolean matches(final CraftingContainer inventory, @Nullable final Level world) {
-        if (!this.canCraftInDimensions(inventory.getWidth(), inventory.getHeight())) {
+    public boolean matches(final net.minecraft.world.item.crafting.CraftingInput input, final Level world) {
+        if (!this.canCraftInDimensions(input.width(), input.height())) {
             return false;
         }
-        final int scanWidth = inventory.getWidth() + 1 - this.width;
-        final int scanHeight = inventory.getHeight() + 1 - this.height;
+        final int scanWidth = input.width() + 1 - this.width;
+        final int scanHeight = input.height() + 1 - this.height;
         for (int i = 0, end = scanWidth * scanHeight; i < end; i++) {
             final int x = i % scanWidth;
             final int y = i / scanWidth;
             for (final IntUnaryOperator func : this.xFunctions) {
-                final ItemStack result = this.getResult(inventory, x, y, func);
+                  final ItemStack result = this.getResult(input, x, y, func);
                 if (!result.isEmpty()) {
                     this.result = result;
                     return true;
@@ -175,7 +177,8 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
 
-    private ItemStack getResult(final CraftingContainer inventory, final int originX, final int originY, final IntUnaryOperator funcX) {
+    // getResult() signature changed in 1.21.1 - now uses CraftingInput
+    private ItemStack getResult(final net.minecraft.world.item.crafting.CraftingInput input, final int originX, final int originY, final IntUnaryOperator funcX) {
         final MatchResultRegular[] match = new MatchResultRegular[this.ingredients.length];
         final Multimap<AuxiliaryIngredient<?>, MatchResultAuxiliary> auxMatchResults = LinkedListMultimap.create();
         final Map<AuxiliaryIngredient<?>, Integer> auxMatchTotals = new HashMap<>();
@@ -183,23 +186,25 @@ public final class GenericRecipe extends CustomRecipe {
         final List<MatchResultAuxiliary> auxResults = new ArrayList<>();
         Item item = this.output.getItem();
         final CompoundTag tag = new CompoundTag();
-        for (int i = 0, w = inventory.getWidth(), size = w * inventory.getHeight(); i < size; i++) {
+        for (int i = 0, w = input.width(), size = w * input.height(); i < size; i++) {
             final int x = i % w;
             final int y = i / w;
             final int ingX = x - originX;
             final int ingY = y - originY;
-            final ItemStack input = inventory.getItem(i);
+            final ItemStack stack = input.getItem(i);
             if (this.contains(ingX, ingY)) {
                 final int index = funcX.applyAsInt(ingX) + ingY * this.width;
                 final RegularIngredient ingredient = this.ingredients[index];
-                final MatchResultRegular result = ingredient.matches(input);
+                final MatchResultRegular result = ingredient.matches(stack);
                 if (!result.doesMatch()) {
                     return ItemStack.EMPTY;
                 }
                 match[index] = result;
                 result.forMatch(presentCalled, tag);
                 if (index == this.outputIngredient) {
-                    final CompoundTag inputTag = input.getTag();
+                    // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+                    final CompoundTag inputTag = new CompoundTag();
+                    // TODO: Migrate to data components API for 1.21.1
                     if (inputTag != null) {
                         if (tag.isEmpty()) {
                             tag.merge(inputTag);
@@ -209,12 +214,12 @@ public final class GenericRecipe extends CustomRecipe {
                             tag.merge(temp);
                         }
                     }
-                    item = input.getItem();
+                    item = stack.getItem();
                 }
-            } else if (!EMPTY.matches(input).doesMatch()) {
+            } else if (!EMPTY.matches(stack).doesMatch()) {
                 boolean nonAuxiliary = true;
                 for (final AuxiliaryIngredient<?> auxiliaryIngredient : this.auxiliaryIngredients) {
-                    final MatchResultAuxiliary result = auxiliaryIngredient.matches(input);
+                    final MatchResultAuxiliary result = auxiliaryIngredient.matches(stack);
                     if (result.doesMatch()) {
                         if (result.isAtLimit(auxMatchTotals.getOrDefault(result.ingredient, 0))) {
                             return ItemStack.EMPTY;
@@ -245,7 +250,9 @@ public final class GenericRecipe extends CustomRecipe {
         }
         final ItemStack output = this.output.isEmpty() ? new ItemStack(item) : this.output.copy();
         if (!tag.isEmpty()) {
-            output.setTag(tag);
+            // ItemStack.setTag() removed in 1.21.1 - use data components API instead
+            // TODO: Migrate to data components API for 1.21.1
+            // output.setTag(tag);
         }
         return output;
     }
@@ -255,13 +262,15 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(final CraftingContainer inventory, final RegistryAccess registryAccess) {
+    // assemble() signature changed in 1.21.1 - now uses CraftingInput and Provider
+    public ItemStack assemble(final net.minecraft.world.item.crafting.CraftingInput input, final net.minecraft.core.HolderLookup.Provider provider) {
         final ItemStack result = this.result;
         return result.isEmpty() ? result : result.copy();
     }
 
+    // getResultItem() signature changed in 1.21.1 - now uses Provider
     @Override
-    public ItemStack getResultItem(final RegistryAccess registryAccess)
+    public ItemStack getResultItem(final net.minecraft.core.HolderLookup.Provider provider)
     {
         return this.output;
     }

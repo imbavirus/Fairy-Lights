@@ -1,14 +1,14 @@
 package me.paulf.fairylights.client;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class FLClientConfig {
     private FLClientConfig() {}
 
     public static final class Tutorial {
-        public final ForgeConfigSpec.ConfigValue<String> progress;
+        public final ModConfigSpec.ConfigValue<String> progress;
 
-        private Tutorial(final ForgeConfigSpec.Builder builder) {
+        private Tutorial(final ModConfigSpec.Builder builder) {
             builder.push("tutorial");
             this.progress = builder
                 .comment(
@@ -23,10 +23,10 @@ public final class FLClientConfig {
 
     public static final Tutorial TUTORIAL;
 
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
     static {
-        final ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        final ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         TUTORIAL = new Tutorial(builder);
         SPEC = builder.build();
     }

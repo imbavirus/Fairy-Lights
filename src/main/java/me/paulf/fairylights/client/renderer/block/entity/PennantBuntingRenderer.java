@@ -33,13 +33,13 @@ import org.joml.Vector3f;
 import java.util.function.Function;
 
 public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingConnection> {
-    private static final ResourceLocation TRIANGLE_MODEL = new ResourceLocation(FairyLights.ID, "entity/triangle_pennant");
+    private static final ResourceLocation TRIANGLE_MODEL = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/triangle_pennant");
 
-    private static final ResourceLocation SPEARHEAD_MODEL = new ResourceLocation(FairyLights.ID, "entity/spearhead_pennant");
+    private static final ResourceLocation SPEARHEAD_MODEL = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/spearhead_pennant");
 
-    private static final ResourceLocation SWALLOWTAIL_MODEl = new ResourceLocation(FairyLights.ID, "entity/swallowtail_pennant");
+    private static final ResourceLocation SWALLOWTAIL_MODEl = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/swallowtail_pennant");
 
-    private static final ResourceLocation SQUARE_MODEL = new ResourceLocation(FairyLights.ID, "entity/square_pennant");
+    private static final ResourceLocation SQUARE_MODEL = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/square_pennant");
 
     public static final ImmutableSet<ResourceLocation> MODELS = ImmutableSet.of(TRIANGLE_MODEL, SPEARHEAD_MODEL, SWALLOWTAIL_MODEl, SQUARE_MODEL);
 
@@ -76,7 +76,10 @@ public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingCon
                 final float r = ((color >> 16) & 0xFF) / 255.0F;
                 final float g = ((color >> 8) & 0xFF) / 255.0F;
                 final float b = (color & 0xFF) / 255.0F;
-                final BakedModel model = Minecraft.getInstance().getModelManager().getModel(this.models.getOrDefault(currPennant.getItem(), TRIANGLE_MODEL));
+                // getModel() may need ModelResourceLocation in 1.21.1
+                final ResourceLocation modelLoc = this.models.getOrDefault(currPennant.getItem(), TRIANGLE_MODEL);
+                final net.minecraft.client.resources.model.ModelResourceLocation modelResourceLoc = new net.minecraft.client.resources.model.ModelResourceLocation(modelLoc, "inventory");
+                final BakedModel model = Minecraft.getInstance().getModelManager().getModel(modelResourceLoc);
                 final Vec3 pos = currPennant.getPoint(delta);
                 matrix.pushPose();
                 matrix.translate(pos.x, pos.y, pos.z);

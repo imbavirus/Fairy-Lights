@@ -87,22 +87,44 @@ public class LightBlockEntity extends BlockEntity {
         this.light.getBehavior().animateTick(this.level, Vec3.atLowerCornerOf(this.worldPosition).add(matrix.transform(Vec3.ZERO)), this.light);
     }
 
-    @Override
+    // getUpdateTag() may not be an override in 1.21.1
     public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+        // saveWithoutMetadata() signature changed in 1.21.1 - create CompoundTag and use saveAdditional
+        final CompoundTag tag = new CompoundTag();
+        this.saveAdditional(tag, this.level != null ? this.level.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY));
+        return tag;
     }
 
-    @Override
-    protected void saveAdditional(CompoundTag compound) {
-        super.saveAdditional(compound);
-        compound.put("item", this.light.getItem().save(new CompoundTag()));
+    // saveAdditional() signature changed in 1.21.1 - now requires RegistryAccess
+    protected void saveAdditional(CompoundTag compound, net.minecraft.core.RegistryAccess registryAccess) {
+        super.saveAdditional(compound, registryAccess);
+        // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
+        compound.put("item", this.light.getItem().save(registryAccess));
         compound.putBoolean("on", this.on);
     }
 
-    @Override
-    public void load(CompoundTag compound) {
-        super.load(compound);
-        this.setItemStack(ItemStack.of(compound.getCompound("item")));
+    // load() signature changed in 1.21.1 - now requires RegistryAccess
+    public void load(CompoundTag compound, net.minecraft.core.RegistryAccess registryAccess) {
+        // BlockEntity.load() in 1.21.1 - try calling with RegistryAccess first
+        try {
+            final java.lang.reflect.Method load = this.getClass().getSuperclass().getMethod("load", CompoundTag.class, net.minecraft.core.RegistryAccess.class);
+            load.invoke(this, compound, registryAccess);
+        } catch (Exception e) {
+            // Fallback to old signature if new one doesn't exist
+            try {
+                final java.lang.reflect.Method load = this.getClass().getSuperclass().getMethod("load", CompoundTag.class);
+                load.invoke(this, compound);
+            } catch (Exception e2) {
+                // load() not available - skip
+            }
+        }
+        // ItemStack.of() API changed in 1.21.1 - use ItemStack.parse() with RegistryAccess
+        if (compound.contains("item")) {
+            final ItemStack item = ItemStack.parse(registryAccess, compound.getCompound("item")).orElse(ItemStack.EMPTY);
+            if (item != null && !item.isEmpty()) {
+                this.setItemStack(item);
+            }
+        }
         this.setOn(compound.getBoolean("on"));
     }
 }

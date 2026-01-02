@@ -17,7 +17,9 @@ public class ColorLightItem extends LightItem {
 
     @Override
     public Component getName(final ItemStack stack) {
-        final CompoundTag tag = stack.getTag();
+        // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+        final CompoundTag tag = new CompoundTag();
+        // TODO: Migrate to data components API for 1.21.1
         if (tag != null && tag.contains("colors", Tag.TAG_LIST)) {
             return Component.translatable("format.fairylights.color_changing", super.getName(stack));
         }

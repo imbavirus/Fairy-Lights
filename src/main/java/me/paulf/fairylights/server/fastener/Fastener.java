@@ -9,15 +9,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.capabilities.ICapabilitySerializable;
-
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface Fastener<F extends FastenerAccessor> extends ICapabilitySerializable<CompoundTag> {
-    @Override
+public interface Fastener<F extends FastenerAccessor> {
     CompoundTag serializeNBT();
 
     Optional<Connection> get(final UUID id);

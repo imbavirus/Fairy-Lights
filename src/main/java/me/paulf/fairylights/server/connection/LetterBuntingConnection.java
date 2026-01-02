@@ -17,9 +17,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+// PacketDistributor removed in NeoForge 1.21.1 - using PayloadRegistrar instead
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -67,7 +67,8 @@ public final class LetterBuntingConnection extends Connection implements Lettere
     @Override
     public void onConnect(final Level world, final Player user, final ItemStack heldStack) {
         if (this.text.isEmpty()) {
-            FairyLights.NETWORK.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) user), new OpenEditLetteredConnectionScreenMessage<>(this));
+            // TODO: Rewrite to use PayloadRegistrar API for NeoForge 1.21.1
+            // FairyLights.NETWORK.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) user), new OpenEditLetteredConnectionScreenMessage<>(this));
         }
     }
 

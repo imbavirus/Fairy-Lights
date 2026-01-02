@@ -54,7 +54,12 @@ public class MeteorLightModel extends LightModel<MeteorLightBehavior> {
     }
 
     @Override
-    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final float r, final float g, final float b, final float a) {
+    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+        // Convert packed color to RGBA floats
+        final float r = ((packedColor >> 16) & 0xFF) / 255.0F;
+        final float g = ((packedColor >> 8) & 0xFF) / 255.0F;
+        final float b = (packedColor & 0xFF) / 255.0F;
+        final float a = ((packedColor >> 24) & 0xFF) / 255.0F;
         for (int i = 0; i < this.lights.length; i++) {
             this.brightness = this.computeBrightness((float) i / this.lights.length);
             for (int n = 0; n < this.lights.length; n++) {
@@ -62,7 +67,7 @@ public class MeteorLightModel extends LightModel<MeteorLightBehavior> {
             }
             this.connector.visible = i == 0;
             this.cap.visible = i == this.lights.length - 1;
-            super.renderToBuffer(matrix, builder, light, overlay, r, g, b, a);
+            super.renderToBuffer(matrix, builder, light, overlay, packedColor);
         }
     }
 

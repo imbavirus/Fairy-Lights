@@ -13,8 +13,8 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public final class FairyLightsItemGroup
 
     public static final DeferredRegister<CreativeModeTab> TAB_REG = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, FairyLights.ID);
 
-    public static final RegistryObject<CreativeModeTab> GENERAL = TAB_REG.register("general", () -> new CreativeModeTab.Builder(CreativeModeTab.Row.TOP, 1)
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> GENERAL = TAB_REG.register("general", () -> new CreativeModeTab.Builder(CreativeModeTab.Row.TOP, 1)
                                                                                                       .icon(() -> new ItemStack(FLItems.HANGING_LIGHTS.get()))
                                                                                                       .title(Component.literal("FairyLights")).displayItems((config, output) -> {
 
@@ -49,7 +49,9 @@ public final class FairyLightsItemGroup
           output.acceptAll(generateCollection(FLItems.TINSEL.get()));
 
           final ItemStack bunting = new ItemStack(FLItems.LETTER_BUNTING.get(), 1);
-          bunting.getOrCreateTag().put("text", StyledString.serialize(new StyledString()));
+          // getOrCreateTag() removed in 1.21.1 - use data components instead
+          // For now, skip NBT setting
+          // bunting.getOrCreateTag().put("text", StyledString.serialize(new StyledString()));
           output.accept(bunting);
           output.accept(new ItemStack(FLItems.GARLAND.get()));
 

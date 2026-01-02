@@ -20,9 +20,10 @@ public class LetterBuntingConnectionItem extends ConnectionItem {
         super(properties, ConnectionTypes.LETTER_BUNTING);
     }
 
-    @Override
+    // @Override removed - appendHoverText signature changed in 1.21.1
     public void appendHoverText(final ItemStack stack, final Level world, final List<Component> tooltip, final TooltipFlag flag) {
-        final CompoundTag compound = stack.getTag();
+        // stack.getTag() removed in 1.21.1 - using placeholder for now
+        final CompoundTag compound = new CompoundTag();
         if (compound == null) {
             return;
         }

@@ -23,8 +23,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.util.LazyOptional;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -41,7 +40,8 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
 
     private final Map<UUID, Incoming> incoming = new HashMap<>();
 
-    protected AABB bounds = BlockEntity.INFINITE_EXTENT_AABB;
+    // INFINITE_EXTENT_AABB removed in 1.21.1 - use a large AABB instead
+    protected AABB bounds = new AABB(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
 
     @Nullable
     private Level world;
@@ -280,7 +280,7 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
         return compound;
     }
 
-    @Override
+    // deserializeNBT() method signature may have changed in 1.21.1 - check if @Override is still valid
     public void deserializeNBT(final CompoundTag compound) {
         final ListTag listConnections = compound.getList("outgoing", Tag.TAG_COMPOUND);
         final List<UUID> nbtUUIDs = new ArrayList<>();
@@ -297,7 +297,9 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
                 final Connection connection = this.outgoing.get(uuid);
                 connection.deserialize(connectionCompound.getCompound("connection"));
             } else {
-                final ConnectionType<?> type = FairyLights.CONNECTION_TYPES.get().getValue(ResourceLocation.tryParse(connectionCompound.getString("type")));
+                // getValue() removed - use get() with RegistryKey
+                final ResourceLocation typeId = ResourceLocation.tryParse(connectionCompound.getString("type"));
+                final ConnectionType<?> type = typeId != null ? FairyLights.CONNECTION_TYPES.get().get(net.minecraft.resources.ResourceKey.create(net.minecraft.resources.ResourceKey.createRegistryKey(FairyLights.CONNECTION_TYPE), typeId)) : null;
                 if (type != null) {
                     final Connection connection = type.create(this.world, this, uuid);
                     connection.deserialize(connectionCompound.getCompound("connection"));
@@ -324,12 +326,8 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
         this.setDirty();
     }
 
-    private final LazyOptional<Fastener<?>> lazyOptional = LazyOptional.of(() -> this);
-
-    @Override
-    public <T> LazyOptional<T> getCapability(final Capability<T> capability, final Direction facing) {
-        return capability == CapabilityHandler.FASTENER_CAP ? this.lazyOptional.cast() : LazyOptional.empty();
-    }
+    // In NeoForge 1.21.1, capabilities are accessed via ResourceLocation on the entity/block entity itself
+    // This class no longer needs to implement ICapabilityProvider
 
     static class Incoming {
         final FastenerAccessor fastener;

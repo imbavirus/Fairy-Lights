@@ -46,7 +46,7 @@ public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnectio
             matrix.mulPose(Axis.ZP.rotationDegrees(RAND.get(index + hash) * 45.0F));
             matrix.mulPose(Axis.YP.rotationDegrees(RAND.get(index + 8 + hash) * 60.F + 90.0F));
             this.rings.setWhich(index % RING_COUNT);
-            this.rings.renderToBuffer(matrix, buf, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.rings.renderToBuffer(matrix, buf, packedLight, packedOverlay, 0xFFFFFFFF); // White color
             matrix.popPose();
         });
     }
@@ -90,8 +90,9 @@ public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnectio
         }
 
         @Override
-        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final float r, final float g, final float b, final float a) {
-            this.roots[this.which].render(matrix, builder, light, overlay, r, g, b, a);
+        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+            // ModelPart.render() signature changed in 1.21.1 - use packed color directly
+            this.roots[this.which].render(matrix, builder, light, overlay, packedColor);
         }
     }
 }

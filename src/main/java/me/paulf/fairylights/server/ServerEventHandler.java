@@ -39,14 +39,15 @@ import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.NoteBlockEvent;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+// AttachCapabilitiesEvent and TickEvent removed in NeoForge 1.21.1 - TODO: Use alternative event system
+// import net.neoforged.neoforge.event.AttachCapabilitiesEvent;
+// import net.neoforged.neoforge.event.tick.TickEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.NoteBlockEvent;
+import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
 
 public final class ServerEventHandler {
 
@@ -54,34 +55,22 @@ public final class ServerEventHandler {
     public void onEntityJoinWorld(final EntityJoinLevelEvent event) {
         final Entity entity = event.getEntity();
         if (entity instanceof Player || entity instanceof FenceFastenerEntity) {
-            entity.getCapability(CapabilityHandler.FASTENER_CAP).ifPresent(f -> f.setWorld(event.getLevel()));
+            CapabilityHandler.getFastenerCapability(entity).ifPresent(f -> f.setWorld(event.getLevel()));
         }
     }
 
-    @SubscribeEvent
-    public void onAttachEntityCapability(final AttachCapabilitiesEvent<Entity> event) {
-        final Entity entity = event.getObject();
-        if (entity instanceof Player) {
-            event.addCapability(CapabilityHandler.FASTENER_ID, new PlayerFastener((Player) entity));
-        } else if (entity instanceof FenceFastenerEntity) {
-            event.addCapability(CapabilityHandler.FASTENER_ID, new FenceFastener((FenceFastenerEntity) entity));
-        }
-    }
+    // NeoForge 1.21.1 uses data attachments instead of AttachCapabilitiesEvent
+    // Capabilities are now attached directly via getData() calls
+    // The fastener data is attached when first accessed via getCapability()
+    // This is handled in the capability accessor methods
 
+    // NeoForge 1.21.1 uses EntityTickEvent instead of TickEvent.PlayerTickEvent
     @SubscribeEvent
-    public void onAttachBlockEntityCapability(final AttachCapabilitiesEvent<BlockEntity> event) {
-        final BlockEntity entity = event.getObject();
-        if (entity instanceof FastenerBlockEntity) {
-            event.addCapability(CapabilityHandler.FASTENER_ID, new BlockFastener((FastenerBlockEntity) entity, ServerProxy.buildBlockView()));
-        }
-    }
-
-    @SubscribeEvent
-    public void onTick(final TickEvent.PlayerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            event.player.getCapability(CapabilityHandler.FASTENER_CAP).ifPresent(fastener -> {
-                if (fastener.update() && !event.player.level().isClientSide()) {
-                    ServerProxy.sendToPlayersWatchingEntity(new UpdateEntityFastenerMessage(event.player, fastener.serializeNBT()), event.player);
+    public void onEntityTick(final net.neoforged.neoforge.event.tick.EntityTickEvent.Post event) {
+        if (event.getEntity() instanceof Player player && !player.level().isClientSide()) {
+            CapabilityHandler.getFastenerCapability(player).ifPresent(fastener -> {
+                if (fastener.update()) {
+                    ServerProxy.sendToPlayersWatchingEntity(new UpdateEntityFastenerMessage(player, fastener.serializeNBT()), player);
                 }
             });
         }
@@ -124,7 +113,8 @@ public final class ServerEventHandler {
                     event.setCanceled(true);
                     return;
                 } else {
-                    event.setUseBlock(Event.Result.DENY);
+                    // Event.Result removed in NeoForge 1.21.1 - use setCanceled instead
+                    event.setCanceled(true);
                 }
             }
         }
@@ -143,8 +133,14 @@ public final class ServerEventHandler {
         }
         if (checkHanging) {
             final HangingEntity entity = FenceFastenerEntity.findHanging(world, pos);
-            if (entity != null && !(entity instanceof LeashFenceKnotEntity)) {
-                event.setCanceled(true);
+            // Check if entity is not a LeashFenceKnotEntity - if it's any other HangingEntity, cancel
+            if (entity != null) {
+                // Check if entity is a LeashFenceKnotEntity by checking its class
+                final Class<?> entityClass = entity.getClass();
+                final boolean isLeashKnot = LeashFenceKnotEntity.class.isAssignableFrom(entityClass);
+                if (!isLeashKnot) {
+                    event.setCanceled(true);
+                }
             }
         }
     }

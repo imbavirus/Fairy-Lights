@@ -23,6 +23,10 @@ public abstract class BasicAuxiliaryIngredient<A> implements AuxiliaryIngredient
         this.limit = limit;
     }
 
+    public BasicAuxiliaryIngredient(final LazyTagIngredient lazyTagIngredient, final boolean isRequired, final int limit) {
+        this(lazyTagIngredient.asIngredient(), isRequired, limit);
+    }
+
     @Override
     public final GenericRecipe.MatchResultAuxiliary matches(final ItemStack input) {
         return new GenericRecipe.MatchResultAuxiliary(this, input, this.ingredient.test(input), Collections.emptyList());

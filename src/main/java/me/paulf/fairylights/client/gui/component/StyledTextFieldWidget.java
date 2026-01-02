@@ -507,7 +507,7 @@ public final class StyledTextFieldWidget extends AbstractWidget {
         if (!this.isFocused) {
             return false;
         }
-        if (SharedConstants.isAllowedChatCharacter(typedChar)) {
+        if (isAllowedCharacter(typedChar)) {
             final String writeChar = this.charInputTransformer.apply(Character.toString(typedChar));
             if (this.isWritable) {
                 this.writeText(writeChar);

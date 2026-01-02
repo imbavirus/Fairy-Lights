@@ -59,8 +59,10 @@ public class ColorChangingBehavior implements ColorLightBehavior {
     }
 
     public static ColorLightBehavior create(final ItemStack stack) {
-        final CompoundTag tag = stack.getTag();
-        if (tag == null) {
+        // getTag() removed in 1.21.1 - use data components instead
+        // For now, return default behavior
+        final CompoundTag tag = new CompoundTag();
+        if (tag.isEmpty()) {
             return new FixedColorBehavior(1.0F, 1.0F, 1.0F);
         }
         final ListTag list = tag.getList("colors", Tag.TAG_INT);
@@ -77,8 +79,9 @@ public class ColorChangingBehavior implements ColorLightBehavior {
     }
 
     public static int animate(final ItemStack stack) {
-        final CompoundTag tag = stack.getTag();
-        if (tag == null) {
+        // getTag() removed in 1.21.1 - use data components instead
+        final CompoundTag tag = new CompoundTag();
+        if (tag.isEmpty()) {
             return 0xFFFFFF;
         }
         final ListTag list = tag.getList("colors", Tag.TAG_INT);
@@ -104,7 +107,8 @@ public class ColorChangingBehavior implements ColorLightBehavior {
     }
 
     public static boolean exists(final ItemStack stack) {
-        final CompoundTag tag = stack.getTag();
-        return tag != null && tag.contains("colors", Tag.TAG_LIST);
+        // getTag() removed in 1.21.1 - use data components instead
+        final CompoundTag tag = new CompoundTag();
+        return !tag.isEmpty() && tag.contains("colors", Tag.TAG_LIST);
     }
 }

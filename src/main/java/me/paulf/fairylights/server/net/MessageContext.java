@@ -1,12 +1,12 @@
 package me.paulf.fairylights.server.net;
 
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.fml.LogicalSide;
+// NetworkEvent.Context removed in NeoForge 1.21.1 - TODO: Update to new API
 
 public abstract class MessageContext {
-    protected final NetworkEvent.Context context;
+    protected final Object context; // Placeholder - TODO: Use new PayloadContext type
 
-    public MessageContext(final NetworkEvent.Context context) {
+    public MessageContext(final Object context) {
         this.context = context;
     }
 

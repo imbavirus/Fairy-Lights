@@ -19,9 +19,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.items.ItemHandlerHelper;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,7 +119,8 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
         final CompoundTag compound = super.serializeLogic();
         final ListTag patternList = new ListTag();
         for (final ItemStack entry : this.pattern) {
-            patternList.add(entry.save(new CompoundTag()));
+            // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
+            patternList.add(entry.save(this.world.registryAccess()));
         }
         compound.put("pattern", patternList);
         compound.put("text", StyledString.serialize(this.text));
@@ -132,7 +133,8 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
         this.pattern = new ArrayList<>();
         final ListTag patternList = compound.getList("pattern", Tag.TAG_COMPOUND);
         for (int i = 0; i < patternList.size(); i++) {
-            this.pattern.add(ItemStack.of(patternList.getCompound(i)));
+            // ItemStack.of() API changed in 1.21.1 - use ItemStack.parse() with RegistryAccess
+            this.pattern.add(ItemStack.parse(this.world.registryAccess(), patternList.getCompound(i)).orElse(ItemStack.EMPTY));
         }
         this.text = StyledString.deserialize(compound.getCompound("text"));
     }

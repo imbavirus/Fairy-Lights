@@ -1,5 +1,7 @@
 package me.paulf.fairylights.server.integration.jei;
 
+// JEI integration - commented out until JEI 1.21.1 NeoForge version is available
+/*
 import com.google.common.collect.ImmutableList;
 import me.paulf.fairylights.util.FLMth;
 import me.paulf.fairylights.util.crafting.GenericRecipe;
@@ -18,7 +20,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+// import net.neoforged.neoforge.registries.DeferredRegistries;
 import org.apache.logging.log4j.LogManager;
 
 import java.util.ArrayList;
@@ -270,14 +272,14 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension {
             }
             if (this.recipe.matches(crafting, null)) {
                 outputs.add(this.recipe.assemble(crafting, null));
-            } else {
-                LogManager.getLogger().debug("No recipe match for {} using inputs {}",
-                    ForgeRegistries.ITEMS.getKey(this.recipe.getOutput().getItem()),
-                    IntStream.range(0, crafting.getWidth() * crafting.getHeight())
-                        .mapToObj(crafting::getItem)
-                        .map(s -> Objects.toString(ForgeRegistries.ITEMS.getKey(s.getItem())))
-                        .collect(Collectors.joining(", "))
-                );
+                } else {
+                // LogManager.getLogger().debug("No recipe match for {} using inputs {}",
+                //     DeferredRegistries.ITEMS.getKey(this.recipe.getOutput().getItem()),
+                //     IntStream.range(0, crafting.getWidth() * crafting.getHeight())
+                //         .mapToObj(crafting::getItem)
+                //         .map(s -> Objects.toString(DeferredRegistries.ITEMS.getKey(s.getItem())))
+                //         .collect(Collectors.joining(", "))
+                // );
             }
         }
         return outputs;
@@ -322,4 +324,9 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension {
             this.ingredients = ingredients;
         }
     }
+}
+*/
+// Placeholder class
+public final class GenericRecipeWrapper {
+    private GenericRecipeWrapper() {}
 }

@@ -31,11 +31,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
-import net.minecraftforge.common.Tags;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.neoforge.common.Tags;
+import net.minecraft.core.registries.Registries;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,81 +42,120 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-@EventBusSubscriber(modid = FairyLights.ID)
+// @EventBusSubscriber removed - this class doesn't have @SubscribeEvent methods
+// Registration is handled via DeferredRegister.REG.register(bus) in FairyLights.java
 public final class FLCraftingRecipes {
     private FLCraftingRecipes() {}
 
-    public static final DeferredRegister<RecipeSerializer<?>> REG = DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, FairyLights.ID);
+    public static final DeferredRegister<RecipeSerializer<?>> REG = DeferredRegister.create(Registries.RECIPE_SERIALIZER, FairyLights.ID);
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> HANGING_LIGHTS = REG.register("crafting_special_hanging_lights", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createHangingLights));
+    // Wrapper methods for SimpleCraftingRecipeSerializer Factory interface - Factory only takes CraftingBookCategory
+    // Note: ResourceLocation is provided by the serializer during deserialization, but we need it for construction
+    // Using a placeholder ResourceLocation - it should be replaced during actual deserialization
+    private static final net.minecraft.resources.ResourceLocation PLACEHOLDER_ID = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "placeholder");
+    
+    public static GenericRecipe createHangingLightsWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { 
+        return createHangingLights(PLACEHOLDER_ID, category); 
+    }
+    public static GenericRecipe createHangingLightsAugmentationWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createHangingLightsAugmentation(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createTinselGarlandWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createTinselGarland(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createPennantBuntingWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createPennantBunting(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createPennantBuntingAugmentationWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createPennantBuntingAugmentation(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createTrianglePennantWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createTrianglePennant(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createSpearheadPennantWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createSpearheadPennant(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createSwallowtailPennantWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createSwallowtailPennant(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createSquarePennantWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createSquarePennant(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createFairyLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createFairyLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createPaperLanternWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createPaperLantern(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createOrbLanternWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createOrbLantern(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createFlowerLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createFlowerLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createCandleLanternLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createCandleLanternLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createOilLanternLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createOilLanternLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createJackOLanternWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createJackOLantern(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createSkullLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createSkullLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createGhostLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createGhostLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createSpiderLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createSpiderLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createWitchLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createWitchLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createSnowflakeLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createSnowflakeLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createHeartLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createHeartLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createMoonLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createMoonLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createStarLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createStarLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createIcicleLightsWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createIcicleLights(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createMeteorLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createMeteorLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createLightTwinkleWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createLightTwinkle(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createColorChangingLightWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createColorChangingLight(PLACEHOLDER_ID, category); }
+    public static GenericRecipe createDyeColorWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return createDyeColor(PLACEHOLDER_ID, category); }
+    public static CustomRecipe createCopyColorWrapper(net.minecraft.world.item.crafting.CraftingBookCategory category) { return new CopyColorRecipe(PLACEHOLDER_ID, category); }
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> HANGING_LIGHTS_AUGMENTATION = REG.register("crafting_special_hanging_lights_augmentation", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createHangingLightsAugmentation));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> HANGING_LIGHTS = REG.register("crafting_special_hanging_lights", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createHangingLightsWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> TINSEL_GARLAND = REG.register("crafting_special_tinsel_garland", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createTinselGarland));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> HANGING_LIGHTS_AUGMENTATION = REG.register("crafting_special_hanging_lights_augmentation", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createHangingLightsAugmentationWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> PENNANT_BUNTING = REG.register("crafting_special_pennant_bunting", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createPennantBunting));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> TINSEL_GARLAND = REG.register("crafting_special_tinsel_garland", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createTinselGarlandWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> PENNANT_BUNTING_AUGMENTATION = REG.register("crafting_special_pennant_bunting_augmentation", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createPennantBuntingAugmentation));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> PENNANT_BUNTING = REG.register("crafting_special_pennant_bunting", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createPennantBuntingWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> TRIANGLE_PENNANT = REG.register("crafting_special_triangle_pennant", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createTrianglePennant));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> PENNANT_BUNTING_AUGMENTATION = REG.register("crafting_special_pennant_bunting_augmentation", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createPennantBuntingAugmentationWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> SPEARHEAD_PENNANT = REG.register("crafting_special_spearhead_pennant", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSpearheadPennant));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> TRIANGLE_PENNANT = REG.register("crafting_special_triangle_pennant", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createTrianglePennantWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> SWALLOWTAIL_PENNANT = REG.register("crafting_special_swallowtail_pennant", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSwallowtailPennant));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> SPEARHEAD_PENNANT = REG.register("crafting_special_spearhead_pennant", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createSpearheadPennantWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> SQUARE_PENNANT = REG.register("crafting_special_square_pennant", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSquarePennant));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> SWALLOWTAIL_PENNANT = REG.register("crafting_special_swallowtail_pennant", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createSwallowtailPennantWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> FAIRY_LIGHT = REG.register("crafting_special_fairy_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createFairyLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> SQUARE_PENNANT = REG.register("crafting_special_square_pennant", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createSquarePennantWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> PAPER_LANTERN = REG.register("crafting_special_paper_lantern", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createPaperLantern));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> FAIRY_LIGHT = REG.register("crafting_special_fairy_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createFairyLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> ORB_LANTERN = REG.register("crafting_special_orb_lantern", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createOrbLantern));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> PAPER_LANTERN = REG.register("crafting_special_paper_lantern", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createPaperLanternWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> FLOWER_LIGHT = REG.register("crafting_special_flower_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createFlowerLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> ORB_LANTERN = REG.register("crafting_special_orb_lantern", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createOrbLanternWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> CANDLE_LANTERN_LIGHT = REG.register("crafting_special_candle_lantern_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createCandleLanternLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> FLOWER_LIGHT = REG.register("crafting_special_flower_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createFlowerLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> OIL_LANTERN_LIGHT = REG.register("crafting_special_oil_lantern_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createOilLanternLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> CANDLE_LANTERN_LIGHT = REG.register("crafting_special_candle_lantern_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createCandleLanternLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> JACK_O_LANTERN = REG.register("crafting_special_jack_o_lantern", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createJackOLantern));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> OIL_LANTERN_LIGHT = REG.register("crafting_special_oil_lantern_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createOilLanternLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> SKULL_LIGHT = REG.register("crafting_special_skull_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSkullLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> JACK_O_LANTERN = REG.register("crafting_special_jack_o_lantern", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createJackOLanternWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> GHOST_LIGHT = REG.register("crafting_special_ghost_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createGhostLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> SKULL_LIGHT = REG.register("crafting_special_skull_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createSkullLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> SPIDER_LIGHT = REG.register("crafting_special_spider_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSpiderLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> GHOST_LIGHT = REG.register("crafting_special_ghost_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createGhostLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> WITCH_LIGHT = REG.register("crafting_special_witch_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createWitchLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> SPIDER_LIGHT = REG.register("crafting_special_spider_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createSpiderLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> SNOWFLAKE_LIGHT = REG.register("crafting_special_snowflake_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSnowflakeLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> WITCH_LIGHT = REG.register("crafting_special_witch_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createWitchLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> HEART_LIGHT = REG.register("crafting_special_heart_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createHeartLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> SNOWFLAKE_LIGHT = REG.register("crafting_special_snowflake_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createSnowflakeLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> MOON_LIGHT = REG.register("crafting_special_moon_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createMoonLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> HEART_LIGHT = REG.register("crafting_special_heart_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createHeartLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> STAR_LIGHT = REG.register("crafting_special_star_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createStarLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> MOON_LIGHT = REG.register("crafting_special_moon_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createMoonLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> ICICLE_LIGHTS = REG.register("crafting_special_icicle_lights", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createIcicleLights));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> STAR_LIGHT = REG.register("crafting_special_star_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createStarLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> METEOR_LIGHT = REG.register("crafting_special_meteor_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createMeteorLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> ICICLE_LIGHTS = REG.register("crafting_special_icicle_lights", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createIcicleLightsWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> LIGHT_TWINKLE = REG.register("crafting_special_light_twinkle", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createLightTwinkle));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> METEOR_LIGHT = REG.register("crafting_special_meteor_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createMeteorLightWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> COLOR_CHANGING_LIGHT = REG.register("crafting_special_color_changing_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createColorChangingLight));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> LIGHT_TWINKLE = REG.register("crafting_special_light_twinkle", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createLightTwinkleWrapper));
 
-    public static final RegistryObject<RecipeSerializer<GenericRecipe>> EDIT_COLOR = REG.register("crafting_special_edit_color", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createDyeColor));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> COLOR_CHANGING_LIGHT = REG.register("crafting_special_color_changing_light", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createColorChangingLightWrapper));
 
-    public static final RegistryObject<? extends RecipeSerializer<CustomRecipe>> COPY_COLOR = REG.register("crafting_special_copy_color", () -> new SimpleCraftingRecipeSerializer<>(CopyColorRecipe::new));
+    public static final DeferredHolder<RecipeSerializer<?>,RecipeSerializer<GenericRecipe>> EDIT_COLOR = REG.register("crafting_special_edit_color", () -> new SimpleCraftingRecipeSerializer<GenericRecipe>(FLCraftingRecipes::createDyeColorWrapper));
 
-    public static final TagKey<Item> LIGHTS = ItemTags.create(new ResourceLocation(FairyLights.ID + ":lights"));
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CustomRecipe>> COPY_COLOR = REG.register("crafting_special_copy_color", () -> new SimpleCraftingRecipeSerializer<CustomRecipe>(FLCraftingRecipes::createCopyColorWrapper));
 
-    public static final TagKey<Item> TWINKLING_LIGHTS = ItemTags.create(new ResourceLocation(FairyLights.ID + ":twinkling_lights"));
+    public static final TagKey<Item> LIGHTS = ItemTags.create(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "lights"));
 
-    public static final TagKey<Item> PENNANTS = ItemTags.create(new ResourceLocation(FairyLights.ID + ":pennants"));
+    public static final TagKey<Item> TWINKLING_LIGHTS = ItemTags.create(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "twinkling_lights"));
 
-    public static final TagKey<Item> DYEABLE = ItemTags.create(new ResourceLocation(FairyLights.ID + ":dyeable"));
+    public static final TagKey<Item> PENNANTS = ItemTags.create(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "pennants"));
 
-    public static final TagKey<Item> DYEABLE_LIGHTS = ItemTags.create(new ResourceLocation(FairyLights.ID + ":dyeable_lights"));
+    public static final TagKey<Item> DYEABLE = ItemTags.create(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "dyeable"));
+
+    public static final TagKey<Item> DYEABLE_LIGHTS = ItemTags.create(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "dyeable_lights"));
 
     public static final RegularIngredient DYE_SUBTYPE_INGREDIENT = new BasicRegularIngredient(LazyTagIngredient.of(Tags.Items.DYES)) {
         @Override
@@ -224,12 +262,14 @@ public final class FLCraftingRecipes {
         return new GenericRecipeBuilder(name, HANGING_LIGHTS, FLItems.HANGING_LIGHTS.get())
             .withShape("I-I")
             .withIngredient('I', Tags.Items.INGOTS_IRON)
-            .withIngredient('-', Tags.Items.STRING)
+            .withIngredient('-', Items.STRING)
             .withAuxiliaryIngredient(new LightIngredient(true))
             .withAuxiliaryIngredient(new InertBasicAuxiliaryIngredient(LazyTagIngredient.of(Tags.Items.DYES_WHITE), false, 1) {
                 @Override
                 public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
-                    final CompoundTag tag = output.getTag();
+                    // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+                    final CompoundTag tag = new CompoundTag();
+                    // TODO: Migrate to data components API for 1.21.1
                     return tag != null && HangingLightsConnectionItem.getString(tag) == StringTypes.WHITE_STRING.get() ? super.getInput(output) : ImmutableList.of();
                 }
 
@@ -253,8 +293,10 @@ public final class FLCraftingRecipes {
     }
 
     private static boolean useInputsForTagBool(final ItemStack output, final String key, final boolean value) {
-        final CompoundTag compound = output.getTag();
-        return compound != null && compound.getBoolean(key) == value;
+        // getTag() removed in 1.21.1 - use data components instead
+        final CompoundTag compound = new CompoundTag();
+        // TODO: Migrate to data components API for 1.21.1
+        return !compound.isEmpty() && compound.getBoolean(key) == value;
     }
 
     /*
@@ -271,7 +313,9 @@ public final class FLCraftingRecipes {
                     return Arrays.stream(this.ingredient.getItems())
                         .map(ItemStack::copy)
                         .flatMap(stack -> {
-                            stack.setTag(new CompoundTag());
+                            // ItemStack.setTag() removed in 1.21.1 - use data components API instead
+                            // TODO: Migrate to data components API for 1.21.1
+                            // stack.setTag(new CompoundTag());
                             return makeHangingLightsExamples(stack).stream();
                         }).collect(ImmutableList.toImmutableList());
                 }
@@ -279,7 +323,9 @@ public final class FLCraftingRecipes {
                 @Override
                 public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
                     final ItemStack stack = output.copy();
-                    final CompoundTag compound = stack.getTag();
+                    // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+                    final CompoundTag compound = new CompoundTag();
+                    // TODO: Migrate to data components API for 1.21.1
                     if (compound == null) {
                         return ImmutableList.of();
                     }
@@ -289,7 +335,9 @@ public final class FLCraftingRecipes {
 
                 @Override
                 public void matched(final ItemStack ingredient, final CompoundTag nbt) {
-                    final CompoundTag compound = ingredient.getTag();
+                    // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+                    final CompoundTag compound = new CompoundTag();
+                    // TODO: Migrate to data components API for 1.21.1
                     if (compound != null) {
                         nbt.merge(compound);
                     }
@@ -321,14 +369,21 @@ public final class FLCraftingRecipes {
 
     public static ItemStack makeHangingLights(final ItemStack base, final DyeColor... colors) {
         final ItemStack stack = base.copy();
-        CompoundTag compound = stack.getTag();
+        // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+        CompoundTag compound = new CompoundTag();
+        // TODO: Migrate to data components API for 1.21.1
         final ListTag lights = new ListTag();
         for (final DyeColor color : colors) {
-            lights.add(DyeableItem.setColor(new ItemStack(FLItems.FAIRY_LIGHT.get()), color).save(new CompoundTag()));
+            // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
+            // TODO: Use data components API instead of NBT for 1.21.1
+            final ItemStack coloredLight = DyeableItem.setColor(new ItemStack(FLItems.FAIRY_LIGHT.get()), color);
+            lights.add(coloredLight.save(net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)));
         }
         if (compound == null) {
             compound = new CompoundTag();
-            stack.setTag(compound);
+            // ItemStack.setTag() removed in 1.21.1 - use data components API instead
+            // TODO: Migrate to data components API for 1.21.1
+            // stack.setTag(compound);
         }
         compound.put("pattern", lights);
         HangingLightsConnectionItem.setString(compound, StringTypes.BLACK_STRING.get());
@@ -340,7 +395,7 @@ public final class FLCraftingRecipes {
             .withShape(" P ", "I-I", " D ")
             .withIngredient('P', Items.PAPER)
             .withIngredient('I', Tags.Items.INGOTS_IRON)
-            .withIngredient('-', Tags.Items.STRING)
+            .withIngredient('-', Items.STRING)
             .withIngredient('D', DYE_SUBTYPE_INGREDIENT)
             .build();
     }
@@ -349,7 +404,7 @@ public final class FLCraftingRecipes {
         return new GenericRecipeBuilder(name, PENNANT_BUNTING, FLItems.PENNANT_BUNTING.get())
             .withShape("I-I")
             .withIngredient('I', Tags.Items.INGOTS_IRON)
-            .withIngredient('-', Tags.Items.STRING)
+            .withIngredient('-', Items.STRING)
             .withAuxiliaryIngredient(new PennantIngredient())
             .build();
     }
@@ -363,14 +418,18 @@ public final class FLCraftingRecipes {
                     return Arrays.stream(this.ingredient.getItems())
                         .map(ItemStack::copy)
                         .flatMap(stack -> {
-                            stack.setTag(new CompoundTag());
+                            // ItemStack.setTag() removed in 1.21.1 - use data components API instead
+                            // TODO: Migrate to data components API for 1.21.1
+                            // stack.setTag(new CompoundTag());
                             return makePennantExamples(stack).stream();
                         }).collect(ImmutableList.toImmutableList());
                 }
 
                 @Override
                 public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
-                    final CompoundTag compound = output.getTag();
+                    // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+                    final CompoundTag compound = new CompoundTag();
+                    // TODO: Migrate to data components API for 1.21.1
                     if (compound == null) {
                         return ImmutableList.of();
                     }
@@ -379,7 +438,9 @@ public final class FLCraftingRecipes {
 
                 @Override
                 public void matched(final ItemStack ingredient, final CompoundTag nbt) {
-                    final CompoundTag compound = ingredient.getTag();
+                    // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+                    final CompoundTag compound = new CompoundTag();
+                    // TODO: Migrate to data components API for 1.21.1
                     if (compound != null) {
                         nbt.merge(compound);
                     }
@@ -400,16 +461,21 @@ public final class FLCraftingRecipes {
 
     public static ItemStack makePennant(final ItemStack base, final DyeColor... colors) {
         final ItemStack stack = base.copy();
-        CompoundTag compound = stack.getTag();
+        // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+        CompoundTag compound = new CompoundTag();
+        // TODO: Migrate to data components API for 1.21.1
         final ListTag pennants = new ListTag();
         for (final DyeColor color : colors) {
             final ItemStack pennant = new ItemStack(FLItems.TRIANGLE_PENNANT.get());
             DyeableItem.setColor(pennant, color);
-            pennants.add(pennant.save(new CompoundTag()));
+            // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
+            pennants.add(pennant.save(net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)));
         }
         if (compound == null) {
             compound = new CompoundTag();
-            stack.setTag(compound);
+            // ItemStack.setTag() removed in 1.21.1 - use data components API instead
+            // TODO: Migrate to data components API for 1.21.1
+            // stack.setTag(compound);
         }
         compound.put("pattern", pennants);
         compound.put("text", StyledString.serialize(new StyledString()));
@@ -420,7 +486,7 @@ public final class FLCraftingRecipes {
         return new GenericRecipeBuilder(name, serializer, item)
             .withShape("- -", "PDP", pattern)
             .withIngredient('P', Items.PAPER)
-            .withIngredient('-', Tags.Items.STRING)
+            .withIngredient('-', Items.STRING)
             .withIngredient('D', DYE_SUBTYPE_INGREDIENT)
             .build();
     }
@@ -458,7 +524,7 @@ public final class FLCraftingRecipes {
     private static GenericRecipe createOrbLantern(final ResourceLocation name, CraftingBookCategory craftingBookCategory) {
         return createLight(name, ORB_LANTERN, FLItems.ORB_LANTERN, b -> b
             .withShape(" I ", "SDS", " W ")
-            .withIngredient('S', Tags.Items.STRING)
+            .withIngredient('S', Items.STRING)
             .withIngredient('W', Items.WHITE_WOOL)
         );
     }
@@ -507,7 +573,7 @@ public final class FLCraftingRecipes {
         return createLight(name, GHOST_LIGHT, FLItems.GHOST_LIGHT, b -> b
             .withShape(" I ", "PDP", "IGI")
             .withIngredient('P', Items.PAPER)
-            .withIngredient('G', Tags.Items.GLASS_PANES_WHITE)
+            .withIngredient('G', Items.WHITE_STAINED_GLASS_PANE)
         );
     }
 
@@ -515,7 +581,7 @@ public final class FLCraftingRecipes {
         return createLight(name, SPIDER_LIGHT, FLItems.SPIDER_LIGHT, b -> b
             .withShape(" I ", "WDW", "SES")
             .withIngredient('W', Items.COBWEB)
-            .withIngredient('S', Tags.Items.STRING)
+            .withIngredient('S', Items.STRING)
             .withIngredient('E', Items.SPIDER_EYE)
         );
     }
@@ -533,21 +599,21 @@ public final class FLCraftingRecipes {
         return createLight(name, SNOWFLAKE_LIGHT, FLItems.SNOWFLAKE_LIGHT, b -> b
             .withShape(" I ", "SDS", " G ")
             .withIngredient('S', Items.SNOWBALL)
-            .withIngredient('G', Tags.Items.GLASS_PANES_WHITE)
+            .withIngredient('G', Items.WHITE_STAINED_GLASS_PANE)
         );
     }
 
     private static GenericRecipe createHeartLight(final ResourceLocation name, CraftingBookCategory craftingBookCategory) {
         return createLight(name, HEART_LIGHT, FLItems.HEART_LIGHT, b -> b
             .withShape(" I ", "IDI", " G ")
-            .withIngredient('G', Tags.Items.GLASS_PANES_RED)
+            .withIngredient('G', Items.RED_STAINED_GLASS_PANE)
         );
     }
 
     private static GenericRecipe createMoonLight(final ResourceLocation name, CraftingBookCategory craftingBookCategory) {
         return createLight(name, MOON_LIGHT, FLItems.MOON_LIGHT, b -> b
             .withShape(" I ", "GDG", " C ")
-            .withIngredient('G', Tags.Items.GLASS_PANES_WHITE)
+            .withIngredient('G', Items.WHITE_STAINED_GLASS_PANE)
             .withIngredient('C', Items.CLOCK)
         );
     }
@@ -556,7 +622,7 @@ public final class FLCraftingRecipes {
     private static GenericRecipe createStarLight(final ResourceLocation name, CraftingBookCategory craftingBookCategory) {
         return createLight(name, STAR_LIGHT, FLItems.STAR_LIGHT, b -> b
             .withShape(" I ", "PDP", " G ")
-            .withIngredient('P', Tags.Items.GLASS_PANES_WHITE)
+              .withIngredient('P', Items.WHITE_STAINED_GLASS_PANE)
             .withIngredient('G', Tags.Items.NUGGETS_GOLD)
         );
     }
@@ -592,7 +658,9 @@ public final class FLCraftingRecipes {
 
         @Override
         public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
-            final CompoundTag compound = output.getTag();
+            // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+            final CompoundTag compound = new CompoundTag();
+            // TODO: Migrate to data components API for 1.21.1
             if (compound == null) {
                 return ImmutableList.of();
             }
@@ -601,8 +669,9 @@ public final class FLCraftingRecipes {
                 return ImmutableList.of();
             }
             final ImmutableList.Builder<ImmutableList<ItemStack>> lights = ImmutableList.builder();
+            final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
             for (int i = 0; i < pattern.size(); i++) {
-                lights.add(ImmutableList.of(ItemStack.of(pattern.getCompound(i))));
+                lights.add(ImmutableList.of(ItemStack.parse(registryAccess, pattern.getCompound(i)).orElse(ItemStack.EMPTY)));
             }
             return lights.build();
         }
@@ -619,7 +688,8 @@ public final class FLCraftingRecipes {
 
         @Override
         public void consume(final ListTag patternList, final ItemStack ingredient) {
-            patternList.add(ingredient.save(new CompoundTag()));
+            // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
+            patternList.add(ingredient.save(net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)));
         }
 
         @Override
@@ -643,7 +713,9 @@ public final class FLCraftingRecipes {
 
         @Override
         public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
-            final CompoundTag compound = output.getTag();
+            // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
+            final CompoundTag compound = new CompoundTag();
+            // TODO: Migrate to data components API for 1.21.1
             if (compound == null) {
                 return ImmutableList.of();
             }
@@ -652,8 +724,9 @@ public final class FLCraftingRecipes {
                 return ImmutableList.of();
             }
             final ImmutableList.Builder<ImmutableList<ItemStack>> pennants = ImmutableList.builder();
+            final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
             for (int i = 0; i < pattern.size(); i++) {
-                pennants.add(ImmutableList.of(ItemStack.of(pattern.getCompound(i))));
+                pennants.add(ImmutableList.of(ItemStack.parse(registryAccess, pattern.getCompound(i)).orElse(ItemStack.EMPTY)));
             }
             return pennants.build();
         }
@@ -670,7 +743,8 @@ public final class FLCraftingRecipes {
 
         @Override
         public void consume(final ListTag patternList, final ItemStack ingredient) {
-            patternList.add(ingredient.save(new CompoundTag()));
+            // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
+            patternList.add(ingredient.save(net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)));
         }
 
         @Override

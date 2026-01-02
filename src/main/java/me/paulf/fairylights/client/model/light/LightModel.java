@@ -92,7 +92,7 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
         if (this.bounds == null) {
             final PoseStack matrix = new PoseStack();
             final AABBVertexBuilder builder = new AABBVertexBuilder();
-            this.renderToBuffer(matrix, builder, 0, 0, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.renderToBuffer(matrix, builder, 0, 0, 0xFFFFFFFF); // White color
             this.renderTranslucent(matrix, builder, 0, 0, 1.0F, 1.0F, 1.0F, 1.0F);
             this.bounds = builder.build();
         }
@@ -102,7 +102,7 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
     public double getFloorOffset() {
         if (Double.isNaN(this.floorOffset)) {
             final AABBVertexBuilder builder = new AABBVertexBuilder();
-            this.renderToBuffer(new PoseStack(), builder, 0, 0, 1.0F, 1.0F, 1.0F, 1.0F);
+            this.renderToBuffer(new PoseStack(), builder, 0, 0, 0xFFFFFFFF); // White color
             this.floorOffset = builder.build().minY-this.getBounds().minY;
         }
         return this.floorOffset;
@@ -113,16 +113,31 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
     }
 
     @Override
-    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final float r, final float g, final float b, final float a) {
-        this.unlit.render(matrix, builder, light, overlay, r, g, b, a);
+    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+        // Convert packed color to RGBA floats for ModelPart.render
+        final float r = ((packedColor >> 16) & 0xFF) / 255.0F;
+        final float g = ((packedColor >> 8) & 0xFF) / 255.0F;
+        final float b = (packedColor & 0xFF) / 255.0F;
+        final float a = ((packedColor >> 24) & 0xFF) / 255.0F;
+        // ModelPart.render() signature changed in 1.21.1 - use packed color instead of RGBA floats
+        this.unlit.render(matrix, builder, light, overlay, packedColor);
         final int emissiveLight = this.getLight(light);
-        this.lit.render(matrix, builder, emissiveLight, overlay, r, g, b, a);
-        this.litTint.render(matrix, builder, emissiveLight, overlay, r * this.red, g * this.green, b * this.blue, a);
+        // ModelPart.render() signature changed in 1.21.1 - use packed color
+        final int litColor = ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | (int)(b * 255) | ((int)(a * 255) << 24);
+        this.lit.render(matrix, builder, emissiveLight, overlay, litColor);
+        final int tintColor = ((int)(r * this.red * 255) << 16) | ((int)(g * this.green * 255) << 8) | (int)(b * this.blue * 255) | ((int)(a * 255) << 24);
+        this.litTint.render(matrix, builder, emissiveLight, overlay, tintColor);
     }
 
     public void renderTranslucent(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final float r, final float g, final float b, final float a) {
         final float v = this.brightness;
-        this.litTintGlow.render(matrix, builder, this.getLight(light), overlay, r * this.red * v + (1.0F - v), g * this.green * v + (1.0F - v), b * this.blue * v + (1.0F - v), v * 0.15F + 0.2F);
+        // ModelPart.render() signature changed in 1.21.1 - pack color into int
+        final float finalR = r * this.red * v + (1.0F - v);
+        final float finalG = g * this.green * v + (1.0F - v);
+        final float finalB = b * this.blue * v + (1.0F - v);
+        final float finalA = v * 0.15F + 0.2F;
+        final int packedColor = ((int)(finalR * 255) << 16) | ((int)(finalG * 255) << 8) | (int)(finalB * 255) | ((int)(finalA * 255) << 24);
+        this.litTintGlow.render(matrix, builder, this.getLight(light), overlay, packedColor);
     }
 
     protected int getLight(final int packedLight) {
@@ -146,47 +161,43 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
     static class AABBVertexBuilder implements VertexConsumer {
         final AABBBuilder builder = new AABBBuilder();
 
-        @Override
-        public VertexConsumer vertex(final double x, final double y, final double z) {
+        // VertexConsumer API changed in 1.21.1 - implement required methods
+        public VertexConsumer addVertex(final double x, final double y, final double z) {
             this.builder.include(x, y, z);
             return this;
         }
 
-        @Override
-        public VertexConsumer color(int r, int g, int b, int a) {
+        public VertexConsumer addVertex(final float x, final float y, final float z) {
+            this.builder.include(x, y, z);
             return this;
         }
 
-        @Override
-        public VertexConsumer uv(float u, float v) {
+        public VertexConsumer setColor(int r, int g, int b, int a) {
             return this;
         }
 
-        @Override
-        public VertexConsumer overlayCoords(int u, int v) {
+        public VertexConsumer setUv(float u, float v) {
             return this;
         }
 
-        @Override
-        public VertexConsumer uv2(int u, int v) {
+        public VertexConsumer setUv1(int u, int v) {
             return this;
         }
 
-        @Override
-        public VertexConsumer normal(float x, float y, float z) {
+        public VertexConsumer setUv2(int u, int v) {
             return this;
         }
 
-        @Override
-        public void endVertex() {
+        public VertexConsumer setOverlay(int u, int v) {
+            return this;
         }
 
-        @Override
-        public void defaultColor(int r, int g, int b, int a) {
+        public VertexConsumer setLight(int uv) {
+            return this;
         }
 
-        @Override
-        public void unsetDefaultColor() {
+        public VertexConsumer setNormal(float x, float y, float z) {
+            return this;
         }
 
         AABB build() {

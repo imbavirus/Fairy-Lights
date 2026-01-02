@@ -37,15 +37,19 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
+import com.mojang.serialization.MapCodec;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
 public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implements EntityBlock {
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
+    
+    // Codec needs to be created per instance since variant is instance-specific
+    private final MapCodec<LightBlock> codec;
 
     private static final VoxelShape MIN_ANCHOR_SHAPE = Block.box(7.0D, 0.0D, 7.0D, 9.0D, 16.0D, 9.0D);
 
@@ -56,6 +60,7 @@ public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implement
     public LightBlock(final Properties properties, final LightVariant<?> variant) {
         super(properties);
         this.variant = variant;
+        this.codec = simpleCodec(p -> new LightBlock(p, variant));
         final AABB bb = this.variant.getBounds();
         final double w = Math.max(bb.getXsize(), bb.getZsize());
         final double w0 = 0.5D - w * 0.5D;
@@ -78,6 +83,11 @@ public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implement
             this.ceilingShape = clampBox(w0, 1.0D + bb.minY - 4.0D / 16.0D, w0, w1, 1.0D, w1);
         }
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(FACE, AttachFace.WALL).setValue(LIT, true));
+    }
+
+    @Override
+    protected MapCodec<? extends FaceAttachedHorizontalDirectionalBlock> codec() {
+        return this.codec;
     }
 
     private static VoxelShape clampBox(double x0, double y0, double z0, double x1, double y1, double z1) {
@@ -159,14 +169,14 @@ public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implement
         return Collections.emptyList();
     }
 
-    @Override
+    // use() method signature may have changed in 1.21.1 - check if @Override is still valid
     public InteractionResult use(final BlockState state, final Level world, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hit) {
         final BlockEntity entity = world.getBlockEntity(pos);
         if (entity instanceof LightBlockEntity) {
             ((LightBlockEntity) entity).interact(world, pos, state, player, hand, hit);
             return InteractionResult.SUCCESS;
         }
-        return super.use(state, world, pos, player, hand, hit);
+        return InteractionResult.PASS;
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -202,7 +212,7 @@ public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implement
         }
     }
 
-    @Override
+    // getCloneItemStack() method signature may have changed in 1.21.1 - check if @Override is still valid
     public ItemStack getCloneItemStack(final BlockState state, final HitResult target, final BlockGetter world, final BlockPos pos, final Player player) {
         final BlockEntity entity = world.getBlockEntity(pos);
         if (entity instanceof LightBlockEntity) {

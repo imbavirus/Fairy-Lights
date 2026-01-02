@@ -33,12 +33,15 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
+import com.mojang.serialization.MapCodec;
 import javax.annotation.Nullable;
 import java.util.Random;
 import java.util.stream.Stream;
 
 public final class FastenerBlock extends DirectionalBlock implements EntityBlock {
     public static final BooleanProperty TRIGGERED = BlockStateProperties.TRIGGERED;
+    
+    public static final MapCodec<FastenerBlock> CODEC = simpleCodec(FastenerBlock::new);
 
     private static final VoxelShape NORTH_AABB = Block.box(6.0D, 6.0D, 12.0D, 10.0D, 10.0D, 16.0D);
 
@@ -58,6 +61,11 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
             .setValue(FACING, Direction.NORTH)
             .setValue(TRIGGERED, false)
         );
+    }
+
+    @Override
+    protected MapCodec<? extends DirectionalBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -123,7 +131,7 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
         if (!state.is(newState.getBlock())) {
             final BlockEntity entity = world.getBlockEntity(pos);
             if (entity instanceof FastenerBlockEntity) {
-                entity.getCapability(CapabilityHandler.FASTENER_CAP).ifPresent(f -> f.dropItems(world, pos));
+                CapabilityHandler.getFastenerCapability(entity).ifPresent(f -> f.dropItems(world, pos));
             }
             super.onRemove(state, world, pos, newState, isMoving);
         }
@@ -181,7 +189,7 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
     public int getAnalogOutputSignal(final BlockState state, final Level world, final BlockPos pos) {
         final BlockEntity entity = world.getBlockEntity(pos);
         if (entity == null) return super.getAnalogOutputSignal(state, world, pos);
-        return entity.getCapability(CapabilityHandler.FASTENER_CAP).map(f -> f.getAllConnections().stream()).orElse(Stream.empty())
+        return CapabilityHandler.getFastenerCapability(entity).map(f -> f.getAllConnections().stream()).orElse(Stream.empty())
             .filter(HangingLightsConnection.class::isInstance)
             .map(HangingLightsConnection.class::cast)
             .mapToInt(c -> (int) Math.ceil(c.getJingleProgress() * 15))
@@ -199,7 +207,7 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
         if (!(entity instanceof FastenerBlockEntity)) {
             return;
         }
-        entity.getCapability(CapabilityHandler.FASTENER_CAP).ifPresent(fastener -> fastener.getAllConnections().stream()
+        CapabilityHandler.getFastenerCapability(entity).ifPresent(fastener -> fastener.getAllConnections().stream()
             .filter(HangingLightsConnection.class::isInstance)
             .map(HangingLightsConnection.class::cast)
             .filter(conn -> conn.canCurrentlyPlayAJingle() && conn.isDestination(new BlockFastenerAccessor(fastener.getPos())) && world.getBlockState(fastener.getPos()).getValue(TRIGGERED))

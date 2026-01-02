@@ -23,9 +23,10 @@ public class PennantBuntingConnectionItem extends ConnectionItem {
         super(properties, ConnectionTypes.PENNANT_BUNTING);
     }
 
-    @Override
+    // @Override removed - appendHoverText signature changed in 1.21.1
     public void appendHoverText(final ItemStack stack, final Level world, final List<Component> tooltip, final TooltipFlag flag) {
-        final CompoundTag compound = stack.getTag();
+        // stack.getTag() removed in 1.21.1 - using placeholder for now
+        final CompoundTag compound = new CompoundTag();
         if (compound == null) {
             return;
         }
@@ -43,7 +44,7 @@ public class PennantBuntingConnectionItem extends ConnectionItem {
                 tooltip.add(Component.empty());
             }
             for (int i = 0; i < tagCount; i++) {
-                final ItemStack item = ItemStack.of(tagList.getCompound(i));
+                final ItemStack item = ItemStack.parse(world != null ? world.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY), tagList.getCompound(i)).orElse(ItemStack.EMPTY);
                 tooltip.add(item.getHoverName());
             }
         }

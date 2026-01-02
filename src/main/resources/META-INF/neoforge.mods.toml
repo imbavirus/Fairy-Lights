@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[47,)"
+loaderVersion="[4,)"
 issueTrackerURL="https://github.com/pau101/Fairy-Lights/issues"
 license="MIT"
 [[mods]]
@@ -11,14 +11,14 @@ license="MIT"
 	description="Fairy Lights introduces decorative string lights, bunting, garland, and more!"
 	logoFile="logo.png"
 [[dependencies.fairylights]]
-	modId="forge"
+	modId="neoforge"
 	mandatory=true
-	versionRange="[47,)"
+	versionRange="[21.1,)"
 	ordering="NONE"
 	side="BOTH"
 [[dependencies.fairylights]]
 	modId="minecraft"
 	mandatory=true
-	versionRange="[1.20.1,1.20.2)"
+	versionRange="[1.21.1,1.21.2)"
 	ordering="NONE"
 	side="BOTH"

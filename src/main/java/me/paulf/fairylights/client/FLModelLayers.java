@@ -43,6 +43,6 @@ public class FLModelLayers {
     }
 
     private static ModelLayerLocation layer(String name, String layer) {
-        return new ModelLayerLocation(new ResourceLocation(FairyLights.ID, name), layer);
+        return new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, name), layer);
     }
 }

@@ -9,7 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.util.LazyOptional;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 
@@ -27,21 +27,21 @@ public final class BlockFastenerAccessor implements FastenerAccessor {
     }
 
     @Override
-    public LazyOptional<Fastener<?>> get(final Level world, final boolean load) {
+    public Optional<Fastener<?>> get(final Level world, final boolean load) {
         if (load || world.isLoaded(this.pos)) {
             final BlockEntity entity = world.getBlockEntity(this.pos);
             if (entity != null) {
-                return entity.getCapability(CapabilityHandler.FASTENER_CAP);
+                return CapabilityHandler.getFastenerCapability(entity);
             }
         }
-        return LazyOptional.empty();
+        return Optional.empty();
     }
 
     @Override
     public boolean isGone(final Level world) {
         if (world.isClientSide() || !world.isLoaded(this.pos)) return false;
         final BlockEntity entity = world.getBlockEntity(this.pos);
-        return entity == null || !entity.getCapability(CapabilityHandler.FASTENER_CAP).isPresent();
+        return entity == null || !CapabilityHandler.getFastenerCapability(entity).isPresent();
     }
 
     @Override
@@ -62,11 +62,20 @@ public final class BlockFastenerAccessor implements FastenerAccessor {
 
     @Override
     public CompoundTag serialize() {
-        return NbtUtils.writeBlockPos(this.pos);
+        // NbtUtils.writeBlockPos() returns Tag, need to wrap in CompoundTag
+        final CompoundTag tag = new CompoundTag();
+        tag.put("pos", NbtUtils.writeBlockPos(this.pos));
+        return tag;
     }
 
     @Override
     public void deserialize(final CompoundTag nbt) {
-        this.pos = NbtUtils.readBlockPos(nbt);
+        // NbtUtils.readBlockPos() now returns Optional<BlockPos>
+        if (nbt.contains("pos")) {
+            this.pos = NbtUtils.readBlockPos(nbt.getCompound("pos"), "pos").orElse(BlockPos.ZERO);
+        } else {
+            // Fallback for old format
+            this.pos = NbtUtils.readBlockPos(nbt, "pos").orElse(BlockPos.ZERO);
+        }
     }
 }

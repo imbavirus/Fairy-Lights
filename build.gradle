@@ -1,75 +1,14 @@
-buildscript {
-    dependencies {
-        classpath 'org.spongepowered:mixingradle:0.7.+'
-    }
-}
-
 plugins {
     id 'eclipse'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '5.1.+'
+    id 'net.neoforged.gradle.userdev' version '7.0.142'
 }
-
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'org.spongepowered.mixin'
 
 version = '7.0.0'
 group = 'me.paulf.fairylights'
 archivesBaseName = 'fairylights'
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-minecraft {
-    mappings channel: 'official', version: '1.20.1'
-    runs {
-        client {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'forge.enabledGameTestNamespaces', 'fairylights'
-            args '--width', '1280', '--height', '720', '-mixin.config=fairylights.mixins.json'
-            mods {
-                fairylights {
-                    source sourceSets.main
-                }
-            }
-        }
-        server {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'forge.enabledGameTestNamespaces', 'fairylights'
-            args '-mixin.config=fairylights.mixins.json'
-            mods {
-                fairylights {
-                    source sourceSets.main
-                }
-            }
-        }
-        gameTestServer {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'forge.enabledGameTestNamespaces', 'fairylights'
-            mods {
-                examplemod {
-                    source sourceSets.main
-                }
-            }
-        }
-        data {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            args '--mod', 'fairylights', '--all', '--output', file('src/generated/resources/')
-            mods {
-                fairylights {
-                    source sourceSets.main
-                }
-            }
-        }
-    }
-}
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
@@ -85,22 +24,31 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
+    implementation "net.neoforged:neoforge:${neo_version}"
 
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    // Mixin annotation processor - temporarily disabled due to ASM 9.5/9.8 conflict
+    // NeoForge uses ASM 9.8 on module path, Mixin 0.8.5 uses ASM 9.5 on classpath
+    // If mixins are already processed, this may not be needed at runtime
+    // annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    compileOnly fg.deobf('mezz.jei:jei-1.20.1-common-api:15.1.0.19')
-    compileOnly fg.deobf('mezz.jei:jei-1.20.1-forge-api:15.1.0.19')
-    runtimeOnly fg.deobf('mezz.jei:jei-1.20.1-forge:15.1.0.19')
+    // JEI - comment out if version not available
+    // compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    // compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    // runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 }
 
-mixin {
-    add sourceSets.main, 'fairylights.mixins.refmap.json'
-    config 'fairylights.mixins.json'
-}
+// Configure Mixin annotation processor - disabled due to ASM conflict
+// tasks.withType(JavaCompile).configureEach {
+//     options.annotationProcessorPath = configurations.annotationProcessor
+//     options.compilerArgs.add('-A' + 'mixin.refmap=true')
+//     options.compilerArgs.add('-A' + 'mixin.hotSwap=true')
+// }
+
+// Mixin is handled automatically by NeoForge - no plugin needed
+// The mixin configuration is in fairylights.mixins.json
 
 jar {
-    classifier '1.20.1'
+    archiveClassifier.set('1.21.1')
     exclude '.cache'
     manifest {
         attributes([
@@ -115,8 +63,6 @@ jar {
         ])
     }
 }
-
-jar.finalizedBy('reobfJar')
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'

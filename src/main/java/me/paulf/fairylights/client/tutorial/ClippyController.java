@@ -17,12 +17,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.common.NeoForge;
+// TickEvent removed in NeoForge 1.21.1 - TODO: Use alternative event system
+// import net.neoforged.neoforge.event.tick.TickEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.event.config.ModConfigEvent;
 
 import javax.annotation.Nullable;
 import java.util.function.Function;
@@ -39,15 +40,18 @@ public class ClippyController {
     private State state = new NoProgressState();
 
     public void init(final IEventBus modBus) {
-        MinecraftForge.EVENT_BUS.addListener((final LevelEvent.Load event) -> {
+        NeoForge.EVENT_BUS.addListener((final LevelEvent.Load event) -> {
             if (event.getLevel() instanceof ClientLevel) {
                 this.reload();
             }
         });
-        MinecraftForge.EVENT_BUS.addListener((final TickEvent.ClientTickEvent event) -> {
-            final Minecraft mc = Minecraft.getInstance();
-            if (event.phase == TickEvent.Phase.END && !mc.isPaused() && mc.player != null) {
-                this.state.tick(mc.player, this);
+        // NeoForge 1.21.1 uses different event system - use EntityTickEvent or similar
+        NeoForge.EVENT_BUS.addListener((final net.neoforged.neoforge.event.tick.EntityTickEvent.Post event) -> {
+            if (event.getEntity() instanceof net.minecraft.client.player.LocalPlayer player) {
+                final Minecraft mc = Minecraft.getInstance();
+                if (!mc.isPaused() && mc.player != null) {
+                    this.state.tick(player, this);
+                }
             }
         });
         modBus.<ModConfigEvent.Loading>addListener(e -> {
@@ -55,22 +59,34 @@ public class ClippyController {
                 this.reload();
             }
         });
-        MinecraftForge.EVENT_BUS.<ClientPlayerNetworkEvent.LoggingIn>addListener(e -> {
+        NeoForge.EVENT_BUS.<ClientPlayerNetworkEvent.LoggingIn>addListener(e -> {
             this.reload();
             this.state.tick(e.getPlayer(), this);
         });
     }
 
     private void reload() {
-        this.setState(this.states.getOrDefault(FLClientConfig.TUTORIAL.progress.get(), NoProgressState::new).get());
+        // Check if config is loaded before accessing it
+        try {
+            String progressValue = FLClientConfig.TUTORIAL.progress.get();
+            this.setState(this.states.getOrDefault(progressValue, NoProgressState::new).get());
+        } catch (IllegalStateException | NullPointerException e) {
+            // Config not loaded yet, use default state
+            this.setState(new NoProgressState());
+        }
     }
 
     private void setState(final State state) {
         this.state.stop();
         this.state = state;
         this.state.start();
-        FLClientConfig.TUTORIAL.progress.set(this.state.name());
-        FLClientConfig.TUTORIAL.progress.save();
+        // Only save config if it's loaded
+        try {
+            FLClientConfig.TUTORIAL.progress.set(this.state.name());
+            FLClientConfig.TUTORIAL.progress.save();
+        } catch (IllegalStateException | NullPointerException e) {
+            // Config not loaded yet, skip saving
+        }
     }
 
     interface State {
@@ -122,10 +138,10 @@ public class ClippyController {
             if (!player.getInventory().contains(FLCraftingRecipes.LIGHTS) &&
                     !player.getInventory().getSelected().is(FLCraftingRecipes.LIGHTS)) {
                 controller.setState(new NoProgressState());
-            } else if (FLItems.HANGING_LIGHTS.filter(i ->
-                    player.getInventory().getSelected().getItem() == i ||
-                    player.getInventory().contains(new ItemStack(i)) ||
-                    player.getStats().getValue(Stats.ITEM_CRAFTED.get(i)) > 0).isPresent()) {
+            } else if (FLItems.HANGING_LIGHTS.value() != null && (
+                    player.getInventory().getSelected().getItem() == FLItems.HANGING_LIGHTS.value() ||
+                    player.getInventory().contains(new ItemStack(FLItems.HANGING_LIGHTS.value())) ||
+                    player.getStats().getValue(Stats.ITEM_CRAFTED.get(FLItems.HANGING_LIGHTS.value())) > 0)) {
                 controller.setState(new CompleteState());
             }
         }
@@ -163,6 +179,8 @@ public class ClippyController {
 
         @Override
         public Visibility render(final GuiGraphics stack, final ToastComponent toastGui, final long delta) {
+            // Toast texture location in 1.21.1
+            final net.minecraft.resources.ResourceLocation TEXTURE = net.minecraft.resources.ResourceLocation.withDefaultNamespace("textures/gui/toasts.png");
             stack.blit(TEXTURE, 0, 0, 0, 96, 160, 32);
             stack.renderFakeItem(this.stack.get(), 6 + 2, 6 + 2);
             if (this.subtitle == null) {

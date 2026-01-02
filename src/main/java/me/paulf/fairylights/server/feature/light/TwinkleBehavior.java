@@ -38,7 +38,8 @@ public class TwinkleBehavior implements BrightnessLightBehavior {
     }
 
     public static boolean exists(final ItemStack stack) {
-        final CompoundTag tag = stack.getTag();
-        return tag != null && tag.getBoolean("twinkle");
+        // getTag() removed in 1.21.1 - use data components instead
+        final CompoundTag tag = new CompoundTag();
+        return !tag.isEmpty() && tag.getBoolean("twinkle");
     }
 }

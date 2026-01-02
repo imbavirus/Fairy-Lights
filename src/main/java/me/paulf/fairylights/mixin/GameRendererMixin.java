@@ -9,8 +9,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
-    @Inject(at = @At("RETURN"), method = "pick(F)V")
-    public void pick(float delta, CallbackInfo ci) {
-        ClientEventHandler.updateHitConnection();
-    }
+    // TODO: Fix mixin - method signature changed in 1.21.1
+    // Need to check obfuscation mappings for correct method name
+    // @Inject(at = @At("RETURN"), method = "pick(F)V")
+    // private void pick(float delta, CallbackInfo ci) {
+    //     ClientEventHandler.updateHitConnection();
+    // }
 }

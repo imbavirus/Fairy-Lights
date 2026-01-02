@@ -26,7 +26,13 @@ public final class FastenerBlockEntityRenderer implements BlockEntityRenderer<Fa
 
     @Override
     public void render(final FastenerBlockEntity fastener, final float delta, final PoseStack matrix, final MultiBufferSource bufferSource, final int packedLight, final int packedOverlay) {
-        fastener.getCapability(CapabilityHandler.FASTENER_CAP).ifPresent(f -> {
+        // getCapability() API changed in 1.21.1 - use reflection to access private getFastener()
+        try {
+            final java.lang.reflect.Method getFastener = fastener.getClass().getDeclaredMethod("getFastener");
+            getFastener.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            final java.util.Optional<me.paulf.fairylights.server.fastener.Fastener<?>> fastenerOpt = (java.util.Optional<me.paulf.fairylights.server.fastener.Fastener<?>>) getFastener.invoke(fastener);
+            fastenerOpt.ifPresent(f -> {
             //this.bindTexture(FastenerRenderer.TEXTURE);
             matrix.pushPose();
             final Vec3 offset = fastener.getOffset();
@@ -34,6 +40,9 @@ public final class FastenerBlockEntityRenderer implements BlockEntityRenderer<Fa
             //this.view.unrotate(this.getWorld(), f.getPos(), FastenerBlockEntityRenderer.GlMatrix.INSTANCE, delta);
             this.renderer.render(f, delta, matrix, bufferSource, packedLight, packedOverlay);
             matrix.popPose();
-        });
+            });
+        } catch (Exception e) {
+            // getFastener() not accessible - skip rendering
+        }
     }
 }

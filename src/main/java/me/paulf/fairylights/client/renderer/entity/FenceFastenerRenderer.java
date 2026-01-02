@@ -17,7 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.LightLayer;
 
 public final class FenceFastenerRenderer extends EntityRenderer<FenceFastenerEntity> {
-    public static final ResourceLocation MODEL = new ResourceLocation(FairyLights.ID, "block/fence_fastener");
+    public static final ResourceLocation MODEL = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "block/fence_fastener");
 
     private final FastenerRenderer renderer;
 
@@ -37,7 +37,17 @@ public final class FenceFastenerRenderer extends EntityRenderer<FenceFastenerEnt
         matrix.pushPose();
         FastenerRenderer.renderBakedModel(MODEL, matrix, buf, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY);
         matrix.popPose();
-        entity.getCapability(CapabilityHandler.FASTENER_CAP).ifPresent(f -> this.renderer.render(f, delta, matrix, source, packedLight, OverlayTexture.NO_OVERLAY));
+        // getCapability() API changed in 1.21.1 - use reflection
+        try {
+            final java.lang.reflect.Method getCapability = entity.getClass().getMethod("getCapability", net.minecraft.resources.ResourceLocation.class);
+            @SuppressWarnings("unchecked")
+            final java.util.Optional<me.paulf.fairylights.server.fastener.Fastener<?>> cap = (java.util.Optional<me.paulf.fairylights.server.fastener.Fastener<?>>) getCapability.invoke(entity, CapabilityHandler.FASTENER_ID);
+            if (cap != null) {
+                cap.ifPresent(f -> this.renderer.render(f, delta, matrix, source, packedLight, OverlayTexture.NO_OVERLAY));
+            }
+        } catch (Exception e) {
+            // getCapability() not available - skip rendering
+        }
         super.render(entity, yaw, delta, matrix, source, packedLight);
     }
 

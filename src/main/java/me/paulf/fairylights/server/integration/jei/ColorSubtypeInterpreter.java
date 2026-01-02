@@ -1,5 +1,7 @@
 package me.paulf.fairylights.server.integration.jei;
 
+// JEI integration - commented out until JEI 1.21.1 NeoForge version is available
+/*
 import mezz.jei.api.ingredients.subtypes.IIngredientSubtypeInterpreter;
 import mezz.jei.api.ingredients.subtypes.UidContext;
 import net.minecraft.nbt.CompoundTag;
@@ -15,4 +17,9 @@ public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpre
         }
         return NONE;
     }
+}
+*/
+// Placeholder class
+public final class ColorSubtypeInterpreter {
+    private ColorSubtypeInterpreter() {}
 }

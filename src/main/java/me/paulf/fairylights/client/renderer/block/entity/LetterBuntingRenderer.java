@@ -26,7 +26,7 @@ public class LetterBuntingRenderer extends ConnectionRenderer<LetterBuntingConne
     public static final Int2ObjectMap<ResourceLocation> MODELS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&!?".chars()
         .collect(
             Int2ObjectOpenHashMap::new,
-            (map, cp) -> map.put(cp, new ResourceLocation(FairyLights.ID, "entity/letter/" + Character.getName(cp).toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "_"))),
+            (map, cp) -> map.put(cp, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/letter/" + Character.getName(cp).toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "_"))),
             Int2ObjectOpenHashMap::putAll
         );
 

@@ -12,7 +12,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.util.LazyOptional;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
@@ -44,7 +44,7 @@ public abstract class EntityFastenerAccessor<E extends Entity> implements Fasten
     }
 
     @Override
-    public LazyOptional<Fastener<?>> get(final Level world, final boolean load) {
+    public Optional<Fastener<?>> get(final Level world, final boolean load) {
         if (this.entity == null) {
             if (world instanceof ServerLevel) {
                 final Entity e = ((ServerLevel) world).getEntity(this.uuid);
@@ -62,14 +62,14 @@ public abstract class EntityFastenerAccessor<E extends Entity> implements Fasten
         }
         if (this.entity != null && this.entity.level() == world) {
             this.pos = this.entity.position();
-            return this.entity.getCapability(CapabilityHandler.FASTENER_CAP);
+            return CapabilityHandler.getFastenerCapability(this.entity);
         }
-        return LazyOptional.empty();
+        return Optional.empty();
     }
 
     @Override
     public boolean isGone(final Level world) {
-        return !world.isClientSide() && this.entity != null && (!this.entity.getCapability(CapabilityHandler.FASTENER_CAP).isPresent() || this.entity.level() != world);
+        return !world.isClientSide() && this.entity != null && (!CapabilityHandler.getFastenerCapability(this.entity).isPresent() || this.entity.level() != world);
     }
 
     @Override

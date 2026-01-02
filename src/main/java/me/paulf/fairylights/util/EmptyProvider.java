@@ -1,15 +1,9 @@
 package me.paulf.fairylights.util;
 
-import net.minecraft.core.Direction;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.LazyOptional;
-
-import javax.annotation.Nullable;
-
-public final class EmptyProvider implements ICapabilityProvider {
-    @Override
-    public <T> LazyOptional<T> getCapability(final Capability<T> cap, @Nullable final Direction side) {
-        return LazyOptional.empty();
-    }
+// EmptyProvider - Deprecated in NeoForge 1.21.1
+// Capabilities are now accessed directly via ResourceLocation on entities/block entities
+// This class is kept for compatibility but may not be used
+@Deprecated
+public final class EmptyProvider {
+    private EmptyProvider() {}
 }

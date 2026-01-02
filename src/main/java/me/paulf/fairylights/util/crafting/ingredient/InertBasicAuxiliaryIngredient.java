@@ -15,6 +15,14 @@ public class InertBasicAuxiliaryIngredient extends BasicAuxiliaryIngredient<Void
         super(ingredient, true, Integer.MAX_VALUE);
     }
 
+    public InertBasicAuxiliaryIngredient(final LazyTagIngredient lazyTagIngredient, final boolean isRequired, final int limit) {
+        super(lazyTagIngredient, isRequired, limit);
+    }
+
+    public InertBasicAuxiliaryIngredient(final LazyTagIngredient lazyTagIngredient) {
+        super(lazyTagIngredient, true, Integer.MAX_VALUE);
+    }
+
     @Nullable
     @Override
     public final Void accumulator() {

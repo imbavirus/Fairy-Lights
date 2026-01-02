@@ -13,7 +13,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.ForgeEventFactory;
+import net.neoforged.neoforge.event.EventHooks;
 
 import java.util.function.BiConsumer;
 
@@ -91,7 +91,7 @@ public final class InteractionConnectionMessage extends ConnectionMessage {
 
         private void updateItem(final Player player, final ItemStack oldStack, final ItemStack stack, final InteractionHand hand) {
             if (stack.getCount() <= 0 && !player.getAbilities().instabuild) {
-                ForgeEventFactory.onPlayerDestroyItem(player, stack, hand);
+                EventHooks.onPlayerDestroyItem(player, stack, hand);
                 player.setItemInHand(hand, ItemStack.EMPTY);
             } else if (stack.getCount() < oldStack.getCount() && player.getAbilities().instabuild) {
                 stack.setCount(oldStack.getCount());

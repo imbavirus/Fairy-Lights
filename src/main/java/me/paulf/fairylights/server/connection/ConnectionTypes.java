@@ -2,31 +2,38 @@ package me.paulf.fairylights.server.connection;
 
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.item.FLItems;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 public final class ConnectionTypes {
     private ConnectionTypes() {}
 
     public static final DeferredRegister<ConnectionType<?>> REG = DeferredRegister.create(FairyLights.CONNECTION_TYPE, FairyLights.ID);
+    
+    static {
+        REG.makeRegistry(builder -> {
+            // disableSaving() may have been removed or renamed in 1.21.1
+            // Try without it or use alternative method
+        });
+    }
 
-    public static final RegistryObject<ConnectionType<HangingLightsConnection>> HANGING_LIGHTS = REG.register("hanging_lights",
+    public static final DeferredHolder<ConnectionType<?>,ConnectionType<HangingLightsConnection>> HANGING_LIGHTS = REG.register("hanging_lights",
         () -> ConnectionType.Builder.create(HangingLightsConnection::new).item(FLItems.HANGING_LIGHTS).build()
     );
 
-    public static final RegistryObject<ConnectionType<GarlandVineConnection>> VINE_GARLAND = REG.register("vine_garland",
+    public static final DeferredHolder<ConnectionType<?>,ConnectionType<GarlandVineConnection>> VINE_GARLAND = REG.register("vine_garland",
         () -> ConnectionType.Builder.create(GarlandVineConnection::new).item(FLItems.GARLAND).build()
     );
 
-    public static final RegistryObject<ConnectionType<GarlandTinselConnection>> TINSEL_GARLAND = REG.register("tinsel_garland",
+    public static final DeferredHolder<ConnectionType<?>,ConnectionType<GarlandTinselConnection>> TINSEL_GARLAND = REG.register("tinsel_garland",
         () -> ConnectionType.Builder.create(GarlandTinselConnection::new).item(FLItems.TINSEL).build()
     );
 
-    public static final RegistryObject<ConnectionType<PennantBuntingConnection>> PENNANT_BUNTING = REG.register("pennant_bunting",
+    public static final DeferredHolder<ConnectionType<?>,ConnectionType<PennantBuntingConnection>> PENNANT_BUNTING = REG.register("pennant_bunting",
         () -> ConnectionType.Builder.create(PennantBuntingConnection::new).item(FLItems.PENNANT_BUNTING).build()
     );
 
-    public static final RegistryObject<ConnectionType<LetterBuntingConnection>> LETTER_BUNTING = REG.register("letter_bunting",
+    public static final DeferredHolder<ConnectionType<?>,ConnectionType<LetterBuntingConnection>> LETTER_BUNTING = REG.register("letter_bunting",
         () -> ConnectionType.Builder.create(LetterBuntingConnection::new).item(FLItems.LETTER_BUNTING).build()
     );
 }

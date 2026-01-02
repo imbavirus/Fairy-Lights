@@ -34,7 +34,6 @@ import me.paulf.fairylights.util.FLMth;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraftforge.client.ForgeRenderTypes;
 
 import java.util.List;
 import java.util.Map;
@@ -55,8 +54,9 @@ public class LightRenderer {
             )));
         }
 
+        // renderToBuffer() signature changed in 1.21.1
         @Override
-        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final float r, final float g, final float b, final float a) {
+        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
         }
     }
 
@@ -98,16 +98,20 @@ public class LightRenderer {
     }
 
     public Data start(final MultiBufferSource source) {
-        final VertexConsumer buf = ClientProxy.TRANSLUCENT_TEXTURE.buffer(source, ForgeRenderTypes::getUnsortedTranslucent);
+        // RenderType.buffer() API changed in 1.21.1 - use getBuffer() with RenderType
+        final VertexConsumer buf = source.getBuffer(net.minecraft.client.renderer.RenderType.translucent());
         ForwardingVertexConsumer translucent = new ForwardingVertexConsumer() {
             @Override
             protected VertexConsumer delegate() {
                 return buf;
             }
 
-            @Override
-            public VertexConsumer normal(float x, float y, float z) {
-                return super.normal(0.0F, 1.0F, 0.0F);
+            public VertexConsumer setUv1(int u, int v) {
+                return this.delegate().setUv1(u, v);
+            }
+
+            public VertexConsumer setNormal(float x, float y, float z) {
+                return super.setNormal(0.0F, 1.0F, 0.0F);
             }
         };
         return new Data(buf, translucent);
@@ -128,7 +132,7 @@ public class LightRenderer {
 
     public <T extends LightBehavior> void render(final PoseStack matrix, final Data data, final Light<T> light, final LightModel<T> model, final float delta, final int packedLight, final int packedOverlay) {
         model.animate(light, light.getBehavior(), delta);
-        model.renderToBuffer(matrix, data.solid, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
+        model.renderToBuffer(matrix, data.solid, packedLight, packedOverlay, 0xFFFFFFFF); // White color
         model.renderTranslucent(matrix, data.translucent, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
     }
 

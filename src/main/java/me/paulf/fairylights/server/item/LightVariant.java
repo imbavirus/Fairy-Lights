@@ -1,20 +1,14 @@
 package me.paulf.fairylights.server.item;
 
 import me.paulf.fairylights.server.feature.light.LightBehavior;
-import me.paulf.fairylights.util.EmptyProvider;
-import me.paulf.fairylights.util.SimpleProvider;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.LazyOptional;
+
+import java.util.Optional;
 
 public interface LightVariant<T extends LightBehavior> {
-    final class Holder {
-        public static Capability<LightVariant<?>> CAPABILITY = CapabilityManager.get(new CapabilityToken<>() {});
-    }
+    // Capabilities API removed in NeoForge 1.21.1 - item capabilities work differently
+    // This will need to be refactored to use data attachments or a different approach
 
     boolean parallelsCord();
 
@@ -28,11 +22,9 @@ public interface LightVariant<T extends LightBehavior> {
 
     boolean isOrientable();
 
-    static LazyOptional<LightVariant<?>> get(final ICapabilityProvider provider) {
-        return provider.getCapability(Holder.CAPABILITY);
-    }
-
-    static ICapabilityProvider provider(final LightVariant<?> variant) {
-        return Holder.CAPABILITY == null ? new EmptyProvider() : new SimpleProvider<>(Holder.CAPABILITY, variant);
+    // TODO: Refactor to use NeoForge 1.21.1 data attachment system
+    static Optional<LightVariant<?>> get(final ItemStack stack) {
+        // For now, return empty - needs proper implementation
+        return Optional.empty();
     }
 }

@@ -1,5 +1,7 @@
 package me.paulf.fairylights.server.integration.jei;
 
+// JEI integration - commented out until JEI 1.21.1 NeoForge version is available
+/*
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.item.FLItems;
 import me.paulf.fairylights.util.crafting.GenericRecipe;
@@ -51,4 +53,9 @@ public final class FairyLightsJEIPlugin implements IModPlugin {
         registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.SQUARE_PENNANT.get(), new ColorSubtypeInterpreter());
         FLItems.lights().forEach(i -> registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, i, new ColorSubtypeInterpreter()));
     }
+}
+*/
+// Placeholder class to prevent compilation errors
+public final class FairyLightsJEIPlugin {
+    private FairyLightsJEIPlugin() {}
 }

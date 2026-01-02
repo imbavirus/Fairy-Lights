@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 public final class FeatureType {
     private static final DefaultedRegistry<FeatureType> REGISTRY = new DefaultedMappedRegistry<>(
         "default",
-        ResourceKey.createRegistryKey(new ResourceLocation(FairyLights.ID, "feature")),
+        ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "feature")),
         Lifecycle.experimental(),
         false
     );
@@ -25,7 +25,7 @@ public final class FeatureType {
     }
 
     public static FeatureType register(final String name) {
-        return Registry.register(REGISTRY, new ResourceLocation(name), new FeatureType());
+        return Registry.register(REGISTRY, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, name), new FeatureType());
     }
 
     public static FeatureType fromId(final int id) {

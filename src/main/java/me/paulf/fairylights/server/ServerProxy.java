@@ -10,21 +10,23 @@ import me.paulf.fairylights.server.jingle.JingleManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+// PacketDistributor removed in NeoForge 1.21.1 - using PayloadRegistrar instead
 
 public class ServerProxy {
     public void init(final IEventBus modBus) {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, FLConfig.GENERAL_SPEC);
-        MinecraftForge.EVENT_BUS.<AddReloadListenerEvent>addListener(e -> {
+        // ModLoadingContext.registerConfig() changed in NeoForge 1.21.1
+        // TODO: Update to use new config registration API
+        // ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, FLConfig.GENERAL_SPEC);
+        NeoForge.EVENT_BUS.<AddReloadListenerEvent>addListener(e -> {
             e.addListener(JingleManager.INSTANCE);
         });
-        MinecraftForge.EVENT_BUS.register(new ServerEventHandler());
+        NeoForge.EVENT_BUS.register(new ServerEventHandler());
         modBus.addListener(this::setup);
     }
 
@@ -33,16 +35,18 @@ public class ServerProxy {
     }
 
     public static void sendToPlayersWatchingChunk(final Object message, final Level world, final BlockPos pos) {
-        FairyLights.NETWORK.send(PacketDistributor.TRACKING_CHUNK.with(() -> world.getChunkAt(pos)), message);
+        // TODO: Rewrite to use PayloadRegistrar API for NeoForge 1.21.1
+        // FairyLights.NETWORK.send(PacketDistributor.TRACKING_CHUNK.with(() -> world.getChunkAt(pos)), message);
     }
 
     public static void sendToPlayersWatchingEntity(final Object message, final Entity entity) {
-        FairyLights.NETWORK.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), message);
+        // TODO: Rewrite to use PayloadRegistrar API for NeoForge 1.21.1
+        // FairyLights.NETWORK.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), message);
     }
 
     public static BlockView buildBlockView() {
         final CreateBlockViewEvent evt = new CreateBlockViewEvent(new RegularBlockView());
-        MinecraftForge.EVENT_BUS.post(evt);
+        NeoForge.EVENT_BUS.post(evt);
         return evt.getView();
     }
 
@@ -54,7 +58,7 @@ public class ServerProxy {
 			} catch (final ClassNotFoundException e) {
 				throw new AssertionError(e);
 			}
-			MinecraftForge.EVENT_BUS.register(vw);
+			NeoForge.EVENT_BUS.register(vw);
 		}*/
     }
 }

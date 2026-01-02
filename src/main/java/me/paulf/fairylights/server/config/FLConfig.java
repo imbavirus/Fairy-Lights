@@ -1,16 +1,16 @@
 package me.paulf.fairylights.server.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class FLConfig {
     private FLConfig() {}
 
     private static class General {
-        private final ForgeConfigSpec.ConfigValue<Boolean> jingleEnabled;
+        private final ModConfigSpec.ConfigValue<Boolean> jingleEnabled;
 
-        private final ForgeConfigSpec.ConfigValue<Integer> jingleAmplitude;
+        private final ModConfigSpec.ConfigValue<Integer> jingleAmplitude;
 
-        private General(final ForgeConfigSpec.Builder builder) {
+        private General(final ModConfigSpec.Builder builder) {
             builder.push("general");
             // TODO: lang
             this.jingleEnabled = builder.comment("If true jingles will play during Christmas.")
@@ -25,10 +25,10 @@ public final class FLConfig {
 
     private static final General GENERAL;
 
-    public static final ForgeConfigSpec GENERAL_SPEC;
+    public static final ModConfigSpec GENERAL_SPEC;
 
     static {
-        final ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        final ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         GENERAL = new General(builder);
         GENERAL_SPEC = builder.build();
     }

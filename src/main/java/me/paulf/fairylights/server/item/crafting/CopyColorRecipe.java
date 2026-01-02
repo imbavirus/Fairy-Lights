@@ -13,14 +13,14 @@ import net.minecraft.world.level.Level;
 
 public class CopyColorRecipe extends CustomRecipe {
     public CopyColorRecipe(final ResourceLocation id, CraftingBookCategory category) {
-        super(id, category);
+        super(category);
     }
 
     @Override
-    public boolean matches(final CraftingContainer inv, final Level world) {
+    public boolean matches(final net.minecraft.world.item.crafting.CraftingInput input, final Level world) {
         int count = 0;
-        for (int i = 0; i < inv.getContainerSize(); i++) {
-            final ItemStack stack = inv.getItem(i);
+        for (int i = 0; i < input.size(); i++) {
+            final ItemStack stack = input.getItem(i);
             if (!stack.isEmpty() && (!stack.is(FLCraftingRecipes.DYEABLE) || count++ >= 2)) {
                 return false;
             }
@@ -29,10 +29,10 @@ public class CopyColorRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(final CraftingContainer inv, final RegistryAccess registryAccess) {
+    public ItemStack assemble(final net.minecraft.world.item.crafting.CraftingInput input, final net.minecraft.core.HolderLookup.Provider provider) {
         ItemStack original = ItemStack.EMPTY;
-        for (int i = 0; i < inv.getContainerSize(); i++) {
-            final ItemStack stack = inv.getItem(i);
+        for (int i = 0; i < input.size(); i++) {
+            final ItemStack stack = input.getItem(i);
             if (!stack.isEmpty()) {
                 if (stack.is(FLCraftingRecipes.DYEABLE)) {
                     if (original.isEmpty()) {
@@ -52,11 +52,11 @@ public class CopyColorRecipe extends CustomRecipe {
     }
 
     @Override
-    public NonNullList<ItemStack> getRemainingItems(final CraftingContainer inv) {
+    public net.minecraft.core.NonNullList<ItemStack> getRemainingItems(final net.minecraft.world.item.crafting.CraftingInput input) {
         ItemStack original = ItemStack.EMPTY;
-        final NonNullList<ItemStack> remaining = NonNullList.withSize(inv.getContainerSize(), ItemStack.EMPTY);
+        final NonNullList<ItemStack> remaining = NonNullList.withSize(input.size(), ItemStack.EMPTY);
         for (int i = 0; i < remaining.size(); i++) {
-            final ItemStack stack = inv.getItem(i);
+            final ItemStack stack = input.getItem(i);
             if (stack.hasCraftingRemainingItem()) {
                 remaining.set(i, stack.getCraftingRemainingItem());
             } else if (original.isEmpty() && !stack.isEmpty() && stack.is(FLCraftingRecipes.DYEABLE)) {
@@ -72,6 +72,11 @@ public class CopyColorRecipe extends CustomRecipe {
     @Override
     public boolean canCraftInDimensions(final int width, final int height) {
         return width * height >= 2;
+    }
+
+    @Override
+    public net.minecraft.world.item.crafting.RecipeType<?> getType() {
+        return net.minecraft.world.item.crafting.RecipeType.CRAFTING;
     }
 
     @Override

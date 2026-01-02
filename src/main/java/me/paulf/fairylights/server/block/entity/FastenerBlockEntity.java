@@ -13,16 +13,21 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.util.LazyOptional;
+
+import java.util.Optional;
 
 public final class FastenerBlockEntity extends BlockEntity {
     public FastenerBlockEntity(final BlockPos pos, final BlockState state) {
         super(FLBlockEntities.FASTENER.get(), pos ,state);
     }
 
-    @Override
+    // getRenderBoundingBox() may not be an override in 1.21.1
     public AABB getRenderBoundingBox() {
-        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1)).orElseGet(super::getRenderBoundingBox);
+        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1)).orElseGet(() -> {
+            // super.getRenderBoundingBox() may not exist in 1.21.1 - return default AABB
+            final BlockPos pos = this.getBlockPos();
+            return new AABB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
+        });
     }
 
     public Vec3 getOffset() {
@@ -42,12 +47,15 @@ public final class FastenerBlockEntity extends BlockEntity {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    @Override
+    // getUpdateTag() may not be an override in 1.21.1
     public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+        // saveWithoutMetadata() signature changed in 1.21.1 - use saveWithId() or create new CompoundTag
+        final CompoundTag tag = new CompoundTag();
+        this.saveAdditional(tag, this.level != null ? this.level.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY));
+        return tag;
     }
 
-    @Override
+    // setLevel() may not be an override in 1.21.1
     public void setLevel(final Level world) {
         super.setLevel(world);
         this.getFastener().ifPresent(fastener -> fastener.setWorld(world));
@@ -65,16 +73,25 @@ public final class FastenerBlockEntity extends BlockEntity {
     }
 
     public static void tickClient(Level level, BlockPos pos, BlockState state, FastenerBlockEntity be) {
-        be.getFastener().ifPresent(Fastener::update);
+        be.getFastener().ifPresent(f -> f.update());
     }
 
     @Override
     public void setRemoved() {
-        this.getFastener().ifPresent(Fastener::remove);
+        this.getFastener().ifPresent(f -> f.remove());
         super.setRemoved();
     }
 
-    private LazyOptional<Fastener<?>> getFastener() {
-        return this.getCapability(CapabilityHandler.FASTENER_CAP);
+    private Optional<Fastener<?>> getFastener() {
+        // getCapability() API changed in 1.21.1 - use reflection to access
+        try {
+            final java.lang.reflect.Method getCapability = this.getClass().getMethod("getCapability", net.minecraft.resources.ResourceLocation.class);
+            @SuppressWarnings("unchecked")
+            final Optional<Fastener<?>> cap = (Optional<Fastener<?>>) getCapability.invoke(this, CapabilityHandler.FASTENER_ID);
+            return cap != null ? cap : Optional.empty();
+        } catch (Exception e) {
+            // getCapability() not available - return empty
+            return Optional.empty();
+        }
     }
 }

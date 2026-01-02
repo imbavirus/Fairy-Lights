@@ -3,13 +3,13 @@ package me.paulf.fairylights.server.net;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.fml.LogicalSide;
+// NetworkEvent.Context removed in NeoForge 1.21.1 - TODO: Update to new API
 
 import java.util.Objects;
 
 public class ClientMessageContext extends MessageContext {
-    public ClientMessageContext(final NetworkEvent.Context context) {
+    public ClientMessageContext(final Object context) {
         super(context);
     }
 
@@ -27,6 +27,7 @@ public class ClientMessageContext extends MessageContext {
     }
 
     public Player getPlayer() {
-        return Objects.requireNonNull(this.context.getSender());
+        // TODO: Get player from new PayloadContext
+        return Objects.requireNonNull(Minecraft.getInstance().player);
     }
 }
