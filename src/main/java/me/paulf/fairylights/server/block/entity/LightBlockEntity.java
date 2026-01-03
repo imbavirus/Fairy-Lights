@@ -28,7 +28,14 @@ public class LightBlockEntity extends BlockEntity {
 
     public LightBlockEntity(BlockPos pos, BlockState state) {
         super(FLBlockEntities.LIGHT.get(), pos, state);
-        this.light = new Light<>(0, Vec3.ZERO, 0.0F, 0.0F, ItemStack.EMPTY, SimpleLightVariant.FAIRY_LIGHT, 0.0F);
+        // Get the variant from the block state
+        final LightVariant<?> variant;
+        if (state.getBlock() instanceof LightBlock lightBlock) {
+            variant = lightBlock.getVariant();
+        } else {
+            variant = SimpleLightVariant.FAIRY_LIGHT; // Fallback
+        }
+        this.light = new Light<>(0, Vec3.ZERO, 0.0F, 0.0F, ItemStack.EMPTY, variant, 0.0F);
     }
 
     public Light<?> getLight() {
@@ -36,7 +43,15 @@ public class LightBlockEntity extends BlockEntity {
     }
 
     public void setItemStack(final ItemStack stack) {
-        this.light = new Light<>(0, Vec3.ZERO, 0.0F, 0.0F, stack, LightVariant.get(stack).orElse(SimpleLightVariant.FAIRY_LIGHT), 0.0F);
+        // Get the variant from the block state, since the block knows what variant it is
+        final BlockState state = this.getBlockState();
+        final LightVariant<?> variant;
+        if (state.getBlock() instanceof LightBlock lightBlock) {
+            variant = lightBlock.getVariant();
+        } else {
+            variant = SimpleLightVariant.FAIRY_LIGHT; // Fallback
+        }
+        this.light = new Light<>(0, Vec3.ZERO, 0.0F, 0.0F, stack, variant, 0.0F);
         this.setChanged();
     }
 

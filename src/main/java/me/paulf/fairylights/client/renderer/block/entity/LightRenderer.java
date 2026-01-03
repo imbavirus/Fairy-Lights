@@ -34,6 +34,7 @@ import me.paulf.fairylights.util.FLMth;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 
 import java.util.List;
 import java.util.Map;
@@ -98,12 +99,14 @@ public class LightRenderer {
     }
 
     public Data start(final MultiBufferSource source) {
-        // RenderType.buffer() API changed in 1.21.1 - use getBuffer() with RenderType
-        final VertexConsumer buf = source.getBuffer(net.minecraft.client.renderer.RenderType.translucent());
+        // Use the correct texture materials to bind the connections texture atlas
+        // This ensures the UV coordinates in the models map to the correct texture
+        final VertexConsumer solidBuf = ClientProxy.SOLID_TEXTURE.buffer(source, RenderType::entityCutout);
+        final VertexConsumer translucentBuf = ClientProxy.TRANSLUCENT_TEXTURE.buffer(source, RenderType::entityTranslucent);
         ForwardingVertexConsumer translucent = new ForwardingVertexConsumer() {
             @Override
             protected VertexConsumer delegate() {
-                return buf;
+                return translucentBuf;
             }
 
             public VertexConsumer setUv1(int u, int v) {
@@ -111,10 +114,10 @@ public class LightRenderer {
             }
 
             public VertexConsumer setNormal(float x, float y, float z) {
-                return super.setNormal(0.0F, 1.0F, 0.0F);
+                return this.delegate().setNormal(0.0F, 1.0F, 0.0F);
             }
         };
-        return new Data(buf, translucent);
+        return new Data(solidBuf, translucent);
     }
 
     public <T extends LightBehavior> LightModel<T> getModel(final Light<?> light, final int index) {

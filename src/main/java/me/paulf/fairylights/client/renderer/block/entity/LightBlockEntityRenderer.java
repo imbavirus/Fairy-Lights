@@ -22,6 +22,11 @@ public class LightBlockEntityRenderer implements BlockEntityRenderer<LightBlockE
     }
 
     @Override
+    public boolean shouldRenderOffScreen(final LightBlockEntity entity) {
+        return true;
+    }
+
+    @Override
     public void render(final LightBlockEntity entity, final float delta, final PoseStack matrix, final MultiBufferSource source, final int packedLight, final int packedOverlay) {
         this.render(entity, delta, matrix, source, packedLight, packedOverlay, entity.getLight());
     }

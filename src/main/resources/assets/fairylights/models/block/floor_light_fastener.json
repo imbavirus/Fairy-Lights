@@ -1,5 +1,7 @@
 {
+    "render_type": "cutout",
     "textures": {
         "particle": "fairylights:block/fastener"
-    }
+    },
+    "elements": []
 }
