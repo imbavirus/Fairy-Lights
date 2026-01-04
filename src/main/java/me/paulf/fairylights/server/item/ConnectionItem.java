@@ -7,6 +7,8 @@ import me.paulf.fairylights.server.connection.Connection;
 import me.paulf.fairylights.server.connection.ConnectionType;
 import me.paulf.fairylights.server.entity.FenceFastenerEntity;
 import me.paulf.fairylights.server.fastener.Fastener;
+import me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage;
+import me.paulf.fairylights.server.ServerProxy;
 import me.paulf.fairylights.server.sound.FLSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -141,7 +143,13 @@ public abstract class ConnectionItem extends Item {
             } else {
                 // getTag() removed in 1.21.1 - use data components instead
                 final CompoundTag data = new CompoundTag();
-                fastener.connect(world, attacher, this.getConnectionType(), data == null ? new CompoundTag() : data, false);
+                // Create connection FROM player (attacher) TO block (fastener)
+                // This stores the connection in the player's outgoing connections, which is what we need to render
+                attacher.connect(world, fastener, this.getConnectionType(), data == null ? new CompoundTag() : data, false);
+                // Force immediate sync to client so the connection string is visible
+                attacher.setDirty();
+                // Always send the update, don't wait for update() to return true
+                ServerProxy.sendToPlayersWatchingEntity(new me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage(user, attacher.serializeNBT()), user);
             }
             if (playSound) {
                 final Vec3 pos = fastener.getConnectionPoint();

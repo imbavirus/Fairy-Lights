@@ -24,6 +24,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.util.thread.EffectiveSide;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.fml.common.Mod;
 import net.minecraft.core.Registry;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -45,7 +47,7 @@ public final class FairyLights {
     public static final Object NETWORK = new NetBuilder(ResourceLocation.fromNamespaceAndPath(ID, "net"))
         .version(1).optionalServer().requiredClient()
         .clientbound(JingleMessage::new).consumer(() -> new JingleMessage.Handler())
-        .clientbound(UpdateEntityFastenerMessage::new).consumer(() -> new UpdateEntityFastenerMessage.Handler())
+        .clientbound(() -> new UpdateEntityFastenerMessage(0, new net.minecraft.nbt.CompoundTag())).consumer(() -> new UpdateEntityFastenerMessage.Handler())
         .clientbound(OpenEditLetteredConnectionScreenMessage::new).consumer(() -> new OpenEditLetteredConnectionScreenMessage.Handler())
         .serverbound(InteractionConnectionMessage::new).consumer(() -> new InteractionConnectionMessage.Handler())
         .serverbound(EditLetteredConnectionMessage::new).consumer(() -> new EditLetteredConnectionMessage.Handler())
@@ -80,6 +82,20 @@ public final class FairyLights {
         final ServerProxy proxy = EffectiveSide.get().isClient() ? new ClientProxy() : new ServerProxy();
         proxy.init(bus);
         FairyLightsItemGroup.TAB_REG.register(modEventBus);
+        
+        // Register networking payloads
+        modEventBus.addListener((RegisterPayloadHandlersEvent event) -> {
+            final PayloadRegistrar registrar = event.registrar(FairyLights.ID);
+            final NetBuilder network = (NetBuilder) NETWORK;
+            network.setRegistrar(registrar);
+            
+            // Register UpdateEntityFastenerMessage as clientbound payload
+            registrar.playToClient(
+                UpdateEntityFastenerMessage.TYPE,
+                UpdateEntityFastenerMessage.STREAM_CODEC,
+                UpdateEntityFastenerMessage::handle
+            );
+        });
 
     }
 

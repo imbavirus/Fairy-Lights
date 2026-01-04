@@ -40,9 +40,12 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderHighlightEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.minecraft.client.gui.Gui;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.SubscribeEvent;
+import me.paulf.fairylights.server.capability.CapabilityHandler;
+import me.paulf.fairylights.client.renderer.block.entity.FastenerRenderer;
 import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
@@ -383,6 +386,44 @@ public final class ClientEventHandler {
         // public Packet<ClientGamePacketListener> getAddEntityPacket() {
         //     return new net.minecraft.network.protocol.game.ClientboundAddEntityPacket(this);
         // }
+    }
+
+    @SubscribeEvent
+    public void onRenderLevelStage(final RenderLevelStageEvent event) {
+        // Render player connections during the ENTITIES stage
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
+            return;
+        }
+        
+        final Player player = Minecraft.getInstance().player;
+        if (player == null) {
+            return;
+        }
+        
+        // Get the player's fastener and render its connections
+        CapabilityHandler.getFastenerCapability(player).ifPresent(fastener -> {
+            if (!fastener.hasNoConnections()) {
+                final PoseStack poseStack = event.getPoseStack();
+                final MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+                poseStack.pushPose();
+                
+                // Create a FastenerRenderer to render the connections
+                final FastenerRenderer renderer = new FastenerRenderer(Minecraft.getInstance().getEntityModels()::bakeLayer);
+                // Get packed light from the player's position
+                final int packedLight = net.minecraft.client.renderer.LightTexture.pack(
+                    player.level().getBrightness(net.minecraft.world.level.LightLayer.BLOCK, player.blockPosition()),
+                    player.level().getBrightness(net.minecraft.world.level.LightLayer.SKY, player.blockPosition())
+                );
+                // Get partial tick as float
+                final float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+                renderer.render(fastener, partialTick, poseStack, bufferSource, 
+                    packedLight, 
+                    net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
+                
+                poseStack.popPose();
+                bufferSource.endBatch();
+            }
+        });
     }
 
     private static final class HitResult {

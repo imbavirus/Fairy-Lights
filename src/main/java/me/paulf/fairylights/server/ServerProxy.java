@@ -40,8 +40,36 @@ public class ServerProxy {
     }
 
     public static void sendToPlayersWatchingEntity(final Object message, final Entity entity) {
-        // TODO: Rewrite to use PayloadRegistrar API for NeoForge 1.21.1
-        // FairyLights.NETWORK.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), message);
+        if (!(entity.level() instanceof net.minecraft.server.level.ServerLevel serverLevel)) {
+            return;
+        }
+        
+        // Get the network builder
+        final me.paulf.fairylights.server.net.NetBuilder network = (me.paulf.fairylights.server.net.NetBuilder) FairyLights.NETWORK;
+        if (network == null) {
+            return;
+        }
+        
+        // Send to all players tracking the entity (including the entity itself if it's a player)
+        for (net.minecraft.server.level.ServerPlayer player : serverLevel.getPlayers(p -> {
+            // Check if player is tracking the entity (within reasonable distance)
+            return p.distanceToSqr(entity) < 64 * 64 || p.equals(entity);
+        })) {
+            try {
+                // If message is a CustomPacketPayload, send it directly
+                if (message instanceof net.minecraft.network.protocol.common.custom.CustomPacketPayload payload) {
+                    player.connection.send(payload);
+                } else {
+                    // Fallback: try NetBuilder's sendToClient method
+                    if (message instanceof me.paulf.fairylights.server.net.Message) {
+                        network.sendToClient((me.paulf.fairylights.server.net.Message) message, player);
+                    }
+                }
+            } catch (Exception e) {
+                // Networking API not available - message won't be sent
+                // Connection will sync on next tick via regular update mechanism
+            }
+        }
     }
 
     public static BlockView buildBlockView() {
