@@ -2,6 +2,7 @@ package me.paulf.fairylights.server.fastener;
 
 import me.paulf.fairylights.server.connection.Connection;
 import me.paulf.fairylights.server.fastener.accessor.PlayerFastenerAccessor;
+import me.paulf.fairylights.server.item.ConnectionItem;
 import me.paulf.fairylights.util.FLMth;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,7 +25,9 @@ public final class PlayerFastener extends EntityFastener<Player> {
         final double angle = (this.entity.yBodyRot - 90) * FLMth.DEG_TO_RAD;
         final double perpAngle = angle - Math.PI / 2;
         final boolean sneaking = this.entity.isCrouching();
-        final double perpDist = 0.4 * (this.matchesStack(this.entity.getMainHandItem()) ? 1 : -1);
+        // Handedness: in 1.21+ the visual offset ended up mirrored for our connection item,
+        // so invert the legacy sign to align the rope with the actual held hand.
+        final double perpDist = 0.4 * (this.matchesStack(this.entity.getMainHandItem()) ? -1 : 1);
         final double forwardDist;
         final double dy;
         if (sneaking) {
@@ -57,7 +60,15 @@ public final class PlayerFastener extends EntityFastener<Player> {
     }
 
     private boolean matchesStack(final ItemStack stack) {
-        return this.getFirstConnection().filter(connection -> connection.matches(stack)).isPresent();
+        if (!(stack.getItem() instanceof ConnectionItem)) {
+            return false;
+        }
+        final ConnectionItem item = (ConnectionItem) stack.getItem();
+        return this.getFirstConnection().map(connection -> {
+            // Old (1.12) logic: hand selection is based on connection type matching the held connection item.
+            // Data components/NBT equality checks are not reliable in this 1.21.1 port yet, so ignore them here.
+            return connection.getType() == item.getConnectionType();
+        }).orElse(false);
     }
 
     @Override

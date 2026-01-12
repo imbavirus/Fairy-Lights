@@ -2,7 +2,6 @@ package me.paulf.fairylights.server;
 
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
-import me.paulf.fairylights.server.config.FLConfig;
 import me.paulf.fairylights.server.fastener.BlockView;
 import me.paulf.fairylights.server.fastener.CreateBlockViewEvent;
 import me.paulf.fairylights.server.fastener.RegularBlockView;
@@ -13,8 +12,6 @@ import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModLoadingContext;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 // PacketDistributor removed in NeoForge 1.21.1 - using PayloadRegistrar instead
 
@@ -56,14 +53,15 @@ public class ServerProxy {
             return p.distanceToSqr(entity) < 64 * 64 || p.equals(entity);
         })) {
             try {
-                // If message is a CustomPacketPayload, send it directly
+                // Prefer our message path first (UpdateEntityFastenerMessage implements Message + CustomPacketPayload)
+                if (message instanceof me.paulf.fairylights.server.net.Message) {
+                    network.sendToClient((me.paulf.fairylights.server.net.Message) message, player);
+                    continue;
+                }
+
+                // Vanilla fallback: wrap payload into a packet and send
                 if (message instanceof net.minecraft.network.protocol.common.custom.CustomPacketPayload payload) {
-                    player.connection.send(payload);
-                } else {
-                    // Fallback: try NetBuilder's sendToClient method
-                    if (message instanceof me.paulf.fairylights.server.net.Message) {
-                        network.sendToClient((me.paulf.fairylights.server.net.Message) message, player);
-                    }
+                    player.connection.send(new net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket(payload));
                 }
             } catch (Exception e) {
                 // Networking API not available - message won't be sent

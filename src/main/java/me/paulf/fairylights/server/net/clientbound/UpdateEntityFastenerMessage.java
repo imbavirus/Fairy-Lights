@@ -73,7 +73,12 @@ public final class UpdateEntityFastenerMessage implements CustomPacketPayload, M
                         CapabilityHandler.getFastenerCapability(entity).ifPresent(f -> {
                             // Call deserializeNBT directly - it exists in AbstractFastener
                             if (f instanceof me.paulf.fairylights.server.fastener.AbstractFastener) {
-                                ((me.paulf.fairylights.server.fastener.AbstractFastener) f).deserializeNBT(message.getCompound());
+                                final me.paulf.fairylights.server.fastener.AbstractFastener fastener = (me.paulf.fairylights.server.fastener.AbstractFastener) f;
+                                // Ensure the world is set before deserializing
+                                if (fastener.getWorld() == null) {
+                                    fastener.setWorld(level);
+                                }
+                                fastener.deserializeNBT(message.getCompound());
                             }
                         });
                     }

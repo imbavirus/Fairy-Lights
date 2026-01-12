@@ -1,6 +1,7 @@
 package me.paulf.fairylights.server.capability;
 
 import me.paulf.fairylights.FairyLights;
+import me.paulf.fairylights.server.block.entity.FastenerBlockEntity;
 import me.paulf.fairylights.server.fastener.Fastener;
 import me.paulf.fairylights.server.fastener.PlayerFastener;
 import net.minecraft.resources.ResourceLocation;
@@ -30,6 +31,13 @@ public final class CapabilityHandler {
     @SuppressWarnings("unchecked")
     public static Optional<Fastener<?>> getFastenerCapability(BlockEntity entity) {
         if (entity == null) return Optional.empty();
+
+        // NeoForge 1.21.x: our fastener is stored directly on the BE
+        if (entity instanceof FastenerBlockEntity fastenerBe) {
+            return fastenerBe.getFastener();
+        }
+
+        // Legacy / fallback: try old-style reflection (kept for compatibility with other entities)
         try {
             final java.lang.reflect.Method getCapability = entity.getClass().getMethod("getCapability", ResourceLocation.class);
             final Optional<Fastener<?>> cap = (Optional<Fastener<?>>) getCapability.invoke(entity, FASTENER_ID);
@@ -44,6 +52,18 @@ public final class CapabilityHandler {
     @SuppressWarnings("unchecked")
     public static Optional<Fastener<?>> getFastenerCapability(Entity entity) {
         if (entity == null) return Optional.empty();
+
+        // IMPORTANT: The "placing" flow relies on a persistent PlayerFastener instance.
+        // If we create a new PlayerFastener on each lookup, the player will never "remember" the first placement,
+        // reconnect will never happen, and the player remains tethered to every placed fastener.
+        //
+        // Until proper data attachments are implemented, always use the WeakHashMap-backed instance for players.
+        if (entity instanceof Player player) {
+            final PlayerFastener f = playerFasteners.computeIfAbsent(player, PlayerFastener::new);
+            // Keep world set (important for resolving incoming/outgoing connections)
+            f.setWorld(player.level());
+            return Optional.of(f);
+        }
         
         // Try multiple methods in order of likelihood
         // 1. Try getData(ResourceLocation) - some NeoForge versions use this
@@ -96,11 +116,6 @@ public final class CapabilityHandler {
             }
         } catch (Exception e) {
             // Method doesn't exist or failed
-        }
-        // 3. If entity is a Player and we still don't have a capability, create one and store it
-        // This is a temporary workaround using WeakHashMap until proper data attachments are implemented
-        if (entity instanceof Player player) {
-            return Optional.of(playerFasteners.computeIfAbsent(player, PlayerFastener::new));
         }
         return Optional.empty();
     }

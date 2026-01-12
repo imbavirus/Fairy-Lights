@@ -8,7 +8,9 @@ import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -47,9 +49,20 @@ public abstract class EntityFastenerAccessor<E extends Entity> implements Fasten
     public Optional<Fastener<?>> get(final Level world, final boolean load) {
         if (this.entity == null) {
             if (world instanceof ServerLevel) {
-                final Entity e = ((ServerLevel) world).getEntity(this.uuid);
-                if (this.entityClass.isInstance(e)) {
-                    this.entity = this.entityClass.cast(e);
+                final ServerLevel serverLevel = (ServerLevel) world;
+
+                // NOTE: In modern Minecraft, ServerLevel#getEntity(UUID) does NOT reliably return players.
+                // Our placement/reconnect flow depends on resolving the player destination on the server.
+                if (this.entityClass == Player.class) {
+                    final ServerPlayer p = serverLevel.getServer().getPlayerList().getPlayer(this.uuid);
+                    if (p != null) {
+                        this.entity = this.entityClass.cast(p);
+                    }
+                } else {
+                    final Entity e = serverLevel.getEntity(this.uuid);
+                    if (this.entityClass.isInstance(e)) {
+                        this.entity = this.entityClass.cast(e);
+                    }
                 }
             } else if (this.pos != null) {
                 for (final E entity : world.getEntitiesOfClass(this.entityClass, new AABB(this.pos.subtract(1.0D, 1.0D, 1.0D), this.pos.add(1.0D, 1.0D, 1.0D)))) {

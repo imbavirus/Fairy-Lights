@@ -7,6 +7,7 @@ import me.paulf.fairylights.server.fastener.FastenerType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import java.util.Optional;
@@ -28,20 +29,18 @@ public final class BlockFastenerAccessor implements FastenerAccessor {
 
     @Override
     public Optional<Fastener<?>> get(final Level world, final boolean load) {
-        if (load || world.isLoaded(this.pos)) {
-            final BlockEntity entity = world.getBlockEntity(this.pos);
-            if (entity != null) {
-                return CapabilityHandler.getFastenerCapability(entity);
-            }
-        }
-        return Optional.empty();
+        // In 1.21+, Level#isLoaded semantics are different and can return false even for nearby loaded positions,
+        // which breaks the "placing" flow (player can't resolve the first fastener to reconnect on 2nd click).
+        // Using getBlockEntity() is sufficient: it will be null if the chunk isn't loaded.
+        final BlockEntity entity = world.getBlockEntity(this.pos);
+        return entity != null ? CapabilityHandler.getFastenerCapability(entity) : Optional.empty();
     }
 
     @Override
     public boolean isGone(final Level world) {
-        if (world.isClientSide() || !world.isLoaded(this.pos)) return false;
+        if (world.isClientSide()) return false;
         final BlockEntity entity = world.getBlockEntity(this.pos);
-        return entity == null || !CapabilityHandler.getFastenerCapability(entity).isPresent();
+        return entity == null || CapabilityHandler.getFastenerCapability(entity).isEmpty();
     }
 
     @Override
@@ -70,12 +69,18 @@ public final class BlockFastenerAccessor implements FastenerAccessor {
 
     @Override
     public void deserialize(final CompoundTag nbt) {
-        // NbtUtils.readBlockPos() now returns Optional<BlockPos>
-        if (nbt.contains("pos")) {
-            this.pos = NbtUtils.readBlockPos(nbt.getCompound("pos"), "pos").orElse(BlockPos.ZERO);
-        } else {
-            // Fallback for old format
-            this.pos = NbtUtils.readBlockPos(nbt, "pos").orElse(BlockPos.ZERO);
-        }
+        // 1.21+: we serialize as tag.put("pos", NbtUtils.writeBlockPos(pos))
+        // NbtUtils.readBlockPos(tag, "pos") reads a BlockPos from a *field* named "pos".
+        this.pos = NbtUtils.readBlockPos(nbt, "pos").orElseGet(() -> {
+            // Fallback: if someone stored the raw compound directly, read X/Y/Z manually.
+            // (writeBlockPos uses X/Y/Z keys in modern MC)
+            if (nbt.contains("pos", Tag.TAG_COMPOUND)) {
+                final CompoundTag posTag = nbt.getCompound("pos");
+                if (posTag.contains("X", Tag.TAG_ANY_NUMERIC) && posTag.contains("Y", Tag.TAG_ANY_NUMERIC) && posTag.contains("Z", Tag.TAG_ANY_NUMERIC)) {
+                    return new BlockPos(posTag.getInt("X"), posTag.getInt("Y"), posTag.getInt("Z"));
+                }
+            }
+            return BlockPos.ZERO;
+        });
     }
 }

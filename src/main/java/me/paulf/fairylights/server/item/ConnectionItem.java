@@ -6,14 +6,14 @@ import me.paulf.fairylights.server.capability.CapabilityHandler;
 import me.paulf.fairylights.server.connection.Connection;
 import me.paulf.fairylights.server.connection.ConnectionType;
 import me.paulf.fairylights.server.entity.FenceFastenerEntity;
+import me.paulf.fairylights.server.fastener.BlockFastener;
 import me.paulf.fairylights.server.fastener.Fastener;
-import me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage;
-import me.paulf.fairylights.server.ServerProxy;
 import me.paulf.fairylights.server.sound.FLSounds;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionResult;
@@ -34,6 +34,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import java.util.Optional;
 
 public abstract class ConnectionItem extends Item {
+    private static final Logger LOGGER = LogManager.getLogger();
     private final DeferredHolder<ConnectionType<?>, ? extends ConnectionType<?>> type;
 
     public ConnectionItem(final Properties properties, final DeferredHolder<ConnectionType<?>, ? extends ConnectionType<?>> type) {
@@ -92,12 +93,40 @@ public abstract class ConnectionItem extends Item {
             return false;
         }
         final Fastener<?> attacher = attacherOpt.get();
-        return attacher.getFirstConnection().filter(connection -> {
-            final CompoundTag nbt = connection.serializeLogic();
-            // hasTag() and getTag() removed in 1.21.1 - use data components instead
-            // For now, check if nbt is empty
-            return nbt.isEmpty();
-        }).isPresent();
+        final Optional<Connection> connOpt = attacher.getFirstConnection();
+        if (connOpt.isEmpty()) {
+            return false;
+        }
+        final Connection connection = connOpt.get();
+
+        // Port of upstream 1.12 behavior:
+        // - If the placing connection has no logic NBT, then only block if the stack has *some* custom tag
+        //   (meaning you're trying to use a mismatched connection variant).
+        // - If it has logic, block unless the stack tag matches the logic.
+        final CompoundTag logic = connection.serializeLogic();
+        final CompoundTag stackTag = tryGetStackTag(stack);
+
+        if (logic.isEmpty()) {
+            return stackTag != null && !stackTag.isEmpty();
+        }
+
+        // If we can't read stack tag, assume mismatch (conservative).
+        if (stackTag == null) {
+            return true;
+        }
+
+        // Equality check using impliesNbt both ways (closest equivalent to old areNBTEquals(..., true))
+        return !(me.paulf.fairylights.util.Utils.impliesNbt(logic, stackTag) && me.paulf.fairylights.util.Utils.impliesNbt(stackTag, logic));
+    }
+
+    private static CompoundTag tryGetStackTag(final ItemStack stack) {
+        try {
+            final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
+            final Object tag = getTag.invoke(stack);
+            return tag instanceof CompoundTag ? (CompoundTag) tag : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void connect(final ItemStack stack, final Player user, final Level world, final BlockPos pos) {
@@ -134,28 +163,62 @@ public abstract class ConnectionItem extends Item {
             final Optional<Connection> placing = attacher.getFirstConnection();
             if (placing.isPresent()) {
                 final Connection conn = placing.get();
-                if (conn.reconnect(fastener)) {
+                final var oldDestType = conn.getDestination().getType();
+                final boolean ok = conn.reconnect(fastener);
+                final var newDestType = conn.getDestination().getType();
+                LOGGER.info("[FairyLights] connect 2nd: user={}, ok={}, oldDest={}, newDest={}, originPos={}, newPos={}",
+                    user.getGameProfile().getName(),
+                    ok,
+                    oldDestType,
+                    newDestType,
+                    conn.getFastener() != null ? conn.getFastener().getPos() : null,
+                    fastener.getPos()
+                );
+                if (ok) {
                     conn.onConnect(world, user, stack);
                     stack.shrink(1);
+                    // Ensure both ends update client-side immediately (rope rendering)
+                    syncFastenerBlock(world, conn.getFastener());
+                    syncFastenerBlock(world, fastener);
                 } else {
                     playSound = false;
                 }
             } else {
+                LOGGER.info("[FairyLights] connect 1st: user={}, destPos={}", user.getGameProfile().getName(), fastener.getPos());
                 // getTag() removed in 1.21.1 - use data components instead
                 final CompoundTag data = new CompoundTag();
-                // Create connection FROM player (attacher) TO block (fastener)
-                // This stores the connection in the player's outgoing connections, which is what we need to render
-                attacher.connect(world, fastener, this.getConnectionType(), data == null ? new CompoundTag() : data, false);
-                // Force immediate sync to client so the connection string is visible
-                attacher.setDirty();
-                // Always send the update, don't wait for update() to return true
-                ServerProxy.sendToPlayersWatchingEntity(new me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage(user, attacher.serializeNBT()), user);
+                /*
+                 * Correct placement behavior:
+                 * - Store the outgoing connection on the FIRST placed fastener (block/fence).
+                 * - Destination is the player (so the rope appears attached to the first anchor and to your hand).
+                 * - The player tracks "currently placing" via an INCOMING reference, so the 2nd click can reconnect
+                 *   the SAME connection to another fastener (block-to-block).
+                 */
+                fastener.connect(world, attacher, this.getConnectionType(), data == null ? new CompoundTag() : data, false);
+                syncFastenerBlock(world, fastener);
             }
             if (playSound) {
                 final Vec3 pos = fastener.getConnectionPoint();
                 world.playSound(null, pos.x, pos.y, pos.z, FLSounds.CORD_CONNECT.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
             }
         });
+    }
+
+    private static void syncFastenerBlock(final Level world, final Fastener<?> fastener) {
+        if (world == null || world.isClientSide() || fastener == null) {
+            return;
+        }
+        // Only block fasteners have a BE we can block-update.
+        if (!(fastener instanceof BlockFastener)) {
+            return;
+        }
+        final BlockPos pos = fastener.getPos();
+        final BlockState state = world.getBlockState(pos);
+        final BlockEntity be = world.getBlockEntity(pos);
+        if (be != null) {
+            be.setChanged();
+        }
+        world.sendBlockUpdated(pos, state, state, 3);
     }
 
     private void connectFence(final ItemStack stack, final Player user, final Level world, final BlockPos pos, FenceFastenerEntity fastener) {
