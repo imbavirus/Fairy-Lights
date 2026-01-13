@@ -46,7 +46,10 @@ public abstract class ConnectionRenderer<C extends Connection> {
             final float b = (color & 0xFF) / 255.0F;
             while (it.next()) {
                 matrix.pushPose();
-                matrix.translate(it.getX(0.0F), it.getY(0.0F),  it.getZ(0.0F));
+                // Add depth offset to prevent culling when player gets too close
+                // Use a larger offset to prevent oversensitive culling
+                final double depthOffset = 0.01;
+                matrix.translate(it.getX(0.0F) + depthOffset, it.getY(0.0F) + depthOffset, it.getZ(0.0F) + depthOffset);
                 matrix.mulPose(Axis.YP.rotation(FLMth.PI / 2.0F - it.getYaw()));
                 matrix.mulPose(Axis.XP.rotation(-it.getPitch()));
                 matrix.scale(1.0F + this.wireInflate, 1.0F, it.getLength() * 16.0F);

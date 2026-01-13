@@ -25,9 +25,9 @@ public final class PlayerFastener extends EntityFastener<Player> {
         final double angle = (this.entity.yBodyRot - 90) * FLMth.DEG_TO_RAD;
         final double perpAngle = angle - Math.PI / 2;
         final boolean sneaking = this.entity.isCrouching();
-        // Handedness: in 1.21+ the visual offset ended up mirrored for our connection item,
-        // so invert the legacy sign to align the rope with the actual held hand.
-        final double perpDist = 0.4 * (this.matchesStack(this.entity.getMainHandItem()) ? -1 : 1);
+        // Handedness: main hand should use positive offset, offhand should use negative offset
+        // This aligns the rope with the actual held hand in 1.21.1
+        final double perpDist = 0.4 * (this.matchesStack(this.entity.getMainHandItem()) ? 1 : -1);
         final double forwardDist;
         final double dy;
         if (sneaking) {

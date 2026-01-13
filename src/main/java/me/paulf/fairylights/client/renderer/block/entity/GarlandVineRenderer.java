@@ -40,7 +40,10 @@ public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnectio
         final VertexConsumer buf = ClientProxy.SOLID_TEXTURE.buffer(source, RenderType::entityCutout);
         catenary.visitPoints(0.25F, false, (index, x, y, z, yaw, pitch) -> {
             matrix.pushPose();
-            matrix.translate(x, y, z);
+            // Add depth offset to prevent culling when player gets too close
+            // Use a larger offset to prevent oversensitive culling
+            final double depthOffset = 0.01;
+            matrix.translate(x + depthOffset, y + depthOffset, z + depthOffset);
             matrix.mulPose(Axis.YP.rotation(-yaw));
             matrix.mulPose(Axis.ZP.rotation(pitch));
             matrix.mulPose(Axis.ZP.rotationDegrees(RAND.get(index + hash) * 45.0F));
