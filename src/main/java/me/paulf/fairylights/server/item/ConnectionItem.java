@@ -110,8 +110,38 @@ public abstract class ConnectionItem extends Item {
             return stackTag != null && !stackTag.isEmpty();
         }
 
-        // If we can't read stack tag, assume mismatch (conservative).
-        if (stackTag == null) {
+        // If we can't read stack tag, check if connection has only default values
+        if (stackTag == null || stackTag.isEmpty()) {
+            // Check if connection has only default values by examining the serialized logic
+            // For tinsel: default color is LIGHT_GRAY (0xC8C8C8) - check if logic only has default color
+            if (connection instanceof me.paulf.fairylights.server.connection.GarlandTinselConnection) {
+                final int defaultColor = me.paulf.fairylights.server.item.DyeableItem.getColor(net.minecraft.world.item.DyeColor.LIGHT_GRAY);
+                if (logic.contains("color", net.minecraft.nbt.Tag.TAG_INT) && logic.getInt("color") == defaultColor && logic.size() == 1) {
+                    // Connection has only default color, empty stack should match
+                    return false;
+                }
+            } else if (connection instanceof me.paulf.fairylights.server.connection.PennantBuntingConnection) {
+                // Default pattern is empty list, default text is empty
+                final boolean hasEmptyPattern = !logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) || 
+                    (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) && logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty());
+                final boolean hasEmptyText = !logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) ||
+                    (logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) && logic.getCompound("text").isEmpty());
+                if (hasEmptyPattern && hasEmptyText) {
+                    // Connection has only default values, empty stack should match
+                    return false;
+                }
+            } else if (connection instanceof me.paulf.fairylights.server.connection.HangingLightsConnection) {
+                // Default string is BLACK_STRING, default pattern is empty list
+                final boolean hasDefaultString = logic.contains("string", net.minecraft.nbt.Tag.TAG_STRING) && 
+                    logic.getString("string").equals("fairylights:black_string");
+                final boolean hasEmptyPattern = !logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) || 
+                    (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) && logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty());
+                if (hasDefaultString && hasEmptyPattern && logic.size() == 2) {
+                    // Connection has only default values, empty stack should match
+                    return false;
+                }
+            }
+            // Connection has non-default values, but stack is empty - mismatch
             return true;
         }
 
@@ -185,8 +215,18 @@ public abstract class ConnectionItem extends Item {
                 }
             } else {
                 LOGGER.info("[FairyLights] connect 1st: user={}, destPos={}", user.getGameProfile().getName(), fastener.getPos());
-                // getTag() removed in 1.21.1 - use data components instead
-                final CompoundTag data = new CompoundTag();
+                // Get stack NBT so connection logic matches on second placement
+                // For connections with default values (tinsel color, pennant pattern), we need to pass the stack's NBT
+                final CompoundTag data = tryGetStackTag(stack);
+                if (data == null) {
+                    // Create empty tag if stack has no NBT
+                    final CompoundTag empty = new CompoundTag();
+                    fastener.connect(world, attacher, this.getConnectionType(), empty, false);
+                } else {
+                    // Copy stack NBT so connection can deserialize it
+                    final CompoundTag dataCopy = data.copy();
+                    fastener.connect(world, attacher, this.getConnectionType(), dataCopy, false);
+                }
                 /*
                  * Correct placement behavior:
                  * - Store the outgoing connection on the FIRST placed fastener (block/fence).
@@ -194,7 +234,6 @@ public abstract class ConnectionItem extends Item {
                  * - The player tracks "currently placing" via an INCOMING reference, so the 2nd click can reconnect
                  *   the SAME connection to another fastener (block-to-block).
                  */
-                fastener.connect(world, attacher, this.getConnectionType(), data == null ? new CompoundTag() : data, false);
                 syncFastenerBlock(world, fastener);
             }
             if (playSound) {

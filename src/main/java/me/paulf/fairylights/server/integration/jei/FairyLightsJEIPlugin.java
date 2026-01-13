@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public final class FairyLightsJEIPlugin implements IModPlugin {
     @Override
     public ResourceLocation getPluginUid() {
-        return new ResourceLocation(FairyLights.ID, "plugin");
+        return ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "plugin");
     }
 
     @Override

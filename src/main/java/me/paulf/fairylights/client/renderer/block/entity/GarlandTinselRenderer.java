@@ -44,7 +44,10 @@ public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConne
         final float g = ((color >> 8) & 0xFF) / 255.0F;
         final float b = (color & 0xFF) / 255.0F;
         matrix.pushPose();
-        matrix.translate(it.getX(0.0F), it.getY(0.0F), it.getZ(0.0F));
+        // Add depth offset to prevent culling when player gets too close
+        // Use a larger offset to prevent oversensitive culling
+        final double depthOffset = 0.01;
+        matrix.translate(it.getX(0.0F) + depthOffset, it.getY(0.0F) + depthOffset, it.getZ(0.0F) + depthOffset);
         matrix.mulPose(Axis.YP.rotation(-it.getYaw()));
         matrix.mulPose(Axis.ZP.rotation(it.getPitch()));
         final float length = it.getLength();

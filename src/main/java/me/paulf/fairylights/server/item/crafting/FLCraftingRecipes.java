@@ -369,24 +369,40 @@ public final class FLCraftingRecipes {
 
     public static ItemStack makeHangingLights(final ItemStack base, final DyeColor... colors) {
         final ItemStack stack = base.copy();
-        // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
-        CompoundTag compound = new CompoundTag();
-        // TODO: Migrate to data components API for 1.21.1
+        final CompoundTag compound = new CompoundTag();
         final ListTag lights = new ListTag();
         for (final DyeColor color : colors) {
-            // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
-            // TODO: Use data components API instead of NBT for 1.21.1
             final ItemStack coloredLight = DyeableItem.setColor(new ItemStack(FLItems.FAIRY_LIGHT.get()), color);
             lights.add(coloredLight.save(net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)));
         }
-        if (compound == null) {
-            compound = new CompoundTag();
-            // ItemStack.setTag() removed in 1.21.1 - use data components API instead
-            // TODO: Migrate to data components API for 1.21.1
-            // stack.setTag(compound);
-        }
         compound.put("pattern", lights);
         HangingLightsConnectionItem.setString(compound, StringTypes.BLACK_STRING.get());
+        // Apply NBT to stack using reflection (same approach as Connection.getItemStack)
+        try {
+            final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
+            final CompoundTag existingTag = (CompoundTag) getTag.invoke(stack);
+            if (existingTag != null) {
+                existingTag.merge(compound);
+            } else {
+                final java.lang.reflect.Method setTag = stack.getClass().getMethod("setTag", CompoundTag.class);
+                setTag.invoke(stack, compound.copy());
+            }
+        } catch (Exception e) {
+            // Fallback: try save/parse approach
+            try {
+                final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+                final net.minecraft.nbt.Tag savedTag = stack.save(registryAccess);
+                if (savedTag instanceof CompoundTag) {
+                    final CompoundTag tag = (CompoundTag) savedTag;
+                    tag.merge(compound);
+                    final ItemStack result = ItemStack.parse(registryAccess, tag).orElse(stack);
+                    result.setCount(stack.getCount());
+                    return result;
+                }
+            } catch (Exception e2) {
+                // Both methods failed
+            }
+        }
         return stack;
     }
 
@@ -461,24 +477,41 @@ public final class FLCraftingRecipes {
 
     public static ItemStack makePennant(final ItemStack base, final DyeColor... colors) {
         final ItemStack stack = base.copy();
-        // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
-        CompoundTag compound = new CompoundTag();
-        // TODO: Migrate to data components API for 1.21.1
+        final CompoundTag compound = new CompoundTag();
         final ListTag pennants = new ListTag();
         for (final DyeColor color : colors) {
             final ItemStack pennant = new ItemStack(FLItems.TRIANGLE_PENNANT.get());
             DyeableItem.setColor(pennant, color);
-            // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
             pennants.add(pennant.save(net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)));
-        }
-        if (compound == null) {
-            compound = new CompoundTag();
-            // ItemStack.setTag() removed in 1.21.1 - use data components API instead
-            // TODO: Migrate to data components API for 1.21.1
-            // stack.setTag(compound);
         }
         compound.put("pattern", pennants);
         compound.put("text", StyledString.serialize(new StyledString()));
+        // Apply NBT to stack using reflection (same approach as Connection.getItemStack)
+        try {
+            final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
+            final CompoundTag existingTag = (CompoundTag) getTag.invoke(stack);
+            if (existingTag != null) {
+                existingTag.merge(compound);
+            } else {
+                final java.lang.reflect.Method setTag = stack.getClass().getMethod("setTag", CompoundTag.class);
+                setTag.invoke(stack, compound.copy());
+            }
+        } catch (Exception e) {
+            // Fallback: try save/parse approach
+            try {
+                final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+                final net.minecraft.nbt.Tag savedTag = stack.save(registryAccess);
+                if (savedTag instanceof CompoundTag) {
+                    final CompoundTag tag = (CompoundTag) savedTag;
+                    tag.merge(compound);
+                    final ItemStack result = ItemStack.parse(registryAccess, tag).orElse(stack);
+                    result.setCount(stack.getCount());
+                    return result;
+                }
+            } catch (Exception e2) {
+                // Both methods failed
+            }
+        }
         return stack;
     }
 

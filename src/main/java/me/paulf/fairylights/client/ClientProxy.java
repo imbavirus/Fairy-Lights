@@ -217,6 +217,7 @@ public final class ClientProxy extends ServerProxy {
                 if (ColorChangingBehavior.exists(stack)) {
                     return ColorChangingBehavior.animate(stack);
                 }
+                // Use DyeableItem.getColor() which now properly reads from NBT via save/parse
                 return DyeableItem.getColor(stack);
             }
             return 0xFFFFFF;
@@ -240,7 +241,7 @@ public final class ClientProxy extends ServerProxy {
             FLItems.METEOR_LIGHT.get()
         );
         event.register((stack, index) -> {
-            // getTag() may not exist in 1.21.1 - using reflection
+            // Use DyeableItem.getColor() which handles NBT reading via reflection
             CompoundTag tag = null;
             try {
                 tag = (CompoundTag) stack.getClass().getMethod("getTag").invoke(stack);
@@ -257,7 +258,6 @@ public final class ClientProxy extends ServerProxy {
                 final ListTag tagList = tag.getList("pattern", Tag.TAG_COMPOUND);
                 if (tagList.size() > 0) {
                     // ItemStack.parse() API changed in 1.21.1 - use Minecraft instance's registryAccess
-                    // ItemStack.parse() needs RegistryAccess - use a fallback if level is null
                     final var level = net.minecraft.client.Minecraft.getInstance().level;
                     final var registryAccess = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
                     final ItemStack item = ItemStack.parse(registryAccess, tagList.getCompound((index - 1) % tagList.size())).orElse(ItemStack.EMPTY);
@@ -280,7 +280,7 @@ public final class ClientProxy extends ServerProxy {
             if (index == 0) {
                 return 0xFFFFFFFF;
             }
-            // getTag() may not exist in 1.21.1 - using reflection
+            // Use DyeableItem.getColor() which handles NBT reading via reflection
             CompoundTag tag = null;
             try {
                 tag = (CompoundTag) stack.getClass().getMethod("getTag").invoke(stack);
@@ -291,7 +291,9 @@ public final class ClientProxy extends ServerProxy {
                 final ListTag tagList = tag.getList("pattern", Tag.TAG_COMPOUND);
                 if (tagList.size() > 0) {
                     // ItemStack.parse() API changed in 1.21.1 - use Minecraft instance's registryAccess
-                    final ItemStack light = ItemStack.parse(net.minecraft.client.Minecraft.getInstance().level.registryAccess(), tagList.getCompound((index - 1) % tagList.size())).orElse(ItemStack.EMPTY);
+                    final var level = net.minecraft.client.Minecraft.getInstance().level;
+                    final var registryAccess = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+                    final ItemStack light = ItemStack.parse(registryAccess, tagList.getCompound((index - 1) % tagList.size())).orElse(ItemStack.EMPTY);
                     return DyeableItem.getColor(light);
                 }
             }

@@ -57,7 +57,10 @@ public class LetterBuntingRenderer extends ConnectionRenderer<LetterBuntingConne
             final float b = (color & 0xFF) / 255.0F;
             final Vec3 pos = letter.getPoint(delta);
             matrix.pushPose();
-            matrix.translate(pos.x, pos.y, pos.z);
+            // Add depth offset to prevent culling when player gets too close
+            // Use a larger offset to prevent oversensitive culling
+            final double depthOffset = 0.01;
+            matrix.translate(pos.x + depthOffset, pos.y + depthOffset, pos.z + depthOffset);
             matrix.mulPose(Axis.YP.rotation(-letter.getYaw(delta)));
             matrix.mulPose(Axis.ZP.rotation(letter.getPitch(delta)));
             matrix.mulPose(Axis.XP.rotation(letter.getRoll(delta)));

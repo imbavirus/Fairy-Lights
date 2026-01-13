@@ -82,7 +82,10 @@ public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingCon
                 final BakedModel model = Minecraft.getInstance().getModelManager().getModel(modelResourceLoc);
                 final Vec3 pos = currPennant.getPoint(delta);
                 matrix.pushPose();
-                matrix.translate(pos.x, pos.y, pos.z);
+                // Add depth offset to prevent culling when player gets too close
+                // Use a larger offset to prevent oversensitive culling
+                final double depthOffset = 0.01;
+                matrix.translate(pos.x + depthOffset, pos.y + depthOffset, pos.z + depthOffset);
                 matrix.mulPose(Axis.YP.rotation(-currPennant.getYaw(delta)));
                 matrix.mulPose(Axis.ZP.rotation(currPennant.getPitch(delta)));
                 matrix.mulPose(Axis.XP.rotation(currPennant.getRoll(delta)));

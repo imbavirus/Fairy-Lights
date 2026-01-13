@@ -3,7 +3,6 @@ package me.paulf.fairylights.server.item;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 
@@ -65,9 +64,8 @@ public final class DyeableItem {
     }
 
     public static ItemStack setColor(final ItemStack stack, final int color) {
-        // ItemStack.getOrCreateTag() removed in 1.21.1 - use data components API instead
-        // TODO: Migrate to data components API for 1.21.1
-        // For now, use reflection to access NBT methods if available
+        // In 1.21.1, ItemStack NBT access is deprecated, but we need it for colors
+        // Try reflection first (more reliable for setting NBT)
         try {
             final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
             CompoundTag tag = (CompoundTag) getTag.invoke(stack);
@@ -77,9 +75,22 @@ public final class DyeableItem {
                 setTag.invoke(stack, tag);
             }
             setColor(tag, color);
+            return stack;
         } catch (Exception e) {
-            // NBT methods not available - need data components API
-            // For now, color will be handled by color handlers in ClientProxy
+            // Fallback: try save/parse approach
+            try {
+                final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+                final Tag savedTag = stack.save(registryAccess);
+                if (savedTag instanceof CompoundTag) {
+                    final CompoundTag tag = (CompoundTag) savedTag;
+                    setColor(tag, color);
+                    final ItemStack result = ItemStack.parse(registryAccess, tag).orElse(stack);
+                    result.setCount(stack.getCount());
+                    return result;
+                }
+            } catch (Exception e2) {
+                // Both methods failed
+            }
         }
         return stack;
     }
@@ -94,9 +105,8 @@ public final class DyeableItem {
     }
 
     public static int getColor(final ItemStack stack) {
-        // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
-        // TODO: Migrate to data components API for 1.21.1
-        // For now, use reflection to access NBT methods if available
+        // In 1.21.1, ItemStack NBT access is deprecated, but we need it for colors
+        // Try reflection first (more reliable for reading NBT)
         try {
             final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
             final CompoundTag tag = (CompoundTag) getTag.invoke(stack);
@@ -104,7 +114,17 @@ public final class DyeableItem {
                 return getColor(tag);
             }
         } catch (Exception e) {
-            // NBT methods not available - need data components API
+            // Fallback: try save/parse approach
+            try {
+                final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+                final Tag savedTag = stack.save(registryAccess);
+                if (savedTag instanceof CompoundTag) {
+                    final CompoundTag tag = (CompoundTag) savedTag;
+                    return getColor(tag);
+                }
+            } catch (Exception e2) {
+                // Both methods failed
+            }
         }
         return 0xFFFFFF;
     }
