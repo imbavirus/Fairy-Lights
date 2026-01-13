@@ -4,6 +4,7 @@ import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.connection.ConnectionTypes;
 import me.paulf.fairylights.server.item.crafting.FLCraftingRecipes;
 import me.paulf.fairylights.server.string.StringType;
+import me.paulf.fairylights.server.string.StringTypes;
 import me.paulf.fairylights.util.RegistryObjects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.NonNullList;
@@ -55,11 +56,19 @@ public final class HangingLightsConnectionItem extends ConnectionItem {
     }
 
     public static StringType getString(final CompoundTag tag) {
+        if (!tag.contains("string", net.minecraft.nbt.Tag.TAG_STRING)) {
+            // Default to black string if not specified
+            return StringTypes.BLACK_STRING.get();
+        }
         final ResourceLocation stringId = ResourceLocation.tryParse(tag.getString("string"));
+        if (stringId == null) {
+            return StringTypes.BLACK_STRING.get();
+        }
         // Use the same pattern as CONNECTION_TYPES - get the registry and then get the value by key
         final net.minecraft.core.Registry<StringType> registry = FairyLights.STRING_TYPES.get();
         final net.minecraft.resources.ResourceKey<StringType> key = net.minecraft.resources.ResourceKey.create(net.minecraft.resources.ResourceKey.createRegistryKey(FairyLights.STRING_TYPE), stringId);
-        return Objects.requireNonNull(registry.get(key));
+        final StringType result = registry.get(key);
+        return result != null ? result : StringTypes.BLACK_STRING.get();
     }
 
     public static void setString(final CompoundTag tag, final StringType string) {

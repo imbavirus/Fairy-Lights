@@ -23,11 +23,21 @@ public class ClientMessageContext extends MessageContext {
     }
 
     public ClientLevel getWorld() {
-        return Objects.requireNonNull(this.getMinecraft().level);
+        final ClientLevel level = this.getMinecraft().level;
+        if (level == null) {
+            // World might be null during shutdown/pause - return null instead of throwing
+            return null;
+        }
+        return level;
     }
 
     public Player getPlayer() {
         // TODO: Get player from new PayloadContext
-        return Objects.requireNonNull(Minecraft.getInstance().player);
+        final Player player = Minecraft.getInstance().player;
+        if (player == null) {
+            // Player might be null during shutdown/pause - return null instead of throwing
+            return null;
+        }
+        return player;
     }
 }

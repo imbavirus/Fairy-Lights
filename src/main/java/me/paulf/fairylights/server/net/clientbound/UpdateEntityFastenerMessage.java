@@ -4,6 +4,7 @@ import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
 import me.paulf.fairylights.server.net.ClientMessageContext;
 import me.paulf.fairylights.server.net.Message;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -92,12 +93,22 @@ public final class UpdateEntityFastenerMessage implements CustomPacketPayload, M
         public void accept(final UpdateEntityFastenerMessage message, final ClientMessageContext context) {
             // Handle on client thread
             net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                final Entity entity = context.getWorld().getEntity(message.getEntityId());
+                final ClientLevel world = context.getWorld();
+                if (world == null) {
+                    // World is null (shutdown/pause) - skip processing
+                    return;
+                }
+                final Entity entity = world.getEntity(message.getEntityId());
                 if (entity != null && message.getCompound() != null) {
                     CapabilityHandler.getFastenerCapability(entity).ifPresent(f -> {
                         // Call deserializeNBT directly - it exists in AbstractFastener
                         if (f instanceof me.paulf.fairylights.server.fastener.AbstractFastener) {
-                            ((me.paulf.fairylights.server.fastener.AbstractFastener) f).deserializeNBT(message.getCompound());
+                            final me.paulf.fairylights.server.fastener.AbstractFastener fastener = (me.paulf.fairylights.server.fastener.AbstractFastener) f;
+                            // Ensure the world is set before deserializing
+                            if (fastener.getWorld() == null) {
+                                fastener.setWorld(world);
+                            }
+                            fastener.deserializeNBT(message.getCompound());
                         }
                     });
                 }

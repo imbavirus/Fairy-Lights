@@ -383,11 +383,15 @@ public final class FLCraftingRecipes {
             final CompoundTag existingTag = (CompoundTag) getTag.invoke(stack);
             if (existingTag != null) {
                 existingTag.merge(compound);
+                org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] makeHangingLights: merged NBT via reflection (existing tag)");
             } else {
                 final java.lang.reflect.Method setTag = stack.getClass().getMethod("setTag", CompoundTag.class);
                 setTag.invoke(stack, compound.copy());
+                org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] makeHangingLights: set NBT via reflection (new tag)");
             }
+            return stack;
         } catch (Exception e) {
+            org.apache.logging.log4j.LogManager.getLogger().warn("[FairyLights] makeHangingLights: reflection failed, trying save/parse: {}", e.getMessage());
             // Fallback: try save/parse approach
             try {
                 final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
@@ -397,12 +401,14 @@ public final class FLCraftingRecipes {
                     tag.merge(compound);
                     final ItemStack result = ItemStack.parse(registryAccess, tag).orElse(stack);
                     result.setCount(stack.getCount());
+                    org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] makeHangingLights: set NBT via save/parse");
                     return result;
                 }
             } catch (Exception e2) {
-                // Both methods failed
+                org.apache.logging.log4j.LogManager.getLogger().error("[FairyLights] makeHangingLights: save/parse also failed: {}", e2.getMessage());
             }
         }
+        org.apache.logging.log4j.LogManager.getLogger().error("[FairyLights] makeHangingLights: FAILED to set NBT, returning unchanged stack");
         return stack;
     }
 
@@ -492,11 +498,15 @@ public final class FLCraftingRecipes {
             final CompoundTag existingTag = (CompoundTag) getTag.invoke(stack);
             if (existingTag != null) {
                 existingTag.merge(compound);
+                org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] makePennant: merged NBT via reflection (existing tag)");
             } else {
                 final java.lang.reflect.Method setTag = stack.getClass().getMethod("setTag", CompoundTag.class);
                 setTag.invoke(stack, compound.copy());
+                org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] makePennant: set NBT via reflection (new tag)");
             }
+            return stack;
         } catch (Exception e) {
+            org.apache.logging.log4j.LogManager.getLogger().warn("[FairyLights] makePennant: reflection failed, trying save/parse: {}", e.getMessage());
             // Fallback: try save/parse approach
             try {
                 final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
@@ -506,12 +516,14 @@ public final class FLCraftingRecipes {
                     tag.merge(compound);
                     final ItemStack result = ItemStack.parse(registryAccess, tag).orElse(stack);
                     result.setCount(stack.getCount());
+                    org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] makePennant: set NBT via save/parse");
                     return result;
                 }
             } catch (Exception e2) {
-                // Both methods failed
+                org.apache.logging.log4j.LogManager.getLogger().error("[FairyLights] makePennant: save/parse also failed: {}", e2.getMessage());
             }
         }
+        org.apache.logging.log4j.LogManager.getLogger().error("[FairyLights] makePennant: FAILED to set NBT, returning unchanged stack");
         return stack;
     }
 

@@ -89,7 +89,9 @@ public final class DyeableItem {
                     return result;
                 }
             } catch (Exception e2) {
-                // Both methods failed
+                // Both methods failed - log for debugging
+                org.apache.logging.log4j.LogManager.getLogger().warn("[FairyLights] DyeableItem.setColor failed for color 0x{}: reflection={}, save/parse={}", 
+                    Integer.toHexString(color), e.getMessage(), e2.getMessage());
             }
         }
         return stack;
