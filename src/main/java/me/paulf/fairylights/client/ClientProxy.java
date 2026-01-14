@@ -74,15 +74,17 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 public final class ClientProxy extends ServerProxy {
     @SuppressWarnings("deprecation")
-    public static final Material SOLID_TEXTURE = new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/connections"));
+    public static final Material SOLID_TEXTURE = new Material(TextureAtlas.LOCATION_BLOCKS,
+            ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/connections"));
 
     @SuppressWarnings("deprecation")
-    public static final Material TRANSLUCENT_TEXTURE = new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/connections"));
+    public static final Material TRANSLUCENT_TEXTURE = new Material(TextureAtlas.LOCATION_BLOCKS,
+            ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/connections"));
 
     private final ImmutableList<ResourceLocation> entityModels = new ImmutableList.Builder<ResourceLocation>()
-        .addAll(PennantBuntingRenderer.MODELS)
-        .addAll(LetterBuntingRenderer.MODELS.values())
-        .build();
+            .addAll(PennantBuntingRenderer.MODELS)
+            .addAll(LetterBuntingRenderer.MODELS.values())
+            .build();
 
     @Override
     public void init(final IEventBus modBus) {
@@ -90,14 +92,17 @@ public final class ClientProxy extends ServerProxy {
         new ClippyController().init(modBus);
         // ModLoadingContext.registerConfig() changed in NeoForge 1.21.1
         // TODO: Update to use new config registration API
-        // ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, FLClientConfig.SPEC);
+        // ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT,
+        // FLClientConfig.SPEC);
         ClientEventHandler clientEventHandler = new ClientEventHandler();
         NeoForge.EVENT_BUS.register(clientEventHandler);
         modBus.<RegisterGuiLayersEvent>addListener(e -> {
-            // RegisterGuiLayersEvent.registerBelowAll() - comment out for now, needs proper interface
+            // RegisterGuiLayersEvent.registerBelowAll() - comment out for now, needs proper
+            // interface
             // TODO: Fix RegisterGuiLayersEvent API compatibility
-            // e.registerBelowAll(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "overlay"), 
-            //     clientEventHandler::renderOverlay);
+            // e.registerBelowAll(ResourceLocation.fromNamespaceAndPath(FairyLights.ID,
+            // "overlay"),
+            // clientEventHandler::renderOverlay);
         });
         NeoForge.EVENT_BUS.addListener((RegisterClientCommandsEvent e) -> JinglerCommand.register(e.getDispatcher()));
         // Removed duplicate JinglerCommand.register(NeoForge.EVENT_BUS) call
@@ -146,7 +151,8 @@ public final class ClientProxy extends ServerProxy {
 
         final int w = (int) (uSize / (sprite.getU1() - sprite.getU0()));
         final int h = (int) (vSize / (sprite.getV1() - sprite.getV0()));
-        for (final BakedQuad quad : model.getQuads(null, null, RandomSource.create(42L), ModelData.EMPTY, RenderType.cutoutMipped())) {
+        for (final BakedQuad quad : model.getQuads(null, null, RandomSource.create(42L), ModelData.EMPTY,
+                RenderType.cutoutMipped())) {
             final int[] data = quad.getVertices();
             for (int n = 0; n < 4; n++) {
                 int iu = n * stride + finalUvOffset;
@@ -158,17 +164,23 @@ public final class ClientProxy extends ServerProxy {
     }
 
     private void setup(final FMLClientSetupEvent event) {
-        BlockEntityRenderers.register(FLBlockEntities.FASTENER.get(), context -> new FastenerBlockEntityRenderer(context, ServerProxy.buildBlockView()));
+        BlockEntityRenderers.register(FLBlockEntities.FASTENER.get(),
+                context -> new FastenerBlockEntityRenderer(context, ServerProxy.buildBlockView()));
         BlockEntityRenderers.register(FLBlockEntities.LIGHT.get(), LightBlockEntityRenderer::new);
         EntityRenderers.register(FLEntities.FASTENER.get(), FenceFastenerRenderer::new);
-        /*final LightRenderer r = new LightRenderer();
-        final StringBuilder bob = new StringBuilder();
-        FLItems.lights().forEach(l -> {
-            final LightModel<?> model = r.getModel(l.getBlock().getVariant(), -1);
-            final AxisAlignedBB bb = model.getBounds();
-            bob.append(String.format("%n%s new AxisAlignedBB(%.3fD, %.3fD, %.3fD, %.3fD, %.3fD, %.3fD), %.3fD", l.getRegistryName(), bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ, model.getFloorOffset()));
-        });
-        LogManager.getLogger().debug("waldo {}", bob);*/
+        /*
+         * final LightRenderer r = new LightRenderer();
+         * final StringBuilder bob = new StringBuilder();
+         * FLItems.lights().forEach(l -> {
+         * final LightModel<?> model = r.getModel(l.getBlock().getVariant(), -1);
+         * final AxisAlignedBB bb = model.getBounds();
+         * bob.append(String.
+         * format("%n%s new AxisAlignedBB(%.3fD, %.3fD, %.3fD, %.3fD, %.3fD, %.3fD), %.3fD"
+         * , l.getRegistryName(), bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ,
+         * model.getFloorOffset()));
+         * });
+         * LogManager.getLogger().debug("waldo {}", bob);
+         */
     }
 
     private void setupLayerDefinitions(final EntityRenderersEvent.RegisterLayerDefinitions event) {
@@ -206,9 +218,12 @@ public final class ClientProxy extends ServerProxy {
     }
 
     private void setupModels(final ModelEvent.RegisterAdditional event) {
-        // NeoForge 1.21.1 requires 'standalone' variant for side-loaded models, not 'inventory'
-        event.register(new net.minecraft.client.resources.model.ModelResourceLocation(FenceFastenerRenderer.MODEL, "standalone"));
-        this.entityModels.forEach(model -> event.register(new net.minecraft.client.resources.model.ModelResourceLocation(model, "standalone")));
+        // NeoForge 1.21.1 requires 'standalone' variant for side-loaded models, not
+        // 'inventory'
+        event.register(new net.minecraft.client.resources.model.ModelResourceLocation(FenceFastenerRenderer.MODEL,
+                "standalone"));
+        this.entityModels.forEach(model -> event
+                .register(new net.minecraft.client.resources.model.ModelResourceLocation(model, "standalone")));
     }
 
     private void setupColors(final RegisterColorHandlersEvent.Item event) {
@@ -222,45 +237,45 @@ public final class ClientProxy extends ServerProxy {
             }
             return 0xFFFFFF;
         },
-            FLItems.FAIRY_LIGHT.get(),
-            FLItems.PAPER_LANTERN.get(),
-            FLItems.ORB_LANTERN.get(),
-            FLItems.FLOWER_LIGHT.get(),
-            FLItems.CANDLE_LANTERN_LIGHT.get(),
-            FLItems.OIL_LANTERN_LIGHT.get(),
-            FLItems.JACK_O_LANTERN.get(),
-            FLItems.SKULL_LIGHT.get(),
-            FLItems.GHOST_LIGHT.get(),
-            FLItems.SPIDER_LIGHT.get(),
-            FLItems.WITCH_LIGHT.get(),
-            FLItems.SNOWFLAKE_LIGHT.get(),
-            FLItems.HEART_LIGHT.get(),
-            FLItems.MOON_LIGHT.get(),
-            FLItems.STAR_LIGHT.get(),
-            FLItems.ICICLE_LIGHTS.get(),
-            FLItems.METEOR_LIGHT.get()
-        );
+                FLItems.FAIRY_LIGHT.get(),
+                FLItems.PAPER_LANTERN.get(),
+                FLItems.ORB_LANTERN.get(),
+                FLItems.FLOWER_LIGHT.get(),
+                FLItems.CANDLE_LANTERN_LIGHT.get(),
+                FLItems.OIL_LANTERN_LIGHT.get(),
+                FLItems.JACK_O_LANTERN.get(),
+                FLItems.SKULL_LIGHT.get(),
+                FLItems.GHOST_LIGHT.get(),
+                FLItems.SPIDER_LIGHT.get(),
+                FLItems.WITCH_LIGHT.get(),
+                FLItems.SNOWFLAKE_LIGHT.get(),
+                FLItems.HEART_LIGHT.get(),
+                FLItems.MOON_LIGHT.get(),
+                FLItems.STAR_LIGHT.get(),
+                FLItems.ICICLE_LIGHTS.get(),
+                FLItems.METEOR_LIGHT.get());
         event.register((stack, index) -> {
-            // Use DyeableItem.getColor() which handles NBT reading via reflection
-            CompoundTag tag = null;
-            try {
-                tag = (CompoundTag) stack.getClass().getMethod("getTag").invoke(stack);
-            } catch (Exception e) {
-                // NBT methods removed - need data components API
-            }
             if (index == 0) {
-                if (tag != null) {
-                    return HangingLightsConnectionItem.getString(tag).getColor();
+                // HANGING_LIGHTS connection string
+                final CompoundTag logic = stack.get(me.paulf.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
+                if (logic != null) {
+                    return HangingLightsConnectionItem.getString(logic).getColor();
                 }
                 return StringTypes.BLACK_STRING.get().getColor();
             }
-            if (tag != null) {
-                final ListTag tagList = tag.getList("pattern", Tag.TAG_COMPOUND);
+            // HANGING_LIGHTS lights pattern
+            final CompoundTag logic = stack.get(me.paulf.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
+            if (logic != null) {
+                final ListTag tagList = logic.getList("pattern", Tag.TAG_COMPOUND);
                 if (tagList.size() > 0) {
-                    // ItemStack.parse() API changed in 1.21.1 - use Minecraft instance's registryAccess
+                    // ItemStack.parse() needs RegistryAccess
                     final var level = net.minecraft.client.Minecraft.getInstance().level;
-                    final var registryAccess = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                    final ItemStack item = ItemStack.parse(registryAccess, tagList.getCompound((index - 1) % tagList.size())).orElse(ItemStack.EMPTY);
+                    final var registryAccess = level != null ? level.registryAccess()
+                            : net.minecraft.core.RegistryAccess
+                                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+                    final ItemStack item = ItemStack
+                            .parse(registryAccess, tagList.getCompound((index - 1) % tagList.size()))
+                            .orElse(ItemStack.EMPTY);
                     if (ColorChangingBehavior.exists(item)) {
                         return ColorChangingBehavior.animate(item);
                     }
@@ -280,20 +295,18 @@ public final class ClientProxy extends ServerProxy {
             if (index == 0) {
                 return 0xFFFFFFFF;
             }
-            // Use DyeableItem.getColor() which handles NBT reading via reflection
-            CompoundTag tag = null;
-            try {
-                tag = (CompoundTag) stack.getClass().getMethod("getTag").invoke(stack);
-            } catch (Exception e) {
-                // NBT methods removed - need data components API
-            }
-            if (tag != null) {
-                final ListTag tagList = tag.getList("pattern", Tag.TAG_COMPOUND);
+            // PENNANT_BUNTING pattern
+            final CompoundTag logic = stack.get(me.paulf.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
+            if (logic != null) {
+                final ListTag tagList = logic.getList("pattern", Tag.TAG_COMPOUND);
                 if (tagList.size() > 0) {
-                    // ItemStack.parse() API changed in 1.21.1 - use Minecraft instance's registryAccess
                     final var level = net.minecraft.client.Minecraft.getInstance().level;
-                    final var registryAccess = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                    final ItemStack light = ItemStack.parse(registryAccess, tagList.getCompound((index - 1) % tagList.size())).orElse(ItemStack.EMPTY);
+                    final var registryAccess = level != null ? level.registryAccess()
+                            : net.minecraft.core.RegistryAccess
+                                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+                    final ItemStack light = ItemStack
+                            .parse(registryAccess, tagList.getCompound((index - 1) % tagList.size()))
+                            .orElse(ItemStack.EMPTY);
                     return DyeableItem.getColor(light);
                 }
             }
@@ -304,25 +317,22 @@ public final class ClientProxy extends ServerProxy {
         event.register(ClientProxy::secondLayerColor, FLItems.SWALLOWTAIL_PENNANT.get());
         event.register(ClientProxy::secondLayerColor, FLItems.SQUARE_PENNANT.get());
         event.register((stack, index) -> {
-            // getTag() may not exist in 1.21.1 - using reflection
-            CompoundTag tag = null;
-            try {
-                tag = (CompoundTag) stack.getClass().getMethod("getTag").invoke(stack);
-            } catch (Exception e) {
-                // NBT methods removed - need data components API
-            }
-            if (index > 0 && tag != null) {
-                final StyledString str = StyledString.deserialize(tag.getCompound("text"));
-                if (str.length() > 0) {
-                    ChatFormatting lastColor = null, color = null;
-                    int n = (index - 1) % str.length();
-                    for (int i = 0; i < str.length(); lastColor = color, i++) {
-                        color = str.styleAt(i).getColor();
-                        if (lastColor != color && (n-- == 0)) {
-                            break;
+            // LETTER_BUNTING text
+            if (index > 0 && stack.has(me.paulf.fairylights.server.item.FLDataComponents.STYLED_STRING)) {
+                final CompoundTag textTag = stack.get(me.paulf.fairylights.server.item.FLDataComponents.STYLED_STRING);
+                if (textTag != null) {
+                    final StyledString str = StyledString.deserialize(textTag);
+                    if (str.length() > 0) {
+                        ChatFormatting lastColor = null, color = null;
+                        int n = (index - 1) % str.length();
+                        for (int i = 0; i < str.length(); lastColor = color, i++) {
+                            color = str.styleAt(i).getColor();
+                            if (lastColor != color && (n-- == 0)) {
+                                break;
+                            }
                         }
+                        return StyledString.getColor(color) | 0xFF000000;
                     }
-                    return StyledString.getColor(color) | 0xFF000000;
                 }
             }
             return 0xFFFFFFFF;

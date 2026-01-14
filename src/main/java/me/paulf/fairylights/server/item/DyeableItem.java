@@ -10,7 +10,8 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public final class DyeableItem {
-    private DyeableItem() {}
+    private DyeableItem() {
+    }
 
     public static Component getColorName(final int color) {
         final int r = color >> 16 & 0xFF;
@@ -49,7 +50,8 @@ public final class DyeableItem {
         if (color == DyeColor.GRAY) {
             return 0x606060;
         }
-        // DyeColor.getTextureDiffuseColors() removed in 1.21.1 - use getTextureDiffuseColor() which returns int
+        // DyeColor.getTextureDiffuseColors() removed in 1.21.1 - use
+        // getTextureDiffuseColor() which returns int
         final int textureColor = color.getTextureDiffuseColor();
         return textureColor;
     }
@@ -64,36 +66,7 @@ public final class DyeableItem {
     }
 
     public static ItemStack setColor(final ItemStack stack, final int color) {
-        // In 1.21.1, ItemStack NBT access is deprecated, but we need it for colors
-        // Try reflection first (more reliable for setting NBT)
-        try {
-            final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
-            CompoundTag tag = (CompoundTag) getTag.invoke(stack);
-            if (tag == null) {
-                tag = new CompoundTag();
-                final java.lang.reflect.Method setTag = stack.getClass().getMethod("setTag", CompoundTag.class);
-                setTag.invoke(stack, tag);
-            }
-            setColor(tag, color);
-            return stack;
-        } catch (Exception e) {
-            // Fallback: try save/parse approach
-            try {
-                final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                final Tag savedTag = stack.save(registryAccess);
-                if (savedTag instanceof CompoundTag) {
-                    final CompoundTag tag = (CompoundTag) savedTag;
-                    setColor(tag, color);
-                    final ItemStack result = ItemStack.parse(registryAccess, tag).orElse(stack);
-                    result.setCount(stack.getCount());
-                    return result;
-                }
-            } catch (Exception e2) {
-                // Both methods failed - log for debugging
-                org.apache.logging.log4j.LogManager.getLogger().warn("[FairyLights] DyeableItem.setColor failed for color 0x{}: reflection={}, save/parse={}", 
-                    Integer.toHexString(color), e.getMessage(), e2.getMessage());
-            }
-        }
+        stack.set(FLDataComponents.COLOR, color);
         return stack;
     }
 
@@ -107,28 +80,7 @@ public final class DyeableItem {
     }
 
     public static int getColor(final ItemStack stack) {
-        // In 1.21.1, ItemStack NBT access is deprecated, but we need it for colors
-        // Try reflection first (more reliable for reading NBT)
-        try {
-            final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
-            final CompoundTag tag = (CompoundTag) getTag.invoke(stack);
-            if (tag != null) {
-                return getColor(tag);
-            }
-        } catch (Exception e) {
-            // Fallback: try save/parse approach
-            try {
-                final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                final Tag savedTag = stack.save(registryAccess);
-                if (savedTag instanceof CompoundTag) {
-                    final CompoundTag tag = (CompoundTag) savedTag;
-                    return getColor(tag);
-                }
-            } catch (Exception e2) {
-                // Both methods failed
-            }
-        }
-        return 0xFFFFFF;
+        return stack.getOrDefault(FLDataComponents.COLOR, 0xFFFFFF);
     }
 
     public static int getColor(final CompoundTag tag) {

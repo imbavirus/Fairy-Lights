@@ -1,6 +1,7 @@
 package me.paulf.fairylights.server.item.crafting;
 
 import me.paulf.fairylights.server.item.DyeableItem;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
@@ -29,7 +30,8 @@ public class CopyColorRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(final net.minecraft.world.item.crafting.CraftingInput input, final net.minecraft.core.HolderLookup.Provider provider) {
+    public ItemStack assemble(final net.minecraft.world.item.crafting.CraftingInput input,
+            final net.minecraft.core.HolderLookup.Provider provider) {
         ItemStack original = ItemStack.EMPTY;
         for (int i = 0; i < input.size(); i++) {
             final ItemStack stack = input.getItem(i);
@@ -52,7 +54,8 @@ public class CopyColorRecipe extends CustomRecipe {
     }
 
     @Override
-    public net.minecraft.core.NonNullList<ItemStack> getRemainingItems(final net.minecraft.world.item.crafting.CraftingInput input) {
+    public net.minecraft.core.NonNullList<ItemStack> getRemainingItems(
+            final net.minecraft.world.item.crafting.CraftingInput input) {
         ItemStack original = ItemStack.EMPTY;
         final NonNullList<ItemStack> remaining = NonNullList.withSize(input.size(), ItemStack.EMPTY);
         for (int i = 0; i < remaining.size(); i++) {

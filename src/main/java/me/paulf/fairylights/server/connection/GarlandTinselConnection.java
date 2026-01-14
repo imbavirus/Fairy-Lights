@@ -34,5 +34,6 @@ public final class GarlandTinselConnection extends Connection {
     public void deserializeLogic(final CompoundTag compound) {
         super.deserializeLogic(compound);
         this.color = DyeableItem.getColor(compound);
+        org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] GarlandTinselConnection.deserializeLogic: compound={}, color={}", compound, Integer.toHexString(this.color));
     }
 }

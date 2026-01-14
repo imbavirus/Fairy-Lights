@@ -15,6 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
@@ -28,15 +29,15 @@ public final class HangingLightsConnectionItem extends ConnectionItem {
         super(properties, ConnectionTypes.HANGING_LIGHTS);
     }
 
-
-    // appendHoverText() signature changed in 1.21.1 - still uses Level and TooltipFlag but may need @Override removed
-    public void appendHoverText(final ItemStack stack, @Nullable final Level world, final List<Component> tooltip, final TooltipFlag flag) {
-        // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
-        final CompoundTag compound = new CompoundTag();
-        // TODO: Migrate to data components API for 1.21.1
+    @Override
+    public void appendHoverText(final ItemStack stack, final Item.TooltipContext context, final List<Component> tooltip,
+            final TooltipFlag flag) {
+        // Use Data Components to get logic tag
+        final CompoundTag compound = stack.get(FLDataComponents.CONNECTION_LOGIC);
         if (compound != null) {
             final ResourceLocation name = RegistryObjects.getName(FairyLights.STRING_TYPES.get(), getString(compound));
-            tooltip.add(Component.translatable("item." + name.getNamespace() + "." + name.getPath()).withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("item." + name.getNamespace() + "." + name.getPath())
+                    .withStyle(ChatFormatting.GRAY));
         }
         if (compound != null && compound.contains("pattern", Tag.TAG_LIST)) {
             final ListTag tagList = compound.getList("pattern", Tag.TAG_COMPOUND);
@@ -45,12 +46,10 @@ public final class HangingLightsConnectionItem extends ConnectionItem {
                 tooltip.add(Component.empty());
             }
             for (int i = 0; i < tagCount; i++) {
-                // ItemStack.of() API changed in 1.21.1 - use ItemStack.parse() with RegistryAccess
-                final ItemStack lightStack = ItemStack.parse(world != null ? world.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY), tagList.getCompound(i)).orElse(ItemStack.EMPTY);
+                // ItemStack.parse() now uses context.registries()
+                final ItemStack lightStack = ItemStack.parse(context.registries(), tagList.getCompound(i))
+                        .orElse(ItemStack.EMPTY);
                 tooltip.add(lightStack.getHoverName());
-                // appendHoverText signature changed in 1.21.1 - Item.appendHoverText now takes TooltipContext
-                // For now, skip calling appendHoverText as TooltipContext creation requires additional context
-                // TODO: Create proper TooltipContext from world/player context
             }
         }
     }
@@ -64,9 +63,11 @@ public final class HangingLightsConnectionItem extends ConnectionItem {
         if (stringId == null) {
             return StringTypes.BLACK_STRING.get();
         }
-        // Use the same pattern as CONNECTION_TYPES - get the registry and then get the value by key
+        // Use the same pattern as CONNECTION_TYPES - get the registry and then get the
+        // value by key
         final net.minecraft.core.Registry<StringType> registry = FairyLights.STRING_TYPES.get();
-        final net.minecraft.resources.ResourceKey<StringType> key = net.minecraft.resources.ResourceKey.create(net.minecraft.resources.ResourceKey.createRegistryKey(FairyLights.STRING_TYPE), stringId);
+        final net.minecraft.resources.ResourceKey<StringType> key = net.minecraft.resources.ResourceKey
+                .create(net.minecraft.resources.ResourceKey.createRegistryKey(FairyLights.STRING_TYPE), stringId);
         final StringType result = registry.get(key);
         return result != null ? result : StringTypes.BLACK_STRING.get();
     }

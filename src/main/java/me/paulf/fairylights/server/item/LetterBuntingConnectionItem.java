@@ -13,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 public class LetterBuntingConnectionItem extends ConnectionItem {
@@ -20,18 +21,17 @@ public class LetterBuntingConnectionItem extends ConnectionItem {
         super(properties, ConnectionTypes.LETTER_BUNTING);
     }
 
-    // @Override removed - appendHoverText signature changed in 1.21.1
-    public void appendHoverText(final ItemStack stack, final Level world, final List<Component> tooltip, final TooltipFlag flag) {
-        // stack.getTag() removed in 1.21.1 - using placeholder for now
-        final CompoundTag compound = new CompoundTag();
-        if (compound == null) {
-            return;
-        }
-        if (compound.contains("text", Tag.TAG_COMPOUND)) {
-            final CompoundTag text = compound.getCompound("text");
-            final StyledString s = StyledString.deserialize(text);
+    @Override
+    public void appendHoverText(final ItemStack stack, final Item.TooltipContext context, final List<Component> tooltip,
+            final TooltipFlag flag) {
+        final net.minecraft.nbt.CompoundTag tag = stack
+                .get(me.paulf.fairylights.server.item.FLDataComponents.STYLED_STRING);
+        if (tag != null) {
+            final me.paulf.fairylights.util.styledstring.StyledString s = me.paulf.fairylights.util.styledstring.StyledString
+                    .deserialize(tag);
             if (s.length() > 0) {
-                tooltip.add(Component.translatable("format.fairylights.text", s.toTextComponent()).withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.translatable("format.fairylights.text", s.toTextComponent())
+                        .withStyle(ChatFormatting.GRAY));
             }
         }
     }

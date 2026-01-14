@@ -21,3 +21,5 @@ build
 # other
 eclipse
 run
+build.log
+build_log_2.txt

@@ -8,6 +8,7 @@ import me.paulf.fairylights.server.capability.CapabilityHandler;
 import me.paulf.fairylights.server.fastener.Fastener;
 import me.paulf.fairylights.server.item.ConnectionItem;
 import me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage;
+import me.paulf.fairylights.server.fastener.FenceFastener;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -42,10 +43,12 @@ import java.io.IOException;
 import java.util.Optional;
 
 public final class FenceFastenerEntity extends HangingEntity implements IEntityWithComplexSpawn {
+    private final FenceFastener fastener;
     private int surfaceCheckTime;
 
     public FenceFastenerEntity(final EntityType<? extends FenceFastenerEntity> type, final Level world) {
         super(type, world);
+        this.fastener = new FenceFastener(this);
     }
 
     @Override
@@ -69,6 +72,14 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
 
     public int getHeight() {
         return 9;
+    }
+
+    /**
+     * Returns the fastener capability for this entity.
+     * Used by renderers to access connection data.
+     */
+    public Optional<Fastener<?>> getFastener() {
+        return Optional.of(this.fastener);
     }
 
     // getEyeHeight() may not be an override in 1.21.1
@@ -139,7 +150,8 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
 
     @Override
     public void playPlacementSound() {
-        final SoundType sound = FLBlocks.FASTENER.get().getSoundType(FLBlocks.FASTENER.get().defaultBlockState(), this.level(), this.getPos(), null);
+        final SoundType sound = FLBlocks.FASTENER.get().getSoundType(FLBlocks.FASTENER.get().defaultBlockState(),
+                this.level(), this.getPos(), null);
         this.playSound(sound.getPlaceSound(), (sound.getVolume() + 1) / 2, sound.getPitch() * 0.8F);
     }
 
@@ -154,7 +166,8 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
     }
 
     // setDirection() may not be an override in 1.21.1
-    public void setDirection(final Direction facing) {}
+    public void setDirection(final Direction facing) {
+    }
 
     // calculateBoundingBox is now required in 1.21.1
     @Override
@@ -167,20 +180,10 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
         return new AABB(posX - w, posY - h, posZ - w, posX + w, posY + h, posZ + w);
     }
 
-    // recalculateBoundingBox() may be final or have different signature in 1.21.1
-    // Using calculateBoundingBox() instead which is called automatically
-    // @Override
-    // protected void recalculateBoundingBox() {
-    //     final double posX = this.pos.getX() + 0.5;
-    //     final double posY = this.pos.getY() + 0.5;
-    //     final double posZ = this.pos.getZ() + 0.5;
-    //     this.setPosRaw(posX, posY, posZ);
-    //     this.setBoundingBox(this.calculateBoundingBox(this.pos, Direction.UP));
-    // }
-
     @Override
     public AABB getBoundingBoxForCulling() {
-        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1)).orElseGet(super::getBoundingBoxForCulling);
+        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1))
+                .orElseGet(super::getBoundingBoxForCulling);
     }
 
     @Override
@@ -211,7 +214,8 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
             if (this.level().isClientSide()) {
                 player.swing(hand);
             } else {
-                this.getFastener().ifPresent(fastener -> ((ConnectionItem) stack.getItem()).connect(stack, player, this.level(), fastener));
+                this.getFastener().ifPresent(
+                        fastener -> ((ConnectionItem) stack.getItem()).connect(stack, player, this.level(), fastener));
             }
             return InteractionResult.SUCCESS;
         }
@@ -253,7 +257,8 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
                     accounter = (NbtAccounter) NbtAccounter.class.getMethod("unlimitedHeap").invoke(null);
                 } catch (Exception e1) {
                     try {
-                        accounter = (NbtAccounter) NbtAccounter.class.getMethod("createUnlimited", int.class).invoke(null, 0x200000);
+                        accounter = (NbtAccounter) NbtAccounter.class.getMethod("createUnlimited", int.class)
+                                .invoke(null, 0x200000);
                     } catch (Exception e2) {
                         // NbtAccounter constructor may have changed - use default
                         accounter = NbtAccounter.create(0x200000);
@@ -285,21 +290,9 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
         });
     }
 
-    // getAddEntityPacket() removed in 1.21.1 - entities handle their own packets
-    // @Override
-    // public Packet<ClientGamePacketListener> getAddEntityPacket() {
-    //     return new ClientboundAddEntityPacket(this);
-    // }
-
-    private Optional<Fastener<?>> getFastener() {
-        // getCapability() signature changed in 1.21.1 - capabilities accessed via ResourceLocation
-        // TODO: Update to use proper NeoForge 1.21.1 capability API
-        return Optional.empty(); // Temporary - needs proper implementation
-    }
-
     public static FenceFastenerEntity create(final Level world, final BlockPos fence) {
         final FenceFastenerEntity fastener = new FenceFastenerEntity(world, fence);
-        //fastener.forceSpawn = true;
+        // fastener.forceSpawn = true;
         world.addFreshEntity(fastener);
         fastener.playPlacementSound();
         return fastener;

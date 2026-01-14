@@ -30,20 +30,22 @@ import java.util.function.Function;
 
 public final class LetterBuntingConnection extends Connection implements Lettered {
     public static final SymbolSet SYMBOLS = new SymbolSet.Builder(7, "0-9, A-Z, &, !, ?")
-        .add(" 0123456789ABCDEFGHJKLMNOPQRSTUVWXYZ&?", 6)
-        .add("I", 4)
-        .add("!", 2)
-        .build();
+            .add(" 0123456789ABCDEFGHJKLMNOPQRSTUVWXYZ&?", 6)
+            .add("I", 4)
+            .add("!", 2)
+            .build();
 
     private static final float TRACKING = 1.0F / 16.0F;
 
-    private static final StylingPresence SUPPORTED_STYLING = new StylingPresence(true, false, false, false, false, false);
+    private static final StylingPresence SUPPORTED_STYLING = new StylingPresence(true, false, false, false, false,
+            false);
 
     private StyledString text;
 
     private Letter[] letters = new Letter[0];
 
-    public LetterBuntingConnection(final ConnectionType<? extends LetterBuntingConnection> type, final Level world, final Fastener<?> fastener, final UUID uuid) {
+    public LetterBuntingConnection(final ConnectionType<? extends LetterBuntingConnection> type, final Level world,
+            final Fastener<?> fastener, final UUID uuid) {
         super(type, world, fastener, uuid);
         this.text = new StyledString();
     }
@@ -67,8 +69,10 @@ public final class LetterBuntingConnection extends Connection implements Lettere
     @Override
     public void onConnect(final Level world, final Player user, final ItemStack heldStack) {
         if (this.text.isEmpty()) {
-            // TODO: Rewrite to use PayloadRegistrar API for NeoForge 1.21.1
-            // FairyLights.NETWORK.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) user), new OpenEditLetteredConnectionScreenMessage<>(this));
+            if (user instanceof ServerPlayer serverPlayer) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer,
+                        new OpenEditLetteredConnectionScreenMessage<>(this));
+            }
         }
     }
 
@@ -124,7 +128,8 @@ public final class LetterBuntingConnection extends Connection implements Lettere
                             letter.set(point, it.getYaw(), it.getPitch());
                             letter.set(this.text.charAt(pointIdx), this.text.styleAt(pointIdx));
                         } else {
-                            letter = new Letter(pointIdx, point, it.getYaw(), it.getPitch(), SYMBOLS, this.text.charAt(pointIdx), this.text.styleAt(pointIdx));
+                            letter = new Letter(pointIdx, point, it.getYaw(), it.getPitch(), SYMBOLS,
+                                    this.text.charAt(pointIdx), this.text.styleAt(pointIdx));
                         }
                         letters.add(letter);
                         pointIdx++;
@@ -181,7 +186,8 @@ public final class LetterBuntingConnection extends Connection implements Lettere
 
     @Override
     public Function<String, String> getInputTransformer() {
-        return str -> Normalizer.normalize(str, Normalizer.Form.NFKD).replaceAll("[\\p{Mn}\\p{Sk}]", "").toUpperCase(Locale.ROOT);
+        return str -> Normalizer.normalize(str, Normalizer.Form.NFKD).replaceAll("[\\p{Mn}\\p{Sk}]", "")
+                .toUpperCase(Locale.ROOT);
     }
 
     @Override

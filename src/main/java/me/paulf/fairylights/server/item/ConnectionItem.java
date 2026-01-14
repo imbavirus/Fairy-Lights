@@ -37,7 +37,8 @@ public abstract class ConnectionItem extends Item {
     private static final Logger LOGGER = LogManager.getLogger();
     private final DeferredHolder<ConnectionType<?>, ? extends ConnectionType<?>> type;
 
-    public ConnectionItem(final Properties properties, final DeferredHolder<ConnectionType<?>, ? extends ConnectionType<?>> type) {
+    public ConnectionItem(final Properties properties,
+            final DeferredHolder<ConnectionType<?>, ? extends ConnectionType<?>> type) {
         super(properties);
         this.type = type;
     }
@@ -100,11 +101,12 @@ public abstract class ConnectionItem extends Item {
         final Connection connection = connOpt.get();
 
         // Port of upstream 1.12 behavior:
-        // - If the placing connection has no logic NBT, then only block if the stack has *some* custom tag
-        //   (meaning you're trying to use a mismatched connection variant).
+        // - If the placing connection has no logic NBT, then only block if the stack
+        // has *some* custom tag
+        // (meaning you're trying to use a mismatched connection variant).
         // - If it has logic, block unless the stack tag matches the logic.
         final CompoundTag logic = connection.serializeLogic();
-        final CompoundTag stackTag = tryGetStackTag(stack);
+        final CompoundTag stackTag = getData(stack);
 
         if (logic.isEmpty()) {
             return stackTag != null && !stackTag.isEmpty();
@@ -113,31 +115,63 @@ public abstract class ConnectionItem extends Item {
         // If we can't read stack tag, check if connection has only default values
         if (stackTag == null || stackTag.isEmpty()) {
             // Check if connection has only default values by examining the serialized logic
-            // For tinsel: default color is LIGHT_GRAY (0xC8C8C8) - check if logic only has default color
+            // For tinsel: default color is LIGHT_GRAY (0xC8C8C8) - check if logic only has
+            // default color
             if (connection instanceof me.paulf.fairylights.server.connection.GarlandTinselConnection) {
-                final int defaultColor = me.paulf.fairylights.server.item.DyeableItem.getColor(net.minecraft.world.item.DyeColor.LIGHT_GRAY);
-                if (logic.contains("color", net.minecraft.nbt.Tag.TAG_INT) && logic.getInt("color") == defaultColor && logic.size() == 1) {
+                final int defaultColor = me.paulf.fairylights.server.item.DyeableItem
+                        .getColor(net.minecraft.world.item.DyeColor.LIGHT_GRAY);
+                if (logic.contains("color", net.minecraft.nbt.Tag.TAG_INT) && logic.getInt("color") == defaultColor
+                        && logic.size() == 1) {
                     // Connection has only default color, empty stack should match
                     return false;
                 }
             } else if (connection instanceof me.paulf.fairylights.server.connection.PennantBuntingConnection) {
                 // Default pattern is empty list, default text is empty
-                final boolean hasEmptyPattern = !logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) || 
-                    (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) && logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty());
+                final boolean hasEmptyPattern = !logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) ||
+                        (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST)
+                                && logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty());
+                // StyledString serializes to {value:"", styling:[]} so checks for isEmpty()
+                // fail
+                // Check if 'text' compound is missing OR if it exists, check if 'value' string
+                // is empty
                 final boolean hasEmptyText = !logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) ||
-                    (logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) && logic.getCompound("text").isEmpty());
+                        (logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) &&
+                                (logic.getCompound("text").isEmpty() ||
+                                        (logic.getCompound("text").contains("value", net.minecraft.nbt.Tag.TAG_STRING)
+                                                &&
+                                                logic.getCompound("text").getString("value").isEmpty())));
                 if (hasEmptyPattern && hasEmptyText) {
                     // Connection has only default values, empty stack should match
                     return false;
                 }
             } else if (connection instanceof me.paulf.fairylights.server.connection.HangingLightsConnection) {
                 // Default string is BLACK_STRING, default pattern is empty list
-                final boolean hasDefaultString = logic.contains("string", net.minecraft.nbt.Tag.TAG_STRING) && 
-                    logic.getString("string").equals("fairylights:black_string");
-                final boolean hasEmptyPattern = !logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) || 
-                    (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) && logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty());
+                final boolean hasDefaultString = logic.contains("string", net.minecraft.nbt.Tag.TAG_STRING) &&
+                        logic.getString("string").equals("fairylights:black_string");
+                final boolean hasEmptyPattern = !logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) ||
+                        (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST)
+                                && logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty());
                 if (hasDefaultString && hasEmptyPattern && logic.size() == 2) {
                     // Connection has only default values, empty stack should match
+                    return false;
+                }
+            } else if (connection instanceof me.paulf.fairylights.server.connection.LetterBuntingConnection) {
+                // Check if text has no characters (StyledString serializes to value="",
+                // styling=[])
+                final boolean hasEmptyText = !logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) ||
+                        (logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) &&
+                                (logic.getCompound("text").isEmpty() ||
+                                        (logic.getCompound("text").contains("value", net.minecraft.nbt.Tag.TAG_STRING)
+                                                &&
+                                                logic.getCompound("text").getString("value").isEmpty())));
+
+                if (hasEmptyText) {
+                    // Connection has only default values, empty stack should match
+                    return false;
+                }
+            } else if (connection instanceof me.paulf.fairylights.server.connection.GarlandVineConnection) {
+                // Vine garland has no custom logic - always match with empty stack
+                if (logic.isEmpty()) {
                     return false;
                 }
             }
@@ -145,40 +179,53 @@ public abstract class ConnectionItem extends Item {
             return true;
         }
 
-        // Equality check using impliesNbt both ways (closest equivalent to old areNBTEquals(..., true))
-        return !(me.paulf.fairylights.util.Utils.impliesNbt(logic, stackTag) && me.paulf.fairylights.util.Utils.impliesNbt(stackTag, logic));
+        // Equality check using impliesNbt both ways (closest equivalent to old
+        // areNBTEquals(..., true))
+        final boolean logicImpliesStack = me.paulf.fairylights.util.Utils.impliesNbt(logic, stackTag);
+        final boolean stackImpliesLogic = me.paulf.fairylights.util.Utils.impliesNbt(stackTag, logic);
+        final boolean matches = logicImpliesStack && stackImpliesLogic;
+        if (!matches && (connection instanceof me.paulf.fairylights.server.connection.GarlandTinselConnection ||
+                connection instanceof me.paulf.fairylights.server.connection.PennantBuntingConnection)) {
+            LOGGER.warn(
+                    "[FairyLights] isConnectionInOtherHand: connection={}, logic={}, stackTag={}, logicImpliesStack={}, stackImpliesLogic={}",
+                    connection.getClass().getSimpleName(), logic, stackTag, logicImpliesStack, stackImpliesLogic);
+        }
+        return !matches;
     }
 
-    private static CompoundTag tryGetStackTag(final ItemStack stack) {
-        try {
-            final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
-            final Object tag = getTag.invoke(stack);
-            return tag instanceof CompoundTag ? (CompoundTag) tag : null;
-        } catch (Exception e) {
-            return null;
+    private static CompoundTag getData(final ItemStack stack) {
+        CompoundTag tag = stack.getOrDefault(FLDataComponents.CONNECTION_LOGIC, new CompoundTag()).copy();
+        if (stack.has(FLDataComponents.COLOR) && !tag.contains("color")) {
+            tag.putInt("color", stack.get(FLDataComponents.COLOR));
         }
+        if (stack.has(FLDataComponents.STYLED_STRING) && !tag.contains("text")) {
+            tag.put("text", stack.get(FLDataComponents.STYLED_STRING));
+        }
+        return tag.isEmpty() ? null : tag;
     }
 
     private void connect(final ItemStack stack, final Player user, final Level world, final BlockPos pos) {
         final BlockEntity entity = world.getBlockEntity(pos);
         if (entity != null) {
-            CapabilityHandler.getFastenerCapability(entity).ifPresent(fastener -> this.connect(stack, user, world, fastener));
+            CapabilityHandler.getFastenerCapability(entity)
+                    .ifPresent(fastener -> this.connect(stack, user, world, fastener));
         }
     }
 
-    private void connect(final ItemStack stack, final Player user, final Level world, final BlockPos pos, final BlockState state) {
+    private void connect(final ItemStack stack, final Player user, final Level world, final BlockPos pos,
+            final BlockState state) {
         if (world.setBlock(pos, state, 3)) {
             state.getBlock().setPlacedBy(world, pos, state, user, stack);
             final SoundType sound = state.getBlock().getSoundType(state, world, pos, user);
             world.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                sound.getPlaceSound(),
-                SoundSource.BLOCKS,
-                (sound.getVolume() + 1) / 2,
-                sound.getPitch() * 0.8F
-            );
+                    sound.getPlaceSound(),
+                    SoundSource.BLOCKS,
+                    (sound.getVolume() + 1) / 2,
+                    sound.getPitch() * 0.8F);
             final BlockEntity entity = world.getBlockEntity(pos);
             if (entity != null) {
-                CapabilityHandler.getFastenerCapability(entity).ifPresent(destination -> this.connect(stack, user, world, destination, false));
+                CapabilityHandler.getFastenerCapability(entity)
+                        .ifPresent(destination -> this.connect(stack, user, world, destination, false));
             }
         }
     }
@@ -187,7 +234,8 @@ public abstract class ConnectionItem extends Item {
         this.connect(stack, user, world, fastener, true);
     }
 
-    public void connect(final ItemStack stack, final Player user, final Level world, final Fastener<?> fastener, final boolean playConnectSound) {
+    public void connect(final ItemStack stack, final Player user, final Level world, final Fastener<?> fastener,
+            final boolean playConnectSound) {
         CapabilityHandler.getFastenerCapability(user).ifPresent(attacher -> {
             boolean playSound = playConnectSound;
             final Optional<Connection> placing = attacher.getFirstConnection();
@@ -196,14 +244,14 @@ public abstract class ConnectionItem extends Item {
                 final var oldDestType = conn.getDestination().getType();
                 final boolean ok = conn.reconnect(fastener);
                 final var newDestType = conn.getDestination().getType();
-                LOGGER.info("[FairyLights] connect 2nd: user={}, ok={}, oldDest={}, newDest={}, originPos={}, newPos={}",
-                    user.getGameProfile().getName(),
-                    ok,
-                    oldDestType,
-                    newDestType,
-                    conn.getFastener() != null ? conn.getFastener().getPos() : null,
-                    fastener.getPos()
-                );
+                LOGGER.info(
+                        "[FairyLights] connect 2nd: user={}, ok={}, oldDest={}, newDest={}, originPos={}, newPos={}",
+                        user.getGameProfile().getName(),
+                        ok,
+                        oldDestType,
+                        newDestType,
+                        conn.getFastener() != null ? conn.getFastener().getPos() : null,
+                        fastener.getPos());
                 if (ok) {
                     conn.onConnect(world, user, stack);
                     stack.shrink(1);
@@ -214,25 +262,31 @@ public abstract class ConnectionItem extends Item {
                     playSound = false;
                 }
             } else {
-                LOGGER.info("[FairyLights] connect 1st: user={}, destPos={}", user.getGameProfile().getName(), fastener.getPos());
+                LOGGER.info("[FairyLights] connect 1st: user={}, destPos={}, item={}", user.getGameProfile().getName(),
+                        fastener.getPos(), stack.getItem().toString());
                 // Get stack NBT so connection logic matches on second placement
-                // For connections with default values (tinsel color, pennant pattern), we need to pass the stack's NBT
-                final CompoundTag data = tryGetStackTag(stack);
+                // For connections with default values (tinsel color, pennant pattern), we need
+                // to pass the stack's NBT
+                final CompoundTag data = getData(stack);
                 if (data == null) {
                     // Create empty tag if stack has no NBT
                     final CompoundTag empty = new CompoundTag();
+                    LOGGER.info("[FairyLights] connect 1st: stack has no NBT, using empty tag");
                     fastener.connect(world, attacher, this.getConnectionType(), empty, false);
                 } else {
                     // Copy stack NBT so connection can deserialize it
                     final CompoundTag dataCopy = data.copy();
+                    LOGGER.info("[FairyLights] connect 1st: passing NBT to connection: {}", dataCopy);
                     fastener.connect(world, attacher, this.getConnectionType(), dataCopy, false);
                 }
                 /*
                  * Correct placement behavior:
                  * - Store the outgoing connection on the FIRST placed fastener (block/fence).
-                 * - Destination is the player (so the rope appears attached to the first anchor and to your hand).
-                 * - The player tracks "currently placing" via an INCOMING reference, so the 2nd click can reconnect
-                 *   the SAME connection to another fastener (block-to-block).
+                 * - Destination is the player (so the rope appears attached to the first anchor
+                 * and to your hand).
+                 * - The player tracks "currently placing" via an INCOMING reference, so the 2nd
+                 * click can reconnect
+                 * the SAME connection to another fastener (block-to-block).
                  */
                 syncFastenerBlock(world, fastener);
             }
@@ -260,7 +314,8 @@ public abstract class ConnectionItem extends Item {
         world.sendBlockUpdated(pos, state, state, 3);
     }
 
-    private void connectFence(final ItemStack stack, final Player user, final Level world, final BlockPos pos, FenceFastenerEntity fastener) {
+    private void connectFence(final ItemStack stack, final Player user, final Level world, final BlockPos pos,
+            FenceFastenerEntity fastener) {
         final boolean playConnectSound;
         if (fastener == null) {
             fastener = FenceFastenerEntity.create(world, pos);
@@ -268,7 +323,9 @@ public abstract class ConnectionItem extends Item {
         } else {
             playConnectSound = true;
         }
-        this.connect(stack, user, world, CapabilityHandler.getFastenerCapability(fastener).orElseThrow(IllegalStateException::new), playConnectSound);
+        this.connect(stack, user, world,
+                CapabilityHandler.getFastenerCapability(fastener).orElseThrow(IllegalStateException::new),
+                playConnectSound);
     }
 
     public static boolean isFence(final BlockState state) {

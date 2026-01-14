@@ -137,5 +137,6 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
             this.pattern.add(ItemStack.parse(this.world.registryAccess(), patternList.getCompound(i)).orElse(ItemStack.EMPTY));
         }
         this.text = StyledString.deserialize(compound.getCompound("text"));
+        org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] PennantBuntingConnection.deserializeLogic: compound={}, patternSize={}, hasText={}", compound, this.pattern.size(), !this.text.isEmpty());
     }
 }

@@ -154,22 +154,7 @@ public abstract class Connection implements NBTSerializable {
         final ItemStack stack = new ItemStack(this.getType().getItem());
         final CompoundTag tagCompound = this.serializeLogic();
         if (!tagCompound.isEmpty()) {
-            // In 1.21.1, ItemStack NBT - methods may have changed
-            // TODO: Update to use data components API when available
-            // For now, using reflection to access getTag()/setTag() if they exist
-            try {
-                final java.lang.reflect.Method getTag = stack.getClass().getMethod("getTag");
-                final CompoundTag existingTag = (CompoundTag) getTag.invoke(stack);
-                if (existingTag != null) {
-                    existingTag.merge(tagCompound);
-                } else {
-                    final java.lang.reflect.Method setTag = stack.getClass().getMethod("setTag", CompoundTag.class);
-                    setTag.invoke(stack, tagCompound.copy());
-                }
-            } catch (Exception e) {
-                // Fallback: NBT methods removed, need data components
-                throw new UnsupportedOperationException("ItemStack NBT methods not available - need data components API", e);
-            }
+            stack.set(me.paulf.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC, tagCompound);
         }
         return stack;
     }
@@ -179,7 +164,8 @@ public abstract class Connection implements NBTSerializable {
     }
 
     public final boolean isDynamic() {
-        return this.fastener.isMoving() || this.destination.get(this.world, false).filter(Fastener::isMoving).isPresent();
+        return this.fastener.isMoving()
+                || this.destination.get(this.world, false).filter(Fastener::isMoving).isPresent();
     }
 
     public final boolean isModifiable(final Player player) {
@@ -203,7 +189,8 @@ public abstract class Connection implements NBTSerializable {
 
     public void processClientAction(final Player player, final PlayerAction action, final Intersection intersection) {
         // TODO: Implement networking with PayloadRegistrar API for NeoForge 1.21.1
-        // FairyLights.NETWORK.sendToServer(new InteractionConnectionMessage(this, action, intersection));
+        // FairyLights.NETWORK.sendToServer(new InteractionConnectionMessage(this,
+        // action, intersection));
         // For now, stubbed out until networking is properly implemented
     }
 
@@ -219,10 +206,9 @@ public abstract class Connection implements NBTSerializable {
             final ItemEntity item = new ItemEntity(this.world, hit.x, hit.y, hit.z, stack);
             final float scale = 0.05F;
             item.setDeltaMovement(
-                this.world.random.nextGaussian() * scale,
-                this.world.random.nextGaussian() * scale + 0.2F,
-                this.world.random.nextGaussian() * scale
-            );
+                    this.world.random.nextGaussian() * scale,
+                    this.world.random.nextGaussian() * scale + 0.2F,
+                    this.world.random.nextGaussian() * scale);
             this.world.addFreshEntity(item);
         }
         this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_DISCONNECT.get(), SoundSource.BLOCKS, 1, 1);
@@ -232,7 +218,8 @@ public abstract class Connection implements NBTSerializable {
         return this.fastener.reconnect(this.world, this, destination);
     }
 
-    public boolean interact(final Player player, final Vec3 hit, final FeatureType featureType, final int feature, final ItemStack heldStack, final InteractionHand hand) {
+    public boolean interact(final Player player, final Vec3 hit, final FeatureType featureType, final int feature,
+            final ItemStack heldStack, final InteractionHand hand) {
         final Item item = heldStack.getItem();
         if (item instanceof ConnectionItem && !this.matches(heldStack)) {
             return this.replace(player, hit, heldStack);
@@ -272,8 +259,10 @@ public abstract class Connection implements NBTSerializable {
             } catch (Exception e) {
                 // NBT methods removed - need data components API
             }
-            final ConnectionType<? extends Connection> type = ((ConnectionItem) heldStack.getItem()).getConnectionType();
-            final Connection conn = this.fastener.connect(this.world, dest, type, data == null ? new CompoundTag() : data, true);
+            final ConnectionType<? extends Connection> type = ((ConnectionItem) heldStack.getItem())
+                    .getConnectionType();
+            final Connection conn = this.fastener.connect(this.world, dest, type,
+                    data == null ? new CompoundTag() : data, true);
             conn.slack = this.slack;
             conn.onConnect(player.level(), player, heldStack);
             heldStack.shrink(1);
@@ -291,17 +280,22 @@ public abstract class Connection implements NBTSerializable {
             this.slack = 0;
         }
         this.computeCatenary();
-        this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_STRETCH.get(), SoundSource.BLOCKS, 1, 0.8F + (MAX_SLACK - this.slack) * 0.4F);
+        this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_STRETCH.get(), SoundSource.BLOCKS, 1,
+                0.8F + (MAX_SLACK - this.slack) * 0.4F);
         return true;
     }
 
-    public void onConnect(final Level world, final Player user, final ItemStack heldStack) {}
+    public void onConnect(final Level world, final Player user, final ItemStack heldStack) {
+    }
 
-    protected void onRemove() {}
+    protected void onRemove() {
+    }
 
-    protected void onUpdate() {}
+    protected void onUpdate() {
+    }
 
-    protected void onCalculateCatenary(final boolean relocated) {}
+    protected void onCalculateCatenary(final boolean relocated) {
+    }
 
     public final boolean update(final Vec3 from) {
         this.prevCatenary = this.catenary;
@@ -314,12 +308,14 @@ public abstract class Connection implements NBTSerializable {
             if (pull > 0) {
                 final int stage = (int) (pull + 0.1F);
                 if (stage > this.prevStretchStage) {
-                    this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_STRETCH.get(), SoundSource.BLOCKS, 0.25F, 0.5F + stage / 8F);
+                    this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_STRETCH.get(),
+                            SoundSource.BLOCKS, 0.25F, 0.5F + stage / 8F);
                 }
                 this.prevStretchStage = stage;
             }
             if (dist > MAX_LENGTH + PULL_RANGE) {
-                this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_SNAP.get(), SoundSource.BLOCKS, 0.75F, 0.8F + this.world.random.nextFloat() * 0.3F);
+                this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_SNAP.get(), SoundSource.BLOCKS,
+                        0.75F, 0.8F + this.world.random.nextFloat() * 0.3F);
                 this.remove();
             } else if (dest.isMoving()) {
                 dest.resistSnap(from);
@@ -337,10 +333,12 @@ public abstract class Connection implements NBTSerializable {
             final Vec3 vec = point.subtract(from);
             if (vec.length() > 1e-6) {
                 final Direction facing = this.fastener.getFacing();
-                if (this.fastener instanceof FenceFastener && dest instanceof FenceFastener && vec.horizontalDistance() < 1e-2) {
+                if (this.fastener instanceof FenceFastener && dest instanceof FenceFastener
+                        && vec.horizontalDistance() < 1e-2) {
                     this.catenary = this.verticalHelix(vec);
                 } else {
-                    this.catenary = Catenary.from(vec, facing.getAxis() == Direction.Axis.Y ? 0.0F : (float) Math.toRadians(90.0F + facing.toYRot()), SLACK_CURVE, this.slack);
+                    this.catenary = Catenary.from(vec, facing.getAxis() == Direction.Axis.Y ? 0.0F
+                            : (float) Math.toRadians(90.0F + facing.toYRot()), SLACK_CURVE, this.slack);
                 }
                 this.onCalculateCatenary(!this.destination.equals(this.prevDestination));
                 final CollidableList.Builder bob = new CollidableList.Builder();
@@ -373,9 +371,9 @@ public abstract class Connection implements NBTSerializable {
             z[i] = radius * Mth.sin(t * rad);
             if (i > 0) {
                 helixLength += Mth.sqrt(
-                    Mth.square(x[i] - x[i - 1]) +
-                    Mth.square(y[i] - y[i - 1]) +
-                    Mth.square(z[i] - z[i - 1]));
+                        Mth.square(x[i] - x[i - 1]) +
+                                Mth.square(y[i] - y[i - 1]) +
+                                Mth.square(z[i] - z[i - 1]));
             }
         }
         return new Curve3d(steps, x, y, z, helixLength);
@@ -401,11 +399,11 @@ public abstract class Connection implements NBTSerializable {
             final float y1 = it.getY(1.0F);
             final float z1 = it.getZ(1.0F);
             bounds[index++] = new AABB(
-                origin.x + x0, origin.y + y0, origin.z + z0,
-                origin.x + x1, origin.y + y1, origin.z + z1
-            ).inflate(r);
+                    origin.x + x0, origin.y + y0, origin.z + z0,
+                    origin.x + x1, origin.y + y1, origin.z + z1).inflate(r);
         }
-        collision.add(FeatureCollisionTree.build(CORD_FEATURE, i -> Segment.INSTANCE, i -> bounds[i], 1, bounds.length - 2));
+        collision.add(
+                FeatureCollisionTree.build(CORD_FEATURE, i -> Segment.INSTANCE, i -> bounds[i], 1, bounds.length - 2));
     }
 
     public void deserialize(final Fastener<?> destination, final CompoundTag compound, final boolean drop) {
@@ -420,7 +418,8 @@ public abstract class Connection implements NBTSerializable {
         compound.put("destination", FastenerType.serialize(this.destination));
         compound.put("logic", this.serializeLogic());
         compound.putFloat("slack", this.slack);
-        if (!this.drop) compound.putBoolean("drop", false);
+        if (!this.drop)
+            compound.putBoolean("drop", false);
         return compound;
     }
 
@@ -437,7 +436,8 @@ public abstract class Connection implements NBTSerializable {
         return new CompoundTag();
     }
 
-    public void deserializeLogic(final CompoundTag compound) {}
+    public void deserializeLogic(final CompoundTag compound) {
+    }
 
     static class Segment implements Feature {
         static final Segment INSTANCE = new Segment();
