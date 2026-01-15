@@ -48,7 +48,7 @@ dependencies {
 // The mixin configuration is in fairylights.mixins.json
 
 jar {
-    archiveClassifier.set('1.21.1')
+    archiveClassifier.set("neoforge-${minecraft_version}")
     exclude '.cache'
     manifest {
         attributes([

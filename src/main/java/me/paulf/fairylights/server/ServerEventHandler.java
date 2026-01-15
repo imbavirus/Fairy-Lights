@@ -12,6 +12,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import me.paulf.fairylights.server.connection.HangingLightsConnection;
+import me.paulf.fairylights.server.jingle.Jingle;
+import me.paulf.fairylights.server.jingle.JingleLibrary;
+import me.paulf.fairylights.server.jingle.JingleManager;
+import net.minecraft.world.level.Level;
 import java.util.Optional;
 
 @EventBusSubscriber(modid = FairyLights.ID)
@@ -41,5 +46,13 @@ public class ServerEventHandler {
     private static boolean isHoldingConnection(final ItemStack stack, final Connection connection) {
         return stack.getItem() instanceof ConnectionItem &&
                 ((ConnectionItem) stack.getItem()).getConnectionType() == connection.getType();
+    }
+
+    public static void tryJingle(final Level world, final HangingLightsConnection connection) {
+        final JingleLibrary library = JingleManager.INSTANCE.get(JingleLibrary.CHRISTMAS);
+        final Jingle jingle = library.getRandom(world.random, 100);
+        if (jingle != null) {
+            connection.play(jingle, 0);
+        }
     }
 }
