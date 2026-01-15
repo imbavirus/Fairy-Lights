@@ -1,6 +1,5 @@
 package me.paulf.fairylights.server.connection;
 
-import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.client.gui.EditLetteredConnectionScreen;
 import me.paulf.fairylights.server.collision.Intersection;
 import me.paulf.fairylights.server.fastener.Fastener;
@@ -28,7 +27,11 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Function;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public final class LetterBuntingConnection extends Connection implements Lettered {
+    private static final Logger LOGGER = LogManager.getLogger();
     public static final SymbolSet SYMBOLS = new SymbolSet.Builder(7, "0-9, A-Z, &, !, ?")
             .add(" 0123456789ABCDEFGHJKLMNOPQRSTUVWXYZ&?", 6)
             .add("I", 4)
@@ -176,6 +179,7 @@ public final class LetterBuntingConnection extends Connection implements Lettere
     @Override
     public void setText(final StyledString text) {
         this.text = text;
+        LOGGER.info("LetterBuntingConnection: setText called with '{}'", text);
         this.computeCatenary();
     }
 
@@ -205,6 +209,8 @@ public final class LetterBuntingConnection extends Connection implements Lettere
     public CompoundTag serializeLogic() {
         final CompoundTag compound = super.serializeLogic();
         compound.put("text", StyledString.serialize(this.text));
+        LOGGER.info("LetterBuntingConnection: serializeLogic text='{}' tag={}",
+                this.text, compound);
         return compound;
     }
 

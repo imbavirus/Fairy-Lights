@@ -35,6 +35,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import java.time.Month;
 import java.util.function.Supplier;
 
+import me.paulf.fairylights.server.ServerEventHandler;
+
 @Mod(FairyLights.ID)
 public final class FairyLights {
         public static final String ID = "fairylights";
@@ -122,6 +124,8 @@ public final class FairyLights {
                                         EditLetteredConnectionMessage::handle);
                 });
 
+                // Register ServerEventHandler
+                net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(ServerEventHandler.class);
         }
 
 }

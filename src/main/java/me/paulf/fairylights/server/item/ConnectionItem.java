@@ -130,16 +130,19 @@ public abstract class ConnectionItem extends Item {
                 final boolean hasEmptyPattern = !logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST) ||
                         (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST)
                                 && logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty());
-                // StyledString serializes to {value:"", styling:[]} so checks for isEmpty()
-                // fail
-                // Check if 'text' compound is missing OR if it exists, check if 'value' string
-                // is empty
-                final boolean hasEmptyText = !logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) ||
-                        (logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND) &&
-                                (logic.getCompound("text").isEmpty() ||
-                                        (logic.getCompound("text").contains("value", net.minecraft.nbt.Tag.TAG_STRING)
-                                                &&
-                                                logic.getCompound("text").getString("value").isEmpty())));
+                // Relaxed text check: StyledString might verify as empty if value is empty
+                // string
+                boolean hasEmptyText = true;
+                if (logic.contains("text", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                    final CompoundTag textTag = logic.getCompound("text");
+                    // If it has "value", check if that is empty string
+                    if (textTag.contains("value", net.minecraft.nbt.Tag.TAG_STRING)) {
+                        hasEmptyText = textTag.getString("value").isEmpty();
+                    }
+                    // If it doesn't have "value", it might be invalid/empty structure, so assume
+                    // empty/default
+                }
+
                 if (hasEmptyPattern && hasEmptyText) {
                     // Connection has only default values, empty stack should match
                     return false;
