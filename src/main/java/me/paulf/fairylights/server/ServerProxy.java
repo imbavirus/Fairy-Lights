@@ -23,7 +23,7 @@ public class ServerProxy {
         NeoForge.EVENT_BUS.<AddReloadListenerEvent>addListener(e -> {
             e.addListener(JingleManager.INSTANCE);
         });
-        NeoForge.EVENT_BUS.register(new ServerEventHandler());
+
         modBus.addListener(this::setup);
     }
 
