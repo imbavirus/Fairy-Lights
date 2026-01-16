@@ -3,7 +3,7 @@ package me.paulf.fairylights.server;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
 import me.paulf.fairylights.server.connection.Connection;
-import me.paulf.fairylights.server.connection.Connection;
+
 import me.paulf.fairylights.server.item.ConnectionItem;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -48,11 +48,15 @@ public class ServerEventHandler {
                 ((ConnectionItem) stack.getItem()).getConnectionType() == connection.getType();
     }
 
-    public static void tryJingle(final Level world, final HangingLightsConnection connection) {
+    public static void tryJingle(final Level world, final Connection connection) {
+        if (!(connection instanceof HangingLightsConnection)) {
+            return;
+        }
+        final HangingLightsConnection hangingLightsConnection = (HangingLightsConnection) connection;
         final JingleLibrary library = JingleManager.INSTANCE.get(JingleLibrary.CHRISTMAS);
         final Jingle jingle = library.getRandom(world.random, 100);
         if (jingle != null) {
-            connection.play(jingle, 0);
+            hangingLightsConnection.play(jingle, 0);
         }
     }
 }

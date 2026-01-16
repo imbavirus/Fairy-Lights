@@ -4,7 +4,7 @@ import me.paulf.fairylights.server.connection.HangingLightsConnection;
 import me.paulf.fairylights.server.jingle.Jingle;
 import me.paulf.fairylights.server.net.ClientMessageContext;
 import me.paulf.fairylights.server.net.ConnectionMessage;
-import net.minecraft.client.Minecraft;
+import me.paulf.fairylights.server.net.ConnectionMessage;
 import net.minecraft.network.FriendlyByteBuf;
 
 import java.util.function.BiConsumer;
@@ -22,6 +22,10 @@ public final class JingleMessage extends ConnectionMessage {
         this.jingle = jingle;
     }
 
+    public int getLightOffset() {
+        return this.lightOffset;
+    }
+
     @Override
     public void encode(final FriendlyByteBuf buf) {
         super.encode(buf);
@@ -34,16 +38,5 @@ public final class JingleMessage extends ConnectionMessage {
         super.decode(buf);
         this.lightOffset = buf.readVarInt();
         this.jingle = Jingle.read(buf);
-    }
-
-    public static class Handler implements BiConsumer<JingleMessage, ClientMessageContext> {
-        @Override
-        public void accept(final JingleMessage message, final ClientMessageContext context) {
-            final Jingle jingle = message.jingle;
-            if (jingle != null) {
-                ConnectionMessage.<HangingLightsConnection>getConnection(message, c -> c instanceof HangingLightsConnection, Minecraft.getInstance().level).ifPresent(connection ->
-                    connection.play(jingle, message.lightOffset));
-            }
-        }
     }
 }

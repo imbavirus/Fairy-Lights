@@ -26,3 +26,10 @@ build_log_2.txt
 build_log.txt
 .env
 build_error.log
+
+# docker
+Dockerfile
+
+# temporary files
+*.log
+*.txt

@@ -4,6 +4,7 @@ import me.paulf.fairylights.server.ServerEventHandler;
 import me.paulf.fairylights.server.block.entity.FLBlockEntities;
 import me.paulf.fairylights.server.block.entity.FastenerBlockEntity;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
+import me.paulf.fairylights.server.connection.Connection;
 import me.paulf.fairylights.server.connection.HangingLightsConnection;
 import me.paulf.fairylights.server.fastener.accessor.BlockFastenerAccessor;
 import me.paulf.fairylights.server.jingle.JingleLibrary;
@@ -211,7 +212,7 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
             .filter(HangingLightsConnection.class::isInstance)
             .map(HangingLightsConnection.class::cast)
             .filter(conn -> conn.canCurrentlyPlayAJingle() && conn.isDestination(new BlockFastenerAccessor(fastener.getPos())) && world.getBlockState(fastener.getPos()).getValue(TRIGGERED))
-            .findFirst().ifPresent(conn -> ServerEventHandler.tryJingle(world, conn))
+            .findFirst().ifPresent(conn -> ServerEventHandler.tryJingle(world, (Connection) conn))
         );
     }
 

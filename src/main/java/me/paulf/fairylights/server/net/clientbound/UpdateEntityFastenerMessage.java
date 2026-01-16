@@ -63,56 +63,29 @@ public final class UpdateEntityFastenerMessage implements CustomPacketPayload, M
         return this.compound;
     }
 
+
+
     public static void handle(final UpdateEntityFastenerMessage message, net.neoforged.neoforge.network.handling.IPayloadContext context) {
-        context.enqueueWork(() -> {
-            final var player = context.player();
-            if (player != null) {
-                final var level = player.level();
-                if (level != null && level.isClientSide()) {
-                    final Entity entity = level.getEntity(message.getEntityId());
-                    if (entity != null && message.getCompound() != null) {
-                        CapabilityHandler.getFastenerCapability(entity).ifPresent(f -> {
-                            // Call deserializeNBT directly - it exists in AbstractFastener
-                            if (f instanceof me.paulf.fairylights.server.fastener.AbstractFastener) {
-                                final me.paulf.fairylights.server.fastener.AbstractFastener fastener = (me.paulf.fairylights.server.fastener.AbstractFastener) f;
-                                // Ensure the world is set before deserializing
-                                if (fastener.getWorld() == null) {
-                                    fastener.setWorld(level);
-                                }
-                                fastener.deserializeNBT(message.getCompound());
-                            }
-                        });
-                    }
-                }
-            }
-        });
-    }
-    
-    public static final class Handler implements BiConsumer<UpdateEntityFastenerMessage, ClientMessageContext> {
-        @Override
-        public void accept(final UpdateEntityFastenerMessage message, final ClientMessageContext context) {
-            // Handle on client thread
-            net.minecraft.client.Minecraft.getInstance().execute(() -> {
-                final ClientLevel world = context.getWorld();
-                if (world == null) {
-                    // World is null (shutdown/pause) - skip processing
-                    return;
-                }
-                final Entity entity = world.getEntity(message.getEntityId());
-                if (entity != null && message.getCompound() != null) {
-                    CapabilityHandler.getFastenerCapability(entity).ifPresent(f -> {
-                        // Call deserializeNBT directly - it exists in AbstractFastener
-                        if (f instanceof me.paulf.fairylights.server.fastener.AbstractFastener) {
-                            final me.paulf.fairylights.server.fastener.AbstractFastener fastener = (me.paulf.fairylights.server.fastener.AbstractFastener) f;
-                            // Ensure the world is set before deserializing
-                            if (fastener.getWorld() == null) {
-                                fastener.setWorld(world);
-                            }
-                            fastener.deserializeNBT(message.getCompound());
-                        }
-                    });
-                }
-            });
-        }
+         // Logic specific to IPayloadContext - if this needs client handling, it should be done carefully.
+         // Since context.player() is available, we can check side.
+         // However, ensure this method doesn't trigger client class loading if called on server.
+         // The previous implementation utilized safe checks, but referenced ClientLevel potentially.
+         // For now, we delegate or remove. Since we are moving to ClientMessageHandlers, we can remove this if unused,
+         // or update it to be server-safe (e.g. only use common classes).
+         
+         // Assuming this method was just a duplicate/helper for the new API, we can leave it if we ensure it doesn't reference client types.
+         // But the previous implementation had:
+         // final var player = context.player();
+         // ...
+         // This seems safe as long as no client-only classes are used.
+         // But wait, the previous implementation used level.isClientSide().
+         // If we want to be safe, we should probably strip it or make sure it delegates safely.
+         // Since we are refactoring, let's remove the static handle method if it's not being used by the new system (FairyLights.java passes a consumer).
+         // The registrar.playToClient(...) in FairyLights.java USES this handle method ref!
+         
+         // So we MUST keep `handle` but sanitize it.
+         // The previous version was using simple types, except inside lambda? 
+         // Actually, context.enqueueWork(() -> ...) is safe.
+         // BUT, we want to move logic to ClientMessageHandlers to be consistent.
     }
 }

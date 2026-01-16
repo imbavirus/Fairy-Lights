@@ -17,6 +17,8 @@ import java.util.UUID;
 public interface Fastener<F extends FastenerAccessor> {
     CompoundTag serializeNBT();
 
+    void deserializeNBT(CompoundTag nbt);
+
     Optional<Connection> get(final UUID id);
 
     List<Connection> getOwnConnections();
