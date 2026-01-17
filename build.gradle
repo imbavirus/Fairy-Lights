@@ -32,9 +32,9 @@ dependencies {
     // annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     // JEI - comment out if version not available
-    // compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
-    // runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 }
 
 // Configure Mixin annotation processor - disabled due to ASM conflict
