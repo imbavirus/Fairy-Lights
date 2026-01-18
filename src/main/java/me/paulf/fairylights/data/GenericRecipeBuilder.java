@@ -54,7 +54,7 @@ public class GenericRecipeBuilder {
         return new GenericRecipeBuilder(serializer);
     }
 
-    static class Result implements net.minecraft.world.item.crafting.Recipe<net.minecraft.world.item.crafting.CraftingInput> {
+    static class Result implements net.minecraft.world.item.crafting.CraftingRecipe {
         final RecipeSerializer<?> serializer;
         final ResourceLocation id;
 
@@ -66,6 +66,11 @@ public class GenericRecipeBuilder {
         @Override
         public RecipeSerializer<?> getSerializer() {
             return this.serializer;
+        }
+
+        @Override
+        public net.minecraft.world.item.crafting.CraftingBookCategory category() {
+            return net.minecraft.world.item.crafting.CraftingBookCategory.MISC;
         }
 
         // Recipe interface methods

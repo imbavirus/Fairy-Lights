@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped", "category": "misc",
+  "key": {
+    "G": {
+      "tag": "forge:glass_panes/colorless"
+    },
+    "I": {
+      "tag": "forge:ingots/iron"
+    },
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "T": {
+      "item": "minecraft:torch"
+    }
+  },
+  "pattern": [
+    " I ",
+    "STS",
+    "IGI"
+  ],
+  "result": {
+    "count": 4,
+    "item": "fairylights:oil_lantern"
+  }
+}

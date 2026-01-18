@@ -48,6 +48,10 @@ public final class FLCraftingRecipes {
     private FLCraftingRecipes() {
     }
 
+    static {
+        com.mojang.logging.LogUtils.getLogger().info("FLCraftingRecipes class loaded! Registering serializers...");
+    }
+
     public static final DeferredRegister<RecipeSerializer<?>> REG = DeferredRegister
             .create(Registries.RECIPE_SERIALIZER, FairyLights.ID);
 

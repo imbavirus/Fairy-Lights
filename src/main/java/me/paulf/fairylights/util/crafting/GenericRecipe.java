@@ -62,6 +62,7 @@ public final class GenericRecipe extends CustomRecipe {
         // CustomRecipe constructor signature changed in 1.21.1 - may need different
         // parameters
         super(CraftingBookCategory.MISC);
+        com.mojang.logging.LogUtils.getLogger().info("Constructing GenericRecipe: " + id);
         Preconditions.checkArgument(width > 0, "width must be greater than zero");
         Preconditions.checkArgument(height > 0, "height must be greater than zero");
         this.serializer = Objects.requireNonNull(serializer, "serializer");

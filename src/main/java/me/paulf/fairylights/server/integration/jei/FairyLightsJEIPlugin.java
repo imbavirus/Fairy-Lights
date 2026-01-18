@@ -16,7 +16,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @JeiPlugin
@@ -35,16 +37,29 @@ public final class FairyLightsJEIPlugin implements IModPlugin {
     }
 
     @Override
-    public void registerRecipes(final IRecipeRegistration registration) {
+    public void registerRecipes(IRecipeRegistration registration) {
+        LOGGER.info("FairyLightsJEIPlugin: Probing for test_recipe.json...");
+        try (java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("data/fairylights/recipes/test_recipe.json")) {
+            if (is != null) {
+                LOGGER.info("MANUAL CHECK: Found test_recipe.json in ClassLoader! (Bytes available: " + is.available() + ")");
+            } else {
+                LOGGER.error("MANUAL CHECK: Could NOT find test_recipe.json in ClassLoader!");
+            }
+        } catch (Exception e) {
+            LOGGER.error("MANUAL CHECK: Exception finding file", e);
+        }
+
         final ClientLevel world = Minecraft.getInstance().level;
         if (world == null) return;
         final RecipeManager recipeManager = world.getRecipeManager();
-        List<net.minecraft.world.item.crafting.RecipeHolder<?>> allRecipes = recipeManager.getRecipes().stream().collect(Collectors.toList());
+        List<net.minecraft.world.item.crafting.RecipeHolder<?>> allRecipes = new ArrayList<>(recipeManager.getRecipes());
         LOGGER.info("FairyLightsJEIPlugin: RecipeManager contains " + allRecipes.size() + " total recipes.");
         
-        for (int i = 0; i < Math.min(20, allRecipes.size()); i++) {
-             LOGGER.info("Sample Recipe " + i + ": " + allRecipes.get(i).id());
-        }
+        Map<String, Long> recipesByNamespace = allRecipes.stream()
+                .collect(Collectors.groupingBy(h -> h.id().getNamespace(), Collectors.counting()));
+        
+        LOGGER.info("FairyLightsJEIPlugin: Recipe counts by namespace:");
+        recipesByNamespace.forEach((ns, count) -> LOGGER.info(" - " + ns + ": " + count));
 
         List<net.minecraft.world.item.crafting.RecipeHolder<?>> fairylightsRecipes = allRecipes.stream()
                 .filter(holder -> holder.id().getNamespace().equals("fairylights"))

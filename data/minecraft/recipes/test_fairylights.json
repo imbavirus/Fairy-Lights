@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:garbage",
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:dirt"
+    }
+  },
+  "result": {
+    "id": "minecraft:diamond",
+    "count": 1
+  }
+}
