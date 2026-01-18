@@ -1,17 +1,18 @@
 {
-  "type": "minecraft:crafting_shaped", "category": "misc",
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "key": {
     "-": {
-      "tag": "forge:string"
+      "tag": "c:string"
     },
     "B": {
       "item": "minecraft:ink_sac"
     },
     "F": {
-      "tag": "forge:feathers"
+      "tag": "c:feathers"
     },
     "I": {
-      "tag": "forge:ingots/iron"
+      "tag": "c:ingots/iron"
     },
     "P": {
       "item": "minecraft:paper"
@@ -22,7 +23,6 @@
     "PBF"
   ],
   "result": {
-    "item": "fairylights:letter_bunting",
-    "nbt": "{text:{styling:[I;],value:\"\"}}"
+    "id": "fairylights:letter_bunting"
   }
 }

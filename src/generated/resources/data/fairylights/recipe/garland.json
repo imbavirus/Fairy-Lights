@@ -5,7 +5,7 @@
       "item": "minecraft:vine"
     },
     "I": {
-      "tag": "forge:ingots/iron"
+      "tag": "c:ingots/iron"
     }
   },
   "pattern": [
@@ -13,6 +13,7 @@
   ],
   "result": {
     "count": 2,
-    "item": "fairylights:garland"
+    "id": "fairylights:garland"
   }
 }
+

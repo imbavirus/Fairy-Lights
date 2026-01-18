@@ -224,6 +224,8 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
                     this.ingredientMatrix[i] = ingredient;
                     allInputs.add(ingInputs);
                     isEmpty = false;
+                } else {
+                     LOGGER.warn("GenericRecipeWrapper: Ingredient at " + i + " returned empty inputs! " + ingredient);
                 }
             }
             if (isEmpty) {
@@ -257,6 +259,7 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
         final ImmutableList.Builder<ItemStack> outputs = ImmutableList.builder();
         this.forOutputMatches((v, output) -> outputs.add(output));
         this.outputs = outputs.build();
+        LOGGER.info("GenericRecipeWrapper: Generated " + this.outputs.size() + " outputs for " + recipeHolder.id());
         
         if (builder != null && craftingGridHelper != null && focuses != null) {
              LOGGER.info("GenericRecipeWrapper: interacting with builder");

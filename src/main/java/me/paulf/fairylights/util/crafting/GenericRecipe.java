@@ -32,6 +32,7 @@ import java.util.function.IntUnaryOperator;
 import java.util.function.Supplier;
 
 public final class GenericRecipe extends CustomRecipe {
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     public static final EmptyRegularIngredient EMPTY = new EmptyRegularIngredient();
 
     private final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer;
@@ -162,6 +163,7 @@ public final class GenericRecipe extends CustomRecipe {
     // matches() signature changed in 1.21.1 - now uses CraftingInput
     @Override
     public boolean matches(final net.minecraft.world.item.crafting.CraftingInput input, final Level world) {
+        LOGGER.debug("GenericRecipe.matches called for " + this.output);
         if (!this.canCraftInDimensions(input.width(), input.height())) {
             return false;
         }
@@ -173,6 +175,7 @@ public final class GenericRecipe extends CustomRecipe {
             for (final IntUnaryOperator func : this.xFunctions) {
                 final ItemStack result = this.getResult(input, x, y, func);
                 if (!result.isEmpty()) {
+                    LOGGER.info("GenericRecipe.matches SUCCESS for " + result);
                     this.result = result;
                     return true;
                 }
@@ -210,7 +213,7 @@ public final class GenericRecipe extends CustomRecipe {
                 if (index == this.outputIngredient) {
                     final CompoundTag inputTag = new CompoundTag();
                     if (stack.has(me.paulf.fairylights.server.item.FLDataComponents.COLOR)) {
-                        inputTag.putInt("color", stack.get(me.paulf.fairylights.server.item.FLDataComponents.COLOR));
+                        me.paulf.fairylights.server.item.DyeableItem.setColor(inputTag, me.paulf.fairylights.server.item.DyeableItem.getColor(stack));
                     }
                     if (stack.has(me.paulf.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC)) {
                         inputTag.merge(stack.get(me.paulf.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC));
@@ -224,14 +227,12 @@ public final class GenericRecipe extends CustomRecipe {
                                 stack.get(me.paulf.fairylights.server.item.FLDataComponents.TWINKLE));
                     }
 
-                    if (inputTag != null) {
-                        if (tag.isEmpty()) {
-                            tag.merge(inputTag);
-                        } else {
-                            final CompoundTag temp = inputTag.copy();
-                            temp.merge(tag);
-                            tag.merge(temp);
-                        }
+                    if (tag.isEmpty()) {
+                        tag.merge(inputTag);
+                    } else {
+                        final CompoundTag temp = inputTag.copy();
+                        temp.merge(tag);
+                        tag.merge(temp);
                     }
                     item = stack.getItem();
                 }
@@ -257,7 +258,9 @@ public final class GenericRecipe extends CustomRecipe {
         }
         final Set<GenericIngredient<?, ?>> absentCalled = new HashSet<>();
         for (final MatchResultRegular result : match) {
-            result.notifyAbsence(presentCalled, absentCalled, tag);
+            if (result != null) {
+                result.notifyAbsence(presentCalled, absentCalled, tag);
+            }
         }
         for (final MatchResultAuxiliary result : auxResults) {
             result.notifyAbsence(presentCalled, absentCalled, tag);
@@ -270,7 +273,7 @@ public final class GenericRecipe extends CustomRecipe {
         final ItemStack output = this.output.isEmpty() ? new ItemStack(item) : this.output.copy();
         if (!tag.isEmpty()) {
             if (tag.contains("color", net.minecraft.nbt.Tag.TAG_INT)) {
-                output.set(me.paulf.fairylights.server.item.FLDataComponents.COLOR, tag.getInt("color"));
+                me.paulf.fairylights.server.item.DyeableItem.setColor(output, tag.getInt("color"));
             }
             if (tag.contains("twinkle")) {
                 output.set(me.paulf.fairylights.server.item.FLDataComponents.TWINKLE, tag.getBoolean("twinkle"));

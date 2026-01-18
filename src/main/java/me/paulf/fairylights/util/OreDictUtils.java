@@ -50,8 +50,13 @@ public final class OreDictUtils {
     private static ImmutableMultimap<DyeColor, ItemStack> getDyeItemStacks() {
         final ImmutableMultimap.Builder<DyeColor, ItemStack> bob = ImmutableMultimap.builder();
         for (final Dye dye : Dye.values()) {
+            boolean found = false;
             for (final Holder<Item> holder : BuiltInRegistries.ITEM.getTagOrEmpty(dye.getName())) {
                 bob.put(dye.getColor(), new ItemStack(holder));
+                found = true;
+            }
+            if (!found) {
+                bob.put(dye.getColor(), new ItemStack(DyeItem.byColor(dye.getColor())));
             }
         }
         return bob.build();

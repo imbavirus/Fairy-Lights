@@ -13,6 +13,7 @@ import mezz.jei.api.registration.IVanillaCategoryExtensionRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 
@@ -38,21 +39,15 @@ public final class FairyLightsJEIPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        LOGGER.info("FairyLightsJEIPlugin: Probing for test_recipe.json...");
-        try (java.io.InputStream is = getClass().getClassLoader().getResourceAsStream("data/fairylights/recipes/test_recipe.json")) {
-            if (is != null) {
-                LOGGER.info("MANUAL CHECK: Found test_recipe.json in ClassLoader! (Bytes available: " + is.available() + ")");
-            } else {
-                LOGGER.error("MANUAL CHECK: Could NOT find test_recipe.json in ClassLoader!");
-            }
-        } catch (Exception e) {
-            LOGGER.error("MANUAL CHECK: Exception finding file", e);
+        LOGGER.info("FairyLightsJEIPlugin: Registering recipes");
+        final ClientLevel world = Minecraft.getInstance().level;
+        if (world == null) {
+            LOGGER.error("FairyLightsJEIPlugin: ClientLevel is null during recipe registration!");
+            return;
         }
 
-        final ClientLevel world = Minecraft.getInstance().level;
-        if (world == null) return;
         final RecipeManager recipeManager = world.getRecipeManager();
-        List<net.minecraft.world.item.crafting.RecipeHolder<?>> allRecipes = new ArrayList<>(recipeManager.getRecipes());
+        List<RecipeHolder<?>> allRecipes = new ArrayList<>(recipeManager.getRecipes());
         LOGGER.info("FairyLightsJEIPlugin: RecipeManager contains " + allRecipes.size() + " total recipes.");
         
         Map<String, Long> recipesByNamespace = allRecipes.stream()
@@ -61,33 +56,31 @@ public final class FairyLightsJEIPlugin implements IModPlugin {
         LOGGER.info("FairyLightsJEIPlugin: Recipe counts by namespace:");
         recipesByNamespace.forEach((ns, count) -> LOGGER.info(" - " + ns + ": " + count));
 
-        List<net.minecraft.world.item.crafting.RecipeHolder<?>> fairylightsRecipes = allRecipes.stream()
-                .filter(holder -> holder.id().getNamespace().equals("fairylights"))
-                .collect(Collectors.toList());
-        
-        LOGGER.info("FairyLightsJEIPlugin: Found " + fairylightsRecipes.size() + " recipes with namespace 'fairylights'.");
-
-        List<net.minecraft.world.item.crafting.RecipeHolder<net.minecraft.world.item.crafting.CraftingRecipe>> recipes = fairylightsRecipes.stream()
+        List<RecipeHolder<CraftingRecipe>> fairylightsRecipes = allRecipes.stream()
+                .filter(holder -> holder.id().getNamespace().equals(FairyLights.ID))
                 .filter(holder -> holder.value() instanceof GenericRecipe)
-                .map(holder -> (net.minecraft.world.item.crafting.RecipeHolder<net.minecraft.world.item.crafting.CraftingRecipe>) holder)
+                .map(holder -> (RecipeHolder<CraftingRecipe>) holder)
                 .collect(Collectors.toList());
         
-        LOGGER.info("FairyLightsJEIPlugin: Registering " + recipes.size() + " GenericRecipes.");
-        
-        registration.addRecipes(
-            RecipeTypes.CRAFTING,
-            recipes);
+        LOGGER.info("FairyLightsJEIPlugin: Found " + fairylightsRecipes.size() + " GenericRecipes to register.");
+        fairylightsRecipes.forEach(holder -> LOGGER.info(" - Registering GenericRecipe: " + holder.id()));
+
+        registration.addRecipes(RecipeTypes.CRAFTING, fairylightsRecipes);
     }
 
     @Override
     public void registerItemSubtypes(final ISubtypeRegistration registry) {
+        LOGGER.info("FairyLightsJEIPlugin: Registering item subtypes");
+        // Connection items with color variants
+        registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.HANGING_LIGHTS.get(), new ColorSubtypeInterpreter());
+        registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.PENNANT_BUNTING.get(), new ColorSubtypeInterpreter());
         registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.TINSEL.get(), new ColorSubtypeInterpreter());
+        // Pennant items
         registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.TRIANGLE_PENNANT.get(), new ColorSubtypeInterpreter());
         registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.SPEARHEAD_PENNANT.get(), new ColorSubtypeInterpreter());
         registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.SWALLOWTAIL_PENNANT.get(), new ColorSubtypeInterpreter());
         registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.SQUARE_PENNANT.get(), new ColorSubtypeInterpreter());
+        // All light items
         FLItems.lights().forEach(i -> registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, i, new ColorSubtypeInterpreter()));
     }
 }
-
-

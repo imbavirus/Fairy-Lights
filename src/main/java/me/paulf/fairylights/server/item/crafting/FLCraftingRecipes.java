@@ -281,11 +281,21 @@ public final class FLCraftingRecipes {
             .create(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "dyeable_lights"));
 
     public static final RegularIngredient DYE_SUBTYPE_INGREDIENT = new BasicRegularIngredient(
-            LazyTagIngredient.of(Tags.Items.DYES)) {
+            Ingredient.of(OreDictUtils.getAllDyes().stream())) {
         @Override
         public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
             return DyeableItem.getDyeColor(output).map(dye -> ImmutableList.of(OreDictUtils.getDyes(dye)))
                     .orElse(ImmutableList.of());
+        }
+
+        @Override
+        public ImmutableList<ItemStack> getInputs() {
+            return OreDictUtils.getAllDyes();
+        }
+
+        @Override
+        public me.paulf.fairylights.util.crafting.GenericRecipe.MatchResultRegular matches(final ItemStack input) {
+            return new me.paulf.fairylights.util.crafting.GenericRecipe.MatchResultRegular(this, input, OreDictUtils.isDye(input), ImmutableList.of());
         }
 
         @Override
@@ -295,15 +305,10 @@ public final class FLCraftingRecipes {
 
         @Override
         public void matched(final ItemStack ingredient, final CompoundTag nbt) {
-            // Updated to use components. nbt argument is legacy but expected by API
-            // Only way is to put color into nbt and hope GenericRecipe applies it or update
-            // ingredient logic
-            // Since we don't control GenericRecipe here easily, we assume it's applying
-            // nbt.
-            // BUT GenericRecipe is fairylights code? Yes it is.
-            // We should update the methods calling matched too.
+            nbt.putInt("color", OreDictUtils.getDyeColor(ingredient).getFireworkColor());
         }
     };
+
 
     private static GenericRecipe createDyeColor(final ResourceLocation name,
             CraftingBookCategory craftingBookCategory) {
@@ -311,7 +316,7 @@ public final class FLCraftingRecipes {
                 .withShape("I")
                 .withIngredient('I', DYEABLE).withOutput('I')
                 .withAuxiliaryIngredient(
-                        new BasicAuxiliaryIngredient<Blender>(LazyTagIngredient.of(Tags.Items.DYES), true, 8) {
+                        new BasicAuxiliaryIngredient<Blender>(Ingredient.of(OreDictUtils.getAllDyes().stream()), true, 8) {
                             @Override
                             public Blender accumulator() {
                                 return new Blender();
@@ -379,7 +384,7 @@ public final class FLCraftingRecipes {
     private static GenericRecipe createHangingLights(ResourceLocation name, CraftingBookCategory craftingBookCategory) {
         return new GenericRecipeBuilder(name, HANGING_LIGHTS, FLItems.HANGING_LIGHTS.get())
                 .withShape("I-I")
-                .withIngredient('I', Tags.Items.INGOTS_IRON)
+                .withIngredient('I', Items.IRON_INGOT)
                 .withIngredient('-', Items.STRING)
                 .withAuxiliaryIngredient(new LightIngredient(true))
                 .withAuxiliaryIngredient(
@@ -483,7 +488,7 @@ public final class FLCraftingRecipes {
         return new GenericRecipeBuilder(name, TINSEL_GARLAND, FLItems.TINSEL.get())
                 .withShape(" P ", "I-I", " D ")
                 .withIngredient('P', Items.PAPER)
-                .withIngredient('I', Tags.Items.INGOTS_IRON)
+                .withIngredient('I', Items.IRON_INGOT)
                 .withIngredient('-', Items.STRING)
                 .withIngredient('D', DYE_SUBTYPE_INGREDIENT)
                 .build();
@@ -493,7 +498,7 @@ public final class FLCraftingRecipes {
             CraftingBookCategory craftingBookCategory) {
         return new GenericRecipeBuilder(name, PENNANT_BUNTING, FLItems.PENNANT_BUNTING.get())
                 .withShape("I-I")
-                .withIngredient('I', Tags.Items.INGOTS_IRON)
+                .withIngredient('I', Items.IRON_INGOT)
                 .withIngredient('-', Items.STRING)
                 .withAuxiliaryIngredient(new PennantIngredient())
                 .build();
@@ -581,7 +586,7 @@ public final class FLCraftingRecipes {
     // Helper methods for Lights (Fairy, Paper, etc.)
     private static GenericRecipe createFairyLight(final ResourceLocation name, CraftingBookCategory category) {
         return createLight(name, FAIRY_LIGHT, FLItems.FAIRY_LIGHT,
-                b -> b.withShape(" I ", "IDI", " G ").withIngredient('G', Tags.Items.GLASS_PANES_COLORLESS));
+                b -> b.withShape(" I ", "IDI", " G ").withIngredient('G', Items.GLASS_PANE));
     }
 
     private static GenericRecipe createPaperLantern(final ResourceLocation name, CraftingBookCategory category) {
@@ -602,12 +607,12 @@ public final class FLCraftingRecipes {
 
     private static GenericRecipe createCandleLanternLight(final ResourceLocation name, CraftingBookCategory category) {
         return createLight(name, CANDLE_LANTERN_LIGHT, FLItems.CANDLE_LANTERN_LIGHT,
-                b -> b.withShape(" I ", "GDG", "IGI").withIngredient('G', Tags.Items.NUGGETS_GOLD));
+                b -> b.withShape(" I ", "GDG", "IGI").withIngredient('G', Items.GOLD_NUGGET));
     }
 
     private static GenericRecipe createOilLanternLight(final ResourceLocation name, CraftingBookCategory category) {
         return createLight(name, OIL_LANTERN_LIGHT, FLItems.OIL_LANTERN_LIGHT, b -> b.withShape(" I ", "SDS", "IGI")
-                .withIngredient('S', Items.STICK).withIngredient('G', Tags.Items.GLASS_PANES_COLORLESS));
+                .withIngredient('S', Items.STICK).withIngredient('G', Items.GLASS_PANE));
     }
 
     private static GenericRecipe createJackOLantern(final ResourceLocation name, CraftingBookCategory category) {
@@ -618,7 +623,7 @@ public final class FLCraftingRecipes {
 
     private static GenericRecipe createSkullLight(final ResourceLocation name, CraftingBookCategory category) {
         return createLight(name, SKULL_LIGHT, FLItems.SKULL_LIGHT,
-                b -> b.withShape(" I ", "IDI", " B ").withIngredient('B', Tags.Items.BONES));
+                b -> b.withShape(" I ", "IDI", " B ").withIngredient('B', Items.BONE));
     }
 
     private static GenericRecipe createGhostLight(final ResourceLocation name, CraftingBookCategory category) {
@@ -655,24 +660,24 @@ public final class FLCraftingRecipes {
 
     private static GenericRecipe createStarLight(final ResourceLocation name, CraftingBookCategory category) {
         return createLight(name, STAR_LIGHT, FLItems.STAR_LIGHT, b -> b.withShape(" I ", "PDP", " G ")
-                .withIngredient('P', Items.WHITE_STAINED_GLASS_PANE).withIngredient('G', Tags.Items.NUGGETS_GOLD));
+                .withIngredient('P', Items.WHITE_STAINED_GLASS_PANE).withIngredient('G', Items.GOLD_NUGGET));
     }
 
     private static GenericRecipe createIcicleLights(final ResourceLocation name, CraftingBookCategory category) {
         return createLight(name, ICICLE_LIGHTS, FLItems.ICICLE_LIGHTS, b -> b.withShape(" I ", "GDG", " B ")
-                .withIngredient('G', Tags.Items.GLASS_PANES_COLORLESS).withIngredient('B', Items.WATER_BUCKET));
+                .withIngredient('G', Items.GLASS_PANE).withIngredient('B', Items.WATER_BUCKET));
     }
 
     private static GenericRecipe createMeteorLight(final ResourceLocation name, CraftingBookCategory category) {
         return createLight(name, METEOR_LIGHT, FLItems.METEOR_LIGHT, b -> b.withShape(" I ", "GDG", "IPI")
-                .withIngredient('G', Tags.Items.DUSTS_GLOWSTONE).withIngredient('P', Items.PAPER));
+                .withIngredient('G', Items.GLOWSTONE_DUST).withIngredient('P', Items.PAPER));
     }
 
     private static GenericRecipe createLight(final ResourceLocation name,
             final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer,
             final Supplier<? extends Item> variant, final UnaryOperator<GenericRecipeBuilder> recipe) {
         return recipe.apply(new GenericRecipeBuilder(name, serializer))
-                .withIngredient('I', Tags.Items.INGOTS_IRON)
+                .withIngredient('I', Items.IRON_INGOT)
                 .withIngredient('D', FLCraftingRecipes.DYE_SUBTYPE_INGREDIENT)
                 .withOutput(variant.get(), 4)
                 .build();

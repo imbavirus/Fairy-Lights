@@ -1,11 +1,12 @@
 {
-  "type": "minecraft:crafting_shaped", "category": "misc",
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "key": {
     "G": {
-      "tag": "forge:glass_panes/colorless"
+      "item": "minecraft:glass_pane"
     },
     "I": {
-      "tag": "forge:ingots/iron"
+      "item": "minecraft:iron_ingot"
     },
     "S": {
       "item": "minecraft:stick"
@@ -21,6 +22,6 @@
   ],
   "result": {
     "count": 4,
-    "item": "fairylights:oil_lantern"
+    "id": "fairylights:oil_lantern"
   }
 }
