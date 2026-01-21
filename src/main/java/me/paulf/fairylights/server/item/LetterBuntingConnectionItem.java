@@ -25,7 +25,7 @@ public class LetterBuntingConnectionItem extends ConnectionItem {
     public void appendHoverText(final ItemStack stack, final Item.TooltipContext context, final List<Component> tooltip,
             final TooltipFlag flag) {
         final net.minecraft.nbt.CompoundTag tag = stack
-                .get(me.paulf.fairylights.server.item.FLDataComponents.STYLED_STRING);
+                .get(me.paulf.fairylights.server.item.FLDataComponents.STYLED_STRING.get());
         if (tag != null) {
             final me.paulf.fairylights.util.styledstring.StyledString s = me.paulf.fairylights.util.styledstring.StyledString
                     .deserialize(tag);

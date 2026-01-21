@@ -34,10 +34,14 @@ public final class FairyLightsItemGroup
                                                                                                       .icon(() -> new ItemStack(FLItems.HANGING_LIGHTS.get()))
                                                                                                       .title(Component.literal("FairyLights")).displayItems((config, output) -> {
 
-
           for (final DyeColor color : DyeColor.values())
           {
-              output.accept(FLCraftingRecipes.makeHangingLights(new ItemStack(FLItems.HANGING_LIGHTS.get()), color));
+              ItemStack hangingLights = FLCraftingRecipes.makeHangingLights(new ItemStack(FLItems.HANGING_LIGHTS.get()), color);
+              
+              // Ensure color is set (even if makeHangingLights set logic)
+              DyeableItem.setColor(hangingLights, color);
+
+              output.accept(hangingLights);
           }
 
           for (final DyeColor color : DyeColor.values())

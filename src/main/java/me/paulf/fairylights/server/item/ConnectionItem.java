@@ -197,12 +197,12 @@ public abstract class ConnectionItem extends Item {
     }
 
     private static CompoundTag getData(final ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(FLDataComponents.CONNECTION_LOGIC, new CompoundTag()).copy();
-        if (stack.has(FLDataComponents.COLOR) && !tag.contains("color")) {
-            tag.putInt("color", stack.get(FLDataComponents.COLOR));
+        CompoundTag tag = stack.getOrDefault(FLDataComponents.CONNECTION_LOGIC.get(), new CompoundTag()).copy();
+        if (stack.has(FLDataComponents.COLOR.get()) && !tag.contains("color")) {
+            tag.putInt("color", stack.get(FLDataComponents.COLOR.get()));
         }
-        if (stack.has(FLDataComponents.STYLED_STRING) && !tag.contains("text")) {
-            tag.put("text", stack.get(FLDataComponents.STYLED_STRING));
+        if (stack.has(FLDataComponents.STYLED_STRING.get()) && !tag.contains("text")) {
+            tag.put("text", stack.get(FLDataComponents.STYLED_STRING.get()));
         }
         return tag.isEmpty() ? null : tag;
     }

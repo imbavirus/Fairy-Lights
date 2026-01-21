@@ -33,7 +33,7 @@ public final class HangingLightsConnectionItem extends ConnectionItem {
     public void appendHoverText(final ItemStack stack, final Item.TooltipContext context, final List<Component> tooltip,
             final TooltipFlag flag) {
         // Use Data Components to get logic tag
-        final CompoundTag compound = stack.get(FLDataComponents.CONNECTION_LOGIC);
+        final CompoundTag compound = stack.get(FLDataComponents.CONNECTION_LOGIC.get());
         if (compound != null) {
             final ResourceLocation name = RegistryObjects.getName(FairyLights.STRING_TYPES.get(), getString(compound));
             tooltip.add(Component.translatable("item." + name.getNamespace() + "." + name.getPath())

@@ -23,7 +23,7 @@ public class PennantBuntingConnectionItem extends ConnectionItem {
     @Override
     public void appendHoverText(final ItemStack stack, final Item.TooltipContext context, final List<Component> tooltip,
             final TooltipFlag flag) {
-        final CompoundTag tag = stack.get(me.paulf.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
+        final CompoundTag tag = stack.get(me.paulf.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC.get());
         if (tag != null && tag.contains("pattern", Tag.TAG_LIST)) {
             final ListTag tagList = tag.getList("pattern", Tag.TAG_COMPOUND);
             final int tagCount = tagList.size();

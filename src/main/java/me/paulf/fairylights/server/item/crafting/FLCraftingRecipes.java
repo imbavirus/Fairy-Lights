@@ -45,6 +45,8 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 public final class FLCraftingRecipes {
+    private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger();
+
     private FLCraftingRecipes() {
     }
 
@@ -285,7 +287,10 @@ public final class FLCraftingRecipes {
         @Override
         public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
             return DyeableItem.getDyeColor(output).map(dye -> ImmutableList.of(OreDictUtils.getDyes(dye)))
-                    .orElse(ImmutableList.of());
+                    .orElseGet(() -> {
+                         LOGGER.warn("DYE_SUBTYPE_INGREDIENT: Could not find dye color for output: " + output + " with color: " + DyeableItem.getColor(output));
+                        return ImmutableList.of();
+                    });
         }
 
         @Override
@@ -305,7 +310,8 @@ public final class FLCraftingRecipes {
 
         @Override
         public void matched(final ItemStack ingredient, final CompoundTag nbt) {
-            nbt.putInt("color", OreDictUtils.getDyeColor(ingredient).getFireworkColor());
+            // Use DyeableItem.getColor() to ensure consistency with creative tab item colors
+            nbt.putInt("color", DyeableItem.getColor(OreDictUtils.getDyeColor(ingredient)));
         }
     };
 
@@ -382,7 +388,12 @@ public final class FLCraftingRecipes {
     }
 
     private static GenericRecipe createHangingLights(ResourceLocation name, CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(name, HANGING_LIGHTS, FLItems.HANGING_LIGHTS.get())
+        final ItemStack output = new ItemStack(FLItems.HANGING_LIGHTS.get());
+        final CompoundTag logic = new CompoundTag();
+        HangingLightsConnectionItem.setString(logic, StringTypes.BLACK_STRING.get());
+        output.set(FLDataComponents.CONNECTION_LOGIC.get(), logic);
+
+        return new GenericRecipeBuilder(name, HANGING_LIGHTS, output)
                 .withShape("I-I")
                 .withIngredient('I', Items.IRON_INGOT)
                 .withIngredient('-', Items.STRING)
@@ -391,7 +402,7 @@ public final class FLCraftingRecipes {
                         new InertBasicAuxiliaryIngredient(LazyTagIngredient.of(Tags.Items.DYES_WHITE), false, 1) {
                             @Override
                             public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
-                                final CompoundTag logic = output.get(FLDataComponents.CONNECTION_LOGIC);
+                                final CompoundTag logic = output.get(FLDataComponents.CONNECTION_LOGIC.get());
                                 if (logic != null && HangingLightsConnectionItem
                                         .getString(logic) == StringTypes.WHITE_STRING.get()) {
                                     return super.getInput(output);
@@ -401,7 +412,7 @@ public final class FLCraftingRecipes {
 
                             @Override
                             public void present(final CompoundTag nbt) {
-                                // Requires GenericRecipe update
+                                HangingLightsConnectionItem.setString(nbt, StringTypes.WHITE_STRING.get());
                             }
 
                             @Override
@@ -418,7 +429,7 @@ public final class FLCraftingRecipes {
     }
 
     private static boolean useInputsForTagBool(final ItemStack output, final boolean value) {
-        return output.getOrDefault(FLDataComponents.TWINKLE, false) == value;
+        return output.getOrDefault(FLDataComponents.TWINKLE.get(), false) == value;
     }
 
     private static GenericRecipe createHangingLightsAugmentation(final ResourceLocation name,
@@ -479,7 +490,7 @@ public final class FLCraftingRecipes {
         }
         logic.put("pattern", lights);
         HangingLightsConnectionItem.setString(logic, StringTypes.BLACK_STRING.get());
-        stack.set(FLDataComponents.CONNECTION_LOGIC, logic);
+        stack.set(FLDataComponents.CONNECTION_LOGIC.get(), logic);
         return stack;
     }
 
@@ -496,7 +507,11 @@ public final class FLCraftingRecipes {
 
     private static GenericRecipe createPennantBunting(final ResourceLocation name,
             CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(name, PENNANT_BUNTING, FLItems.PENNANT_BUNTING.get())
+        final ItemStack output = new ItemStack(FLItems.PENNANT_BUNTING.get());
+        output.set(FLDataComponents.STYLED_STRING.get(), StyledString.serialize(new StyledString()));
+        output.set(FLDataComponents.CONNECTION_LOGIC.get(), new CompoundTag());
+
+        return new GenericRecipeBuilder(name, PENNANT_BUNTING, output)
                 .withShape("I-I")
                 .withIngredient('I', Items.IRON_INGOT)
                 .withIngredient('-', Items.STRING)
@@ -506,7 +521,11 @@ public final class FLCraftingRecipes {
 
     private static GenericRecipe createPennantBuntingAugmentation(final ResourceLocation name,
             CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(name, PENNANT_BUNTING_AUGMENTATION, FLItems.PENNANT_BUNTING.get())
+        final ItemStack output = new ItemStack(FLItems.PENNANT_BUNTING.get());
+        output.set(FLDataComponents.STYLED_STRING.get(), StyledString.serialize(new StyledString()));
+        output.set(FLDataComponents.CONNECTION_LOGIC.get(), new CompoundTag());
+
+        return new GenericRecipeBuilder(name, PENNANT_BUNTING_AUGMENTATION, output)
                 .withShape("B")
                 .withIngredient('B', new BasicRegularIngredient(Ingredient.of(FLItems.PENNANT_BUNTING.get())) {
                     @Override
@@ -551,8 +570,8 @@ public final class FLCraftingRecipes {
         }
         logic.put("pattern", pennants);
         // StyledString for text - separate component
-        stack.set(FLDataComponents.STYLED_STRING, StyledString.serialize(new StyledString()));
-        stack.set(FLDataComponents.CONNECTION_LOGIC, logic);
+        stack.set(FLDataComponents.STYLED_STRING.get(), StyledString.serialize(new StyledString()));
+        stack.set(FLDataComponents.CONNECTION_LOGIC.get(), logic);
         return stack;
     }
 
@@ -685,12 +704,12 @@ public final class FLCraftingRecipes {
 
     private static class LightIngredient extends BasicAuxiliaryIngredient<ListTag> {
         private LightIngredient(final boolean isRequired) {
-            super(LazyTagIngredient.of(LIGHTS), isRequired, 8);
+            super(Ingredient.of(FLItems.lights().map(ItemStack::new)), isRequired, 8);
         }
 
         @Override
         public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
-            final CompoundTag logic = output.get(FLDataComponents.CONNECTION_LOGIC);
+            final CompoundTag logic = output.get(FLDataComponents.CONNECTION_LOGIC.get());
             if (logic != null) {
                 final ListTag pattern = logic.getList("pattern", Tag.TAG_COMPOUND);
                 if (!pattern.isEmpty()) {
@@ -732,7 +751,7 @@ public final class FLCraftingRecipes {
             // If GenericRecipeBuilder is effectively: stack.setTag(nbt) [which is gone],
             // then we have a problem.
             if (pattern.size() > 0) {
-                // nbt.put("pattern", pattern);
+                nbt.put("pattern", pattern);
             }
             return false;
         }
@@ -740,12 +759,17 @@ public final class FLCraftingRecipes {
 
     private static class PennantIngredient extends BasicAuxiliaryIngredient<ListTag> {
         private PennantIngredient() {
-            super(LazyTagIngredient.of(PENNANTS), true, 8);
+            super(Ingredient.of(java.util.stream.Stream.of(
+                    FLItems.TRIANGLE_PENNANT.get(),
+                    FLItems.SPEARHEAD_PENNANT.get(),
+                    FLItems.SWALLOWTAIL_PENNANT.get(),
+                    FLItems.SQUARE_PENNANT.get()
+            ).map(ItemStack::new)), true, 8);
         }
 
         @Override
         public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
-            final CompoundTag logic = output.get(FLDataComponents.CONNECTION_LOGIC);
+            final CompoundTag logic = output.get(FLDataComponents.CONNECTION_LOGIC.get());
             if (logic != null) {
                 final ListTag pattern = logic.getList("pattern", Tag.TAG_COMPOUND);
                 if (!pattern.isEmpty()) {
@@ -781,7 +805,7 @@ public final class FLCraftingRecipes {
         @Override
         public boolean finish(final ListTag pattern, final CompoundTag nbt) {
             if (pattern.size() > 0) {
-                // nbt.put("pattern", pattern);
+                nbt.put("pattern", pattern);
             }
             return false;
         }

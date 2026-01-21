@@ -66,7 +66,7 @@ public final class DyeableItem {
     }
 
     public static ItemStack setColor(final ItemStack stack, final int color) {
-        stack.set(FLDataComponents.COLOR, color);
+        stack.set(FLDataComponents.COLOR.get(), color);
         return stack;
     }
 
@@ -80,7 +80,7 @@ public final class DyeableItem {
     }
 
     public static int getColor(final ItemStack stack) {
-        return stack.getOrDefault(FLDataComponents.COLOR, 0xFFFFFF);
+        return stack.getOrDefault(FLDataComponents.COLOR.get(), 0xFFFFFF);
     }
 
     public static int getColor(final CompoundTag tag) {

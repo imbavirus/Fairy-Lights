@@ -70,6 +70,7 @@ public final class FairyLightsJEIPlugin implements IModPlugin {
 
     @Override
     public void registerItemSubtypes(final ISubtypeRegistration registry) {
+        System.out.println("DEBUG: FairyLightsJEIPlugin.registerItemSubtypes called!");
         LOGGER.info("FairyLightsJEIPlugin: Registering item subtypes");
         // Connection items with color variants
         registry.registerSubtypeInterpreter(VanillaTypes.ITEM_STACK, FLItems.HANGING_LIGHTS.get(), new ColorSubtypeInterpreter());

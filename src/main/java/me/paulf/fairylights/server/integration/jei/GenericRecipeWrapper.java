@@ -3,6 +3,7 @@ package me.paulf.fairylights.server.integration.jei;
 import com.google.common.collect.ImmutableList;
 import me.paulf.fairylights.util.FLMth;
 import me.paulf.fairylights.util.crafting.GenericRecipe;
+import net.minecraft.core.registries.BuiltInRegistries;
 import me.paulf.fairylights.util.crafting.ingredient.AuxiliaryIngredient;
 import me.paulf.fairylights.util.crafting.ingredient.GenericIngredient;
 import me.paulf.fairylights.util.crafting.ingredient.RegularIngredient;
@@ -94,46 +95,60 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
         final List<List<ItemStack>> inputs = new ArrayList<>(9);
         final GenericIngredient<?, ?>[] ingredientMat = new GenericIngredient<?, ?>[9];
         final AuxiliaryIngredient<?>[] aux = this.recipe.getAuxiliaryIngredients();
-        for (int i = 0, auxIngIdx = 0, auxIdx = 0; i < 9; i++) {
-            final int x = i % 3;
-            final int y = i / 3;
-            final ImmutableList<ImmutableList<ItemStack>> ingInputs;
-            GenericIngredient<?, ?> ingredient = null;
-            if (x < this.recipe.getWidth() && y < this.recipe.getHeight()) {
-                ingredient = ingredients[x + y * this.recipe.getWidth()];
-                ingInputs = ingredient.getInput(output);
-            } else {
-                ingInputs = null;
-            }
-            if (ingInputs == null || ingInputs.isEmpty()) {
-                boolean isEmpty = true;
-                if (auxIngIdx < aux.length) {
-                    ImmutableList<ImmutableList<ItemStack>> auxInputs = null;
-                    AuxiliaryIngredient<?> ingredientAux = null;
-                    for (; auxIngIdx < aux.length; auxIngIdx++) {
-                        ingredientAux = aux[auxIngIdx];
-                        auxInputs = ingredientAux.getInput(output);
+        
+        try {
+            for (int i = 0, auxIngIdx = 0, auxIdx = 0; i < 9; i++) {
+                final int x = i % 3;
+                final int y = i / 3;
+                final ImmutableList<ImmutableList<ItemStack>> ingInputs;
+                GenericIngredient<?, ?> ingredient = null;
+                if (x < this.recipe.getWidth() && y < this.recipe.getHeight()) {
+                    ingredient = ingredients[x + y * this.recipe.getWidth()];
+                    ingInputs = ingredient.getInput(output);
+                   
+                    if (ingInputs == null || ingInputs.isEmpty()) {
+                         // Only log if it's supposed to be a core ingredient but failed to produce input
+                         if (ingredient != null && !(ingredient instanceof me.paulf.fairylights.util.crafting.ingredient.EmptyRegularIngredient)) {
+                             LOGGER.warn("GenericRecipeWrapper: Failed to get inputs for ingredient at index " + i + " for " + BuiltInRegistries.RECIPE_SERIALIZER.getKey(this.recipe.getSerializer()));
+                         }
+                    }
+
+                } else {
+                    ingInputs = null;
+                }
+                if (ingInputs == null || ingInputs.isEmpty()) {
+                    boolean isEmpty = true;
+                    if (auxIngIdx < aux.length) {
+                        ImmutableList<ImmutableList<ItemStack>> auxInputs = null;
+                        AuxiliaryIngredient<?> ingredientAux = null;
+                        for (; auxIngIdx < aux.length; auxIngIdx++) {
+                            ingredientAux = aux[auxIngIdx];
+                            auxInputs = ingredientAux.getInput(output);
+                            if (auxInputs.size() > 0) {
+                                break;
+                            }
+                        }
                         if (auxInputs.size() > 0) {
-                            break;
+                            inputs.add(auxInputs.get(auxIdx++));
+                            ingredientMat[i] = ingredientAux;
+                            if (auxIdx == auxInputs.size()) {
+                                auxIdx = 0;
+                                auxIngIdx++;
+                            }
+                            isEmpty = false;
                         }
                     }
-                    if (auxInputs.size() > 0) {
-                        inputs.add(auxInputs.get(auxIdx++));
-                        ingredientMat[i] = ingredientAux;
-                        if (auxIdx == auxInputs.size()) {
-                            auxIdx = 0;
-                            auxIngIdx++;
-                        }
-                        isEmpty = false;
+                    if (isEmpty) {
+                        inputs.add(Collections.emptyList());
                     }
+                } else {
+                    inputs.add(ingInputs.get(0));
+                    ingredientMat[i] = ingredient;
                 }
-                if (isEmpty) {
-                    inputs.add(Collections.emptyList());
-                }
-            } else {
-                inputs.add(ingInputs.get(0));
-                ingredientMat[i] = ingredient;
             }
+        } catch (Exception e) {
+             LOGGER.error("GenericRecipeWrapper: Exception deriving inputs for " + BuiltInRegistries.RECIPE_SERIALIZER.getKey(this.recipe.getSerializer()), e);
+             return new Input(Collections.emptyList(), new GenericIngredient<?, ?>[9]);
         }
         return new Input(inputs, ingredientMat);
     }
