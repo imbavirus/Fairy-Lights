@@ -182,8 +182,7 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
 
     @Override
     public AABB getBoundingBoxForCulling() {
-        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1))
-                .orElseGet(super::getBoundingBoxForCulling);
+        return AABB.INFINITE;
     }
 
     @Override

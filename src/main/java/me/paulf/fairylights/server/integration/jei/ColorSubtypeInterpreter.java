@@ -14,7 +14,10 @@ public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpre
         StringBuilder sb = new StringBuilder();
 
         // 1. Base Item Color
-        if (stack.has(FLDataComponents.COLOR.get())) {
+        // 1. Base Item Color
+        // Only check color if there is no connection logic, as connection items use logic for identity
+        // and the base color tag is often just for the creative tab icon.
+        if (stack.has(FLDataComponents.COLOR.get()) && !stack.has(FLDataComponents.CONNECTION_LOGIC.get())) {
             sb.append(String.format("C:%06x", stack.get(FLDataComponents.COLOR.get())));
         }
 
@@ -23,11 +26,12 @@ public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpre
              net.minecraft.nbt.CompoundTag logic = stack.get(FLDataComponents.CONNECTION_LOGIC.get());
              
              // String Type
-             if (logic.contains("string", net.minecraft.nbt.Tag.TAG_STRING)) {
-                 sb.append("_S:").append(logic.getString("string"));
-             }
+             // if (logic.contains("string", net.minecraft.nbt.Tag.TAG_STRING)) {
+             //     sb.append("_S:").append(logic.getString("string"));
+             // }
              
              // Pattern List
+             /*
              if (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST)) {
                  net.minecraft.nbt.ListTag pattern = logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND);
                  sb.append("_P:[");
@@ -53,10 +57,15 @@ public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpre
                  }
                  sb.append("]");
              }
+             */
         }
         
         if (sb.length() > 0) {
-            return sb.toString();
+            String result = sb.toString();
+            if (net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath().equals("hanging_lights")) {
+                 LOGGER.info("ColorSubtypeInterpreter: " + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()) + " -> " + result);
+            }
+            return result;
         }
         
         return IIngredientSubtypeInterpreter.NONE;

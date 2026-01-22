@@ -108,6 +108,15 @@ public abstract class ConnectionItem extends Item {
         final CompoundTag logic = connection.serializeLogic();
         final CompoundTag stackTag = getData(stack);
 
+        if (stackTag == null) {
+            // Should not happen if getData returns null for empty, but for safety
+        }
+
+        // Fix: If logic doesn't track color, ignore stack's color to prevent mismatch
+        if (stackTag != null && !logic.contains("color") && stackTag.contains("color")) {
+            stackTag.remove("color");
+        }
+
         if (logic.isEmpty()) {
             return stackTag != null && !stackTag.isEmpty();
         }

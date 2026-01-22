@@ -164,7 +164,7 @@ public final class GenericRecipe extends CustomRecipe {
     // matches() signature changed in 1.21.1 - now uses CraftingInput
     @Override
     public boolean matches(final net.minecraft.world.item.crafting.CraftingInput input, final Level world) {
-        LOGGER.debug("GenericRecipe.matches called for " + this.output);
+        // LOGGER.debug("GenericRecipe.matches called for " + this.output);
         if (!this.canCraftInDimensions(input.width(), input.height())) {
             return false;
         }
@@ -174,9 +174,9 @@ public final class GenericRecipe extends CustomRecipe {
             final int x = i % scanWidth;
             final int y = i / scanWidth;
             for (final IntUnaryOperator func : this.xFunctions) {
-                final ItemStack result = this.getResult(input, x, y, func);
+                final ItemStack result = this.resolve(input, x, y, func);
                 if (!result.isEmpty()) {
-                    LOGGER.info("GenericRecipe.matches SUCCESS for " + result);
+                    // LOGGER.info("GenericRecipe.matches SUCCESS for " + result);
                     this.result = result;
                     return true;
                 }
@@ -186,8 +186,7 @@ public final class GenericRecipe extends CustomRecipe {
         return false;
     }
 
-    // getResult() signature changed in 1.21.1 - now uses CraftingInput
-    private ItemStack getResult(final net.minecraft.world.item.crafting.CraftingInput input, final int originX,
+    private ItemStack resolve(final net.minecraft.world.item.crafting.CraftingInput input, final int originX,
             final int originY, final IntUnaryOperator funcX) {
         final MatchResultRegular[] match = new MatchResultRegular[this.ingredients.length];
         final Multimap<AuxiliaryIngredient<?>, MatchResultAuxiliary> auxMatchResults = LinkedListMultimap.create();
@@ -197,7 +196,7 @@ public final class GenericRecipe extends CustomRecipe {
         Item item = this.output.getItem();
         final CompoundTag tag = new CompoundTag();
         for (int i = 0, w = input.width(), size = w * input.height(); i < size; i++) {
-            final int x = i % w;
+             final int x = i % w;
             final int y = i / w;
             final int ingX = x - originX;
             final int ingY = y - originY;
@@ -309,11 +308,24 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
     @Override
-    // assemble() signature changed in 1.21.1 - now uses CraftingInput and Provider
     public ItemStack assemble(final net.minecraft.world.item.crafting.CraftingInput input,
             final net.minecraft.core.HolderLookup.Provider provider) {
-        final ItemStack result = this.result;
-        return result.isEmpty() ? result : result.copy();
+         if (!this.canCraftInDimensions(input.width(), input.height())) {
+            return ItemStack.EMPTY;
+        }
+        final int scanWidth = input.width() + 1 - this.width;
+        final int scanHeight = input.height() + 1 - this.height;
+        for (int i = 0, end = scanWidth * scanHeight; i < end; i++) {
+            final int x = i % scanWidth;
+            final int y = i / scanWidth;
+            for (final IntUnaryOperator func : this.xFunctions) {
+                final ItemStack result = this.resolve(input, x, y, func);
+                if (!result.isEmpty()) {
+                    return result;
+                }
+            }
+        }
+        return ItemStack.EMPTY;
     }
 
     // getResultItem() signature changed in 1.21.1 - now uses Provider

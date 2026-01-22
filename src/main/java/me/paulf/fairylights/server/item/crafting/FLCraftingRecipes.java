@@ -712,16 +712,26 @@ public final class FLCraftingRecipes {
             final CompoundTag logic = output.get(FLDataComponents.CONNECTION_LOGIC.get());
             if (logic != null) {
                 final ListTag pattern = logic.getList("pattern", Tag.TAG_COMPOUND);
+                // LOGGER.info("LightIngredient.getInput: logic present, pattern size: " + pattern.size());
                 if (!pattern.isEmpty()) {
                     final ImmutableList.Builder<ImmutableList<ItemStack>> lights = ImmutableList.builder();
                     final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess
                             .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
                     for (int i = 0; i < pattern.size(); i++) {
-                        lights.add(ImmutableList
-                                .of(ItemStack.parse(registryAccess, pattern.getCompound(i)).orElse(ItemStack.EMPTY)));
+                        ItemStack stack = ItemStack.parse(registryAccess, pattern.getCompound(i)).orElse(ItemStack.EMPTY);
+                        if (stack.isEmpty()) {
+                             LOGGER.error("LightIngredient.getInput: Failed to parse itemstack from pattern at index " + i + ": " + pattern.getCompound(i));
+                        } else {
+                             // LOGGER.info("LightIngredient.getInput: Parsed stack: " + stack);
+                        }
+                        lights.add(ImmutableList.of(stack));
                     }
                     return lights.build();
+                } else {
+                     // LOGGER.warn("LightIngredient.getInput: Pattern is empty for output: " + output);
                 }
+            } else {
+                 LOGGER.warn("LightIngredient.getInput: No CONNECTION_LOGIC for output: " + output);
             }
             return ImmutableList.of();
         }
@@ -772,13 +782,17 @@ public final class FLCraftingRecipes {
             final CompoundTag logic = output.get(FLDataComponents.CONNECTION_LOGIC.get());
             if (logic != null) {
                 final ListTag pattern = logic.getList("pattern", Tag.TAG_COMPOUND);
+                 // LOGGER.info("PennantIngredient.getInput: logic present, pattern size: " + pattern.size());
                 if (!pattern.isEmpty()) {
                     final ImmutableList.Builder<ImmutableList<ItemStack>> pennants = ImmutableList.builder();
                     final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.core.RegistryAccess
                             .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
                     for (int i = 0; i < pattern.size(); i++) {
-                        pennants.add(ImmutableList
-                                .of(ItemStack.parse(registryAccess, pattern.getCompound(i)).orElse(ItemStack.EMPTY)));
+                        ItemStack stack = ItemStack.parse(registryAccess, pattern.getCompound(i)).orElse(ItemStack.EMPTY);
+                         if (stack.isEmpty()) {
+                             LOGGER.error("PennantIngredient.getInput: Failed to parse itemstack from pattern at index " + i + ": " + pattern.getCompound(i));
+                        }
+                        pennants.add(ImmutableList.of(stack));
                     }
                     return pennants.build();
                 }

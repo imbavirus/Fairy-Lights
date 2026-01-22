@@ -33,12 +33,10 @@ public final class FastenerBlockEntity extends BlockEntity {
     }
 
     // getRenderBoundingBox() may not be an override in 1.21.1
+    // getRenderBoundingBox() must return INFINITE because connections can stretch far outside the block.
+    // In NeoForge 1.21.1, this is usually still respected by the entity renderer.
     public AABB getRenderBoundingBox() {
-        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1)).orElseGet(() -> {
-            // super.getRenderBoundingBox() may not exist in 1.21.1 - return default AABB
-            final BlockPos pos = this.getBlockPos();
-            return new AABB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
-        });
+        return AABB.INFINITE;
     }
 
     public Vec3 getOffset() {
