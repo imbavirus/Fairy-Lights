@@ -93,14 +93,28 @@ public final class FairyLights {
         // manager
         // For now, use a supplier that accesses the registry when needed
         // registryOrThrow() needs a RegistryKey, not ResourceLocation
-        CONNECTION_TYPES = () -> net.minecraft.core.RegistryAccess
-                .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)
-                .registryOrThrow(net.minecraft.resources.ResourceKey
-                        .createRegistryKey(FairyLights.CONNECTION_TYPE));
-        STRING_TYPES = () -> net.minecraft.core.RegistryAccess
-                .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)
-                .registryOrThrow(net.minecraft.resources.ResourceKey
-                        .createRegistryKey(FairyLights.STRING_TYPE));
+        CONNECTION_TYPES = () -> {
+            try {
+                return net.minecraft.core.RegistryAccess
+                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)
+                    .registryOrThrow(net.minecraft.resources.ResourceKey
+                            .createRegistryKey(FairyLights.CONNECTION_TYPE));
+            } catch (Exception e) {
+                com.mojang.logging.LogUtils.getLogger().error("FL_DEBUG: Failed to get CONNECTION_TYPES registry", e);
+                throw e;
+            }
+        };
+        STRING_TYPES = () -> {
+            try {
+                return net.minecraft.core.RegistryAccess
+                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)
+                    .registryOrThrow(net.minecraft.resources.ResourceKey
+                            .createRegistryKey(FairyLights.STRING_TYPE));
+            } catch (Exception e) {
+                com.mojang.logging.LogUtils.getLogger().error("FL_DEBUG: Failed to get STRING_TYPES registry", e);
+                throw e;
+            }
+        };
         
         ServerProxy proxy;
         if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
@@ -149,6 +163,12 @@ public final class FairyLights {
                     EditLetteredConnectionMessage.TYPE,
                     EditLetteredConnectionMessage.STREAM_CODEC,
                     EditLetteredConnectionMessage::handle);
+
+            // Register InteractionConnectionMessage as serverbound payload
+            registrar.playToServer(
+                    InteractionConnectionMessage.TYPE,
+                    InteractionConnectionMessage.STREAM_CODEC,
+                    InteractionConnectionMessage::handle);
         });
 
         // Register ServerEventHandler

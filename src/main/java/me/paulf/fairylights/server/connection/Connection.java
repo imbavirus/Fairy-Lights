@@ -188,10 +188,9 @@ public abstract class Connection implements NBTSerializable {
     }
 
     public void processClientAction(final Player player, final PlayerAction action, final Intersection intersection) {
-        // TODO: Implement networking with PayloadRegistrar API for NeoForge 1.21.1
-        // FairyLights.NETWORK.sendToServer(new InteractionConnectionMessage(this,
-        // action, intersection));
-        // For now, stubbed out until networking is properly implemented
+        System.out.println("FL_DEBUG: Sending interaction packet for " + this.getUUID() + " action=" + action);
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new me.paulf.fairylights.server.net.serverbound.InteractionConnectionMessage(this, action, intersection));
     }
 
     public void disconnect(final Player player, final Vec3 hit) {
@@ -406,10 +405,10 @@ public abstract class Connection implements NBTSerializable {
                 FeatureCollisionTree.build(CORD_FEATURE, i -> Segment.INSTANCE, i -> bounds[i], 1, bounds.length - 2));
     }
 
-    public void deserialize(final Fastener<?> destination, final CompoundTag compound, final boolean drop) {
+    public void deserialize(final Fastener<?> destination, final CompoundTag compound, final boolean drop, final net.minecraft.core.HolderLookup.Provider provider) {
         this.destination = destination.createAccessor();
         this.drop = drop;
-        this.deserializeLogic(compound);
+        this.deserializeLogic(compound, provider);
     }
 
     @Override
@@ -425,8 +424,12 @@ public abstract class Connection implements NBTSerializable {
 
     @Override
     public void deserialize(final CompoundTag compound) {
+        throw new UnsupportedOperationException("Use deserialize(CompoundTag, HolderLookup.Provider)");
+    }
+
+    public void deserialize(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
         this.destination = FastenerType.deserialize(compound.getCompound("destination"));
-        this.deserializeLogic(compound.getCompound("logic"));
+        this.deserializeLogic(compound.getCompound("logic"), provider);
         this.slack = compound.contains("slack", Tag.TAG_ANY_NUMERIC) ? compound.getFloat("slack") : 1;
         this.drop = !compound.contains("drop", Tag.TAG_ANY_NUMERIC) || compound.getBoolean("drop");
         this.updateCatenary = true;
@@ -436,7 +439,7 @@ public abstract class Connection implements NBTSerializable {
         return new CompoundTag();
     }
 
-    public void deserializeLogic(final CompoundTag compound) {
+    public void deserializeLogic(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
     }
 
     static class Segment implements Feature {

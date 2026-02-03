@@ -7,6 +7,7 @@ import me.paulf.fairylights.server.feature.FeatureType;
 import me.paulf.fairylights.server.feature.Pennant;
 import me.paulf.fairylights.server.item.DyeableItem;
 import me.paulf.fairylights.server.sound.FLSounds;
+import me.paulf.fairylights.server.item.crafting.FLCraftingRecipes;
 import me.paulf.fairylights.util.OreDictUtils;
 import me.paulf.fairylights.util.styledstring.StyledString;
 import net.minecraft.client.gui.screens.Screen;
@@ -52,7 +53,7 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
 
     @Override
     public boolean interact(final Player player, final Vec3 hit, final FeatureType featureType, final int feature, final ItemStack heldStack, final InteractionHand hand) {
-        if (featureType == FEATURE && OreDictUtils.isDye(heldStack)) {
+        if (featureType == FEATURE && (OreDictUtils.isDye(heldStack) || heldStack.is(FLCraftingRecipes.PENNANTS))) {
             final int index = feature % this.pattern.size();
             final ItemStack pennant = this.pattern.get(index);
             if (!ItemStack.matches(pennant, heldStack)) {
@@ -60,7 +61,6 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
                 this.pattern.set(index, placed);
                 ItemHandlerHelper.giveItemToPlayer(player, pennant);
                 this.computeCatenary();
-                heldStack.shrink(1);
                 this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.FEATURE_COLOR_CHANGE.get(), SoundSource.BLOCKS, 1, 1);
                 return true;
             }
@@ -128,13 +128,13 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
     }
 
     @Override
-    public void deserializeLogic(final CompoundTag compound) {
-        super.deserializeLogic(compound);
+    public void deserializeLogic(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
+        super.deserializeLogic(compound, provider);
         this.pattern = new ArrayList<>();
         final ListTag patternList = compound.getList("pattern", Tag.TAG_COMPOUND);
         for (int i = 0; i < patternList.size(); i++) {
-            // ItemStack.of() API changed in 1.21.1 - use ItemStack.parse() with RegistryAccess
-            this.pattern.add(ItemStack.parse(this.world.registryAccess(), patternList.getCompound(i)).orElse(ItemStack.EMPTY));
+            // Use the passed provider for registry access during deserialization
+            this.pattern.add(ItemStack.parse(provider, patternList.getCompound(i)).orElse(ItemStack.EMPTY));
         }
         this.text = StyledString.deserialize(compound.getCompound("text"));
         org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] PennantBuntingConnection.deserializeLogic: compound={}, patternSize={}, hasText={}", compound, this.pattern.size(), !this.text.isEmpty());

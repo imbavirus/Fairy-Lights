@@ -57,10 +57,23 @@ public class FastenerRenderer {
     public void render(final Fastener<?> fastener, final float delta, final PoseStack matrix, final MultiBufferSource source, final int packedLight, final int packedOverlay) {
         boolean renderBow = true;
         for (final Connection conn : fastener.getAllConnections()) {
-            if (conn.getFastener() == fastener) {
+            final java.util.UUID uuid = conn.getUUID();
+            final boolean isOrigin = conn.getFastener() == fastener;
+            if (me.paulf.fairylights.client.ClientEventHandler.RENDERED_CONNECTIONS.add(uuid)) {
+                matrix.pushPose();
+                if (!isOrigin) {
+                    // We are at the destination end - translate to origin to render correctly
+                    final net.minecraft.world.phys.Vec3 origin = conn.getFastener().getConnectionPoint();
+                    final net.minecraft.world.phys.Vec3 dest = fastener.getConnectionPoint();
+                    matrix.translate(origin.x - dest.x, origin.y - dest.y, origin.z - dest.z);
+                    System.out.println("FL_DEBUG: Rendering connection " + uuid + " (as Destination)");
+                } else {
+                    System.out.println("FL_DEBUG: Rendering connection " + uuid + " (as Origin)");
+                }
                 this.renderConnection(delta, matrix, source, packedLight, packedOverlay, conn);
+                matrix.popPose();
             }
-            if (renderBow && conn instanceof GarlandVineConnection &&
+            if (renderBow && conn instanceof me.paulf.fairylights.server.connection.GarlandVineConnection &&
                     this.renderBow(fastener, matrix, source, packedLight, packedOverlay)) {
                 renderBow = false;
             }

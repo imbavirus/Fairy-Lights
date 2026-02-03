@@ -21,7 +21,7 @@ public final class FLBlocks {
     public static final DeferredRegister<Block> REG = DeferredRegister.create(Registries.BLOCK, FairyLights.ID);
 
 
-    public static final DeferredHolder<Block,FastenerBlock> FASTENER = REG.register("fastener", () -> new FastenerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).forceSolidOn().strength(3.5F).sound(SoundType.LANTERN)));
+    public static final DeferredHolder<Block,FastenerBlock> FASTENER = REG.register("fastener", () -> new FastenerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).forceSolidOn().strength(0.2F).sound(SoundType.LANTERN)));
 
     public static final DeferredHolder<Block,LightBlock> FAIRY_LIGHT = REG.register("fairy_light", FLBlocks.createLight(SimpleLightVariant.FAIRY_LIGHT));
 
@@ -68,6 +68,6 @@ public final class FLBlocks {
     }
 
     private static Supplier<LightBlock> createLight(final LightVariant<?> variant, final BiFunction<Block.Properties, LightVariant<?>, LightBlock> factory) {
-        return () -> factory.apply(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).forceSolidOn().strength(3.5F).sound(SoundType.LANTERN).lightLevel(state -> state.getValue(LightBlock.LIT) ? 15 : 0).noCollission(), variant);
+        return () -> factory.apply(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).forceSolidOn().strength(0.2F).sound(SoundType.LANTERN).lightLevel(state -> state.getValue(LightBlock.LIT) ? 15 : 0).noCollission(), variant);
     }
 }

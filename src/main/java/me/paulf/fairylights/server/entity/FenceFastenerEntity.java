@@ -45,7 +45,7 @@ import java.util.Optional;
 public final class FenceFastenerEntity extends HangingEntity implements IEntityWithComplexSpawn {
     private final FenceFastener fastener;
     private int surfaceCheckTime;
-
+    
     public FenceFastenerEntity(final EntityType<? extends FenceFastenerEntity> type, final Level world) {
         super(type, world);
         this.fastener = new FenceFastener(this);
@@ -102,9 +102,10 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
         return 1;
     }
 
-    // These methods may not be overrides in 1.21.1
+    @Override
     public boolean shouldRenderAtSqrDistance(final double distance) {
-        return distance < 4096;
+        // Always render at any distance - connections can be long
+        return true;
     }
 
     public boolean ignoreExplosion() {
@@ -182,7 +183,9 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
 
     @Override
     public AABB getBoundingBoxForCulling() {
-        return AABB.INFINITE;
+        // Return infinite bounds so connections are always visible regardless of camera direction
+        // INFINITE_EXTENT_AABB was removed in 1.21.1, so we create an infinite AABB manually
+        return new AABB(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
 
     @Override
@@ -223,7 +226,9 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
 
     @Override
     public void addAdditionalSaveData(final CompoundTag compound) {
+        super.addAdditionalSaveData(compound);
         compound.put("pos", NbtUtils.writeBlockPos(this.pos));
+        compound.put("fastener", this.fastener.serializeNBT());
     }
 
     @Override
@@ -233,13 +238,18 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
         if (compound.contains("pos", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             NbtUtils.readBlockPos(compound, "pos").ifPresent(pos -> this.pos = pos);
         }
+        if (compound.contains("fastener", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            final net.minecraft.core.HolderLookup.Provider provider = this.level() != null ? this.level().registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+            this.fastener.deserializeNBT(compound.getCompound("fastener"), provider);
+        }
     }
 
     @Override
     public void writeSpawnData(final net.minecraft.network.RegistryFriendlyByteBuf buf) {
         this.getFastener().ifPresent(fastener -> {
             try {
-                NbtIo.write(fastener.serializeNBT(), new ByteBufOutputStream(buf));
+                CompoundTag tag = fastener.serializeNBT();
+                NbtIo.write(tag, new ByteBufOutputStream(buf));
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
@@ -280,7 +290,7 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
                     // Fastener is an interface, deserializeNBT is in AbstractFastener
                     // Cast to AbstractFastener to access the method
                     if (fastener instanceof me.paulf.fairylights.server.fastener.AbstractFastener) {
-                        ((me.paulf.fairylights.server.fastener.AbstractFastener<?>) fastener).deserializeNBT(tag);
+                        ((me.paulf.fairylights.server.fastener.AbstractFastener<?>) fastener).deserializeNBT(tag, buf.registryAccess());
                     }
                 }
             } catch (final Exception e) {

@@ -1,5 +1,7 @@
 package me.paulf.fairylights.server.connection;
 
+// LogManager import removed
+
 import me.paulf.fairylights.server.block.FLBlocks;
 import me.paulf.fairylights.server.fastener.Fastener;
 import me.paulf.fairylights.server.feature.FeatureType;
@@ -281,22 +283,40 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         final ListTag tagList = new ListTag();
         for (final ItemStack light : this.pattern) {
             // ItemStack.save() API changed in 1.21.1 - use RegistryAccess from world
-            tagList.add(light.save(this.world.registryAccess()));
+            Tag savedTag = light.save(this.world.registryAccess());
+            
+            // Manual fallback: Save color directly to NBT because DataComponents seem to be failing persistence
+            if (savedTag instanceof CompoundTag compoundTag) {
+                int color = me.paulf.fairylights.server.item.DyeableItem.getColor(light);
+                compoundTag.putInt("fl_backup_color", color);
+            }
+            
+            tagList.add(savedTag);
         }
         compound.put("pattern", tagList);
         return compound;
     }
 
     @Override
-    public void deserializeLogic(final CompoundTag compound) {
-        super.deserializeLogic(compound);
+    public void deserializeLogic(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
+        super.deserializeLogic(compound, provider);
         this.string = HangingLightsConnectionItem.getString(compound);
         final ListTag patternList = compound.getList("pattern", Tag.TAG_COMPOUND);
         this.pattern = new ArrayList<>();
         for (int i = 0; i < patternList.size(); i++) {
             final CompoundTag lightCompound = patternList.getCompound(i);
-            // ItemStack.parse() API changed in 1.21.1 - use RegistryAccess from world
-            this.pattern.add(ItemStack.parse(this.world.registryAccess(), lightCompound).orElse(ItemStack.EMPTY));
+            // Use the passed provider for registry access during deserialization
+            ItemStack stack = ItemStack.parse(provider, lightCompound).orElse(ItemStack.EMPTY);
+            
+            // Manual fallback: Restore color from NBT if present
+            if (lightCompound.contains("fl_backup_color", Tag.TAG_ANY_NUMERIC)) {
+                int color = lightCompound.getInt("fl_backup_color");
+                me.paulf.fairylights.server.item.DyeableItem.setColor(stack, color);
+            }
+            
+            this.pattern.add(stack);
         }
+        // Force refresh of features (Light objects) to use the loaded pattern (with colors)
+        this.computeCatenary();
     }
 }

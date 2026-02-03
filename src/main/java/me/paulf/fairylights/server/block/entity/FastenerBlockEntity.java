@@ -17,8 +17,11 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Optional;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 public final class FastenerBlockEntity extends BlockEntity {
+    private static final Logger LOGGER = LogUtils.getLogger();
     /**
      * NeoForge 1.21.x removed the old Forge capability attachment flow used by the original mod.
      * The previous port tried to access a "getCapability(ResourceLocation)" method via reflection,
@@ -35,8 +38,9 @@ public final class FastenerBlockEntity extends BlockEntity {
     // getRenderBoundingBox() may not be an override in 1.21.1
     // getRenderBoundingBox() must return INFINITE because connections can stretch far outside the block.
     // In NeoForge 1.21.1, this is usually still respected by the entity renderer.
+    // INFINITE_EXTENT_AABB was removed in 1.21.1, so we create an infinite AABB manually
     public AABB getRenderBoundingBox() {
-        return AABB.INFINITE;
+        return new AABB(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
 
     public Vec3 getOffset() {
@@ -65,7 +69,10 @@ public final class FastenerBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag(final HolderLookup.Provider provider) {
         // Start with the vanilla tag so position/id/etc are correct, then add our fastener state.
         final CompoundTag tag = super.getUpdateTag(provider);
-        this.getFastener().ifPresent(f -> tag.put("fastener", f.serializeNBT()));
+        this.getFastener().ifPresent(f -> {
+            CompoundTag fastenerTag = f.serializeNBT();
+            tag.put("fastener", fastenerTag);
+        });
         return tag;
     }
 
@@ -75,7 +82,8 @@ public final class FastenerBlockEntity extends BlockEntity {
         if (tag.contains("fastener", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             this.getFastener().ifPresent(f -> {
                 if (f instanceof me.paulf.fairylights.server.fastener.AbstractFastener<?> af) {
-                    af.deserializeNBT(tag.getCompound("fastener"));
+                    CompoundTag fastenerTag = tag.getCompound("fastener");
+                    af.deserializeNBT(fastenerTag, provider);
                 }
             });
         }
@@ -103,6 +111,12 @@ public final class FastenerBlockEntity extends BlockEntity {
     }
 
     @Override
+    public void onLoad() {
+        super.onLoad();
+        LOGGER.error("FL_DEBUG_CRITICAL: FastenerBlockEntity.onLoad at " + this.worldPosition);
+    }
+
+    @Override
     public void setRemoved() {
         this.getFastener().ifPresent(Fastener::remove);
         super.setRemoved();
@@ -111,7 +125,10 @@ public final class FastenerBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(final CompoundTag tag, final HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
-        this.getFastener().ifPresent(f -> tag.put("fastener", f.serializeNBT()));
+        this.getFastener().ifPresent(f -> {
+             CompoundTag fastenerTag = f.serializeNBT();
+             tag.put("fastener", fastenerTag);
+        });
     }
 
     @Override
@@ -120,7 +137,7 @@ public final class FastenerBlockEntity extends BlockEntity {
         if (tag.contains("fastener", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             this.getFastener().ifPresent(f -> {
                 if (f instanceof me.paulf.fairylights.server.fastener.AbstractFastener<?> af) {
-                    af.deserializeNBT(tag.getCompound("fastener"));
+                    af.deserializeNBT(tag.getCompound("fastener"), provider);
                 }
             });
         }

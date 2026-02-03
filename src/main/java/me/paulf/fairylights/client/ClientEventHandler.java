@@ -13,6 +13,7 @@ import me.paulf.fairylights.server.entity.FenceFastenerEntity;
 import me.paulf.fairylights.server.fastener.CollectFastenersEvent;
 import me.paulf.fairylights.server.fastener.Fastener;
 import me.paulf.fairylights.server.fastener.FastenerType;
+import me.paulf.fairylights.server.block.entity.FastenerBlockEntity;
 import me.paulf.fairylights.server.jingle.Jingle;
 import me.paulf.fairylights.util.Curve;
 import net.minecraft.client.Minecraft;
@@ -37,6 +38,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderHighlightEvent;
@@ -54,6 +56,12 @@ import java.util.Set;
 
 public final class ClientEventHandler {
     private static final float HIGHLIGHT_ALPHA = 0.4F;
+
+    public static final java.util.Set<java.util.UUID> RENDERED_CONNECTIONS = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    private static int lastFrame = -1;
+
+    private static FastenerRenderer fastenerRenderer;
 
     @Nullable
     public static Connection getHitConnection() {
@@ -102,6 +110,8 @@ public final class ClientEventHandler {
                 if (result.intersection.getResult().distanceTo(eyes) < mc.hitResult.getLocation().distanceTo(eyes)) {
                     mc.hitResult = new EntityHitResult(new HitConnection(mc.level, result));
                     mc.crosshairPickEntity = null;
+                    // Log hit detection for debugging
+                    // System.out.println("Fairy Lights: Hit connection " + result.connection.getUUID());
                 }
             }
         }
@@ -124,15 +134,18 @@ public final class ClientEventHandler {
         final int minZ = Mth.floor(bounds.minZ / 16.0D);
         final int maxZ = Mth.ceil(bounds.maxZ / 16.0D);
         final ChunkSource provider = world.getChunkSource();
+        int chunkCount = 0;
         for (int x = minX; x < maxX; x++) {
             for (int z = minZ; z < maxZ; z++) {
                 final LevelChunk chunk = provider.getChunk(x, z, false);
                 if (chunk != null) {
                     event.accept(chunk);
+                    chunkCount++;
                 }
             }
         }
         NeoForge.EVENT_BUS.post(event);
+
         return fasteners;
     }
 
@@ -390,40 +403,71 @@ public final class ClientEventHandler {
 
     @SubscribeEvent
     public void onRenderLevelStage(final RenderLevelStageEvent event) {
-        // Render player connections during the ENTITIES stage
+        // Clear rendered connections once per frame
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
+            // getFrameCount() removed in 1.21.1
+            // Just clear unconditionally for now, or use a custom counter if needed
+            RENDERED_CONNECTIONS.clear();
+            // final int frame = Minecraft.getInstance().levelRenderer.getFrameCount();
+            // if (frame != lastFrame) {
+            //    RENDERED_CONNECTIONS.clear();
+            //    lastFrame = frame;
+            // }
+            return;
+        }
+
+        // Render connections during the AFTER_ENTITIES stage to bypass entity frustum culling
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
             return;
         }
         
-        final Player player = Minecraft.getInstance().player;
-        if (player == null) {
+        final Minecraft mc = Minecraft.getInstance();
+        final Player player = mc.player;
+        if (player == null || mc.level == null) {
             return;
         }
         
-        // Get the player's fastener and render its connections
-        CapabilityHandler.getFastenerCapability(player).ifPresent(fastener -> {
+        final PoseStack poseStack = event.getPoseStack();
+        final MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
+        final float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        final Vec3 cameraPos = event.getCamera().getPosition();
+        
+        // Cache renderer
+        if (fastenerRenderer == null) {
+            fastenerRenderer = new FastenerRenderer(mc.getEntityModels()::bakeLayer);
+        }
+        
+        // Collect all fasteners in a large radius to ensure connections stay visible
+        // Search in a radius around the camera to find all fasteners
+        final AABB searchBounds = new AABB(player.blockPosition()).inflate(64.0);
+        final Set<Fastener<?>> fasteners = collectFasteners(mc.level, searchBounds);
+
+        // Include player fastener
+        CapabilityHandler.getFastenerCapability(player).ifPresent(fasteners::add);
+
+
+
+        for (final Fastener<?> fastener : fasteners) {
             if (!fastener.hasNoConnections()) {
-                final PoseStack poseStack = event.getPoseStack();
-                final MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
                 poseStack.pushPose();
+                // Translate to fastener's connection point relative to camera
+                final Vec3 connPoint = fastener.getConnectionPoint();
+                poseStack.translate(connPoint.x - cameraPos.x, connPoint.y - cameraPos.y, connPoint.z - cameraPos.z);
                 
-                // Create a FastenerRenderer to render the connections
-                final FastenerRenderer renderer = new FastenerRenderer(Minecraft.getInstance().getEntityModels()::bakeLayer);
-                // Get packed light from the player's position
                 final int packedLight = net.minecraft.client.renderer.LightTexture.pack(
-                    player.level().getBrightness(net.minecraft.world.level.LightLayer.BLOCK, player.blockPosition()),
-                    player.level().getBrightness(net.minecraft.world.level.LightLayer.SKY, player.blockPosition())
+                    mc.level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, fastener.getPos()),
+                    mc.level.getBrightness(net.minecraft.world.level.LightLayer.SKY, fastener.getPos())
                 );
-                // Get partial tick as float
-                final float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-                renderer.render(fastener, partialTick, poseStack, bufferSource, 
+                
+                fastenerRenderer.render(fastener, partialTick, poseStack, bufferSource, 
                     packedLight, 
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
                 
                 poseStack.popPose();
-                bufferSource.endBatch();
             }
-        });
+        }
+        
+        bufferSource.endBatch();
     }
 
     private static final class HitResult {

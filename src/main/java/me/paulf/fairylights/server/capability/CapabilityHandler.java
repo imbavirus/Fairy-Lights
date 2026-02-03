@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.util.Optional;
 import java.util.WeakHashMap;
+import me.paulf.fairylights.server.entity.FenceFastenerEntity;
 
 public final class CapabilityHandler {
     private CapabilityHandler() {}
@@ -42,7 +43,7 @@ public final class CapabilityHandler {
             final java.lang.reflect.Method getCapability = entity.getClass().getMethod("getCapability", ResourceLocation.class);
             final Optional<Fastener<?>> cap = (Optional<Fastener<?>>) getCapability.invoke(entity, FASTENER_ID);
             return cap != null ? cap : Optional.empty();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return Optional.empty();
         }
     }
@@ -52,6 +53,10 @@ public final class CapabilityHandler {
     @SuppressWarnings("unchecked")
     public static Optional<Fastener<?>> getFastenerCapability(Entity entity) {
         if (entity == null) return Optional.empty();
+
+        if (entity instanceof FenceFastenerEntity fenceFastener) {
+            return fenceFastener.getFastener();
+        }
 
         // IMPORTANT: The "placing" flow relies on a persistent PlayerFastener instance.
         // If we create a new PlayerFastener on each lookup, the player will never "remember" the first placement,
@@ -85,7 +90,7 @@ public final class CapabilityHandler {
                     // setData doesn't exist, fall through
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // Method doesn't exist or failed, try next
         }
         // 2. Try getCapability(ResourceLocation) - old API
@@ -114,7 +119,7 @@ public final class CapabilityHandler {
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // Method doesn't exist or failed
         }
         return Optional.empty();

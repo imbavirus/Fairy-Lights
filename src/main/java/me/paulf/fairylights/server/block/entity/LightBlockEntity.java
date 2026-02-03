@@ -7,8 +7,10 @@ import me.paulf.fairylights.server.item.SimpleLightVariant;
 import me.paulf.fairylights.server.sound.FLSounds;
 import me.paulf.fairylights.util.FLMth;
 import me.paulf.fairylights.util.matrix.MatrixStack;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -22,6 +24,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 public class LightBlockEntity extends BlockEntity {
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     private Light<?> light;
 
     private boolean on = true;
@@ -102,40 +105,38 @@ public class LightBlockEntity extends BlockEntity {
         this.light.getBehavior().animateTick(this.level, Vec3.atLowerCornerOf(this.worldPosition).add(matrix.transform(Vec3.ZERO)), this.light);
     }
 
-    // getUpdateTag() may not be an override in 1.21.1
-    public CompoundTag getUpdateTag() {
-        // saveWithoutMetadata() signature changed in 1.21.1 - create CompoundTag and use saveAdditional
-        final CompoundTag tag = new CompoundTag();
-        this.saveAdditional(tag, this.level != null ? this.level.registryAccess() : net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY));
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public CompoundTag getUpdateTag(final HolderLookup.Provider provider) {
+        final CompoundTag tag = super.getUpdateTag(provider);
+        this.saveAdditional(tag, provider);
         return tag;
     }
 
-    // saveAdditional() signature changed in 1.21.1 - now requires RegistryAccess
-    protected void saveAdditional(CompoundTag compound, net.minecraft.core.RegistryAccess registryAccess) {
-        super.saveAdditional(compound, registryAccess);
-        // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
-        compound.put("item", this.light.getItem().save(registryAccess));
+    @Override
+    public void handleUpdateTag(final CompoundTag tag, final HolderLookup.Provider provider) {
+        super.handleUpdateTag(tag, provider);
+        this.loadAdditional(tag, provider);
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag compound, net.minecraft.core.HolderLookup.Provider provider) {
+        super.saveAdditional(compound, provider);
+        // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess or Provider
+        compound.put("item", this.light.getItem().save(provider));
         compound.putBoolean("on", this.on);
     }
 
-    // load() signature changed in 1.21.1 - now requires RegistryAccess
-    public void load(CompoundTag compound, net.minecraft.core.RegistryAccess registryAccess) {
-        // BlockEntity.load() in 1.21.1 - try calling with RegistryAccess first
-        try {
-            final java.lang.reflect.Method load = this.getClass().getSuperclass().getMethod("load", CompoundTag.class, net.minecraft.core.RegistryAccess.class);
-            load.invoke(this, compound, registryAccess);
-        } catch (Exception e) {
-            // Fallback to old signature if new one doesn't exist
-            try {
-                final java.lang.reflect.Method load = this.getClass().getSuperclass().getMethod("load", CompoundTag.class);
-                load.invoke(this, compound);
-            } catch (Exception e2) {
-                // load() not available - skip
-            }
-        }
-        // ItemStack.of() API changed in 1.21.1 - use ItemStack.parse() with RegistryAccess
+    @Override
+    protected void loadAdditional(CompoundTag compound, net.minecraft.core.HolderLookup.Provider provider) {
+        super.loadAdditional(compound, provider);
+        // ItemStack.of() API changed in 1.21.1 - use ItemStack.parse() with RegistryAccess/Provider
         if (compound.contains("item")) {
-            final ItemStack item = ItemStack.parse(registryAccess, compound.getCompound("item")).orElse(ItemStack.EMPTY);
+            final ItemStack item = ItemStack.parse(provider, compound.getCompound("item")).orElse(ItemStack.EMPTY);
             if (item != null && !item.isEmpty()) {
                 this.setItemStack(item);
             }

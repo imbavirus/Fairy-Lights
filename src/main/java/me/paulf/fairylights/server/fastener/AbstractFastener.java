@@ -43,7 +43,7 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
      * multiple fasteners (block <-> player <-> fence).
      */
     private static final Object CONNECTION_MAP_LOCK = new Object();
-
+    
     private final Map<UUID, Connection> outgoing = new HashMap<>();
 
     private final Map<UUID, Incoming> incoming = new HashMap<>();
@@ -55,6 +55,9 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
     private Level world;
 
     private boolean dirty;
+
+    @Nullable
+    private CompoundTag pendingLoadNBT;
 
     @Override
     public Optional<Connection> get(final UUID id) {
@@ -98,6 +101,12 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
         this.world = world;
         synchronized (CONNECTION_MAP_LOCK) {
             this.outgoing.values().forEach(c -> c.setWorld(world));
+        }
+        if (world != null && this.pendingLoadNBT != null) {
+            final CompoundTag nbt = this.pendingLoadNBT;
+            this.pendingLoadNBT = null;
+            // Need a provider for deserialization - try to get it from world
+            this.deserializeNBT(nbt, world.registryAccess());
         }
     }
 
@@ -277,7 +286,7 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
     public Connection createOutgoingConnection(final Level world, final UUID uuid, final Fastener<?> destination, final ConnectionType<?> type, final CompoundTag compound, final boolean drop) {
         synchronized (CONNECTION_MAP_LOCK) {
             final Connection c = type.create(world, this, uuid);
-            c.deserialize(destination, compound, drop);
+            c.deserialize(destination, compound, drop, world.registryAccess());
             this.outgoing.put(uuid, c);
             this.setDirty();
             return c;
@@ -297,6 +306,8 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
         synchronized (CONNECTION_MAP_LOCK) {
             final CompoundTag compound = new CompoundTag();
             final ListTag outgoing = new ListTag();
+            // FL_DEBUG: Log outgoing size
+            LOGGER.error("FL_DEBUG_CRITICAL: AbstractFastener.serializeNBT outgoing size: {}", this.outgoing.size());
             for (final Entry<UUID, Connection> connectionEntry : this.outgoing.entrySet()) {
                 final UUID uuid = connectionEntry.getKey();
                 final Connection connection = connectionEntry.getValue();
@@ -320,7 +331,11 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
     }
 
     // deserializeNBT() method signature may have changed in 1.21.1 - check if @Override is still valid
-    public void deserializeNBT(final CompoundTag compound) {
+    public void deserializeNBT(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
+        if (this.world == null) {
+            this.pendingLoadNBT = compound;
+            return;
+        }
         synchronized (CONNECTION_MAP_LOCK) {
             final ListTag listConnections = compound.getList("outgoing", Tag.TAG_COMPOUND);
             final List<UUID> nbtUUIDs = new ArrayList<>();
@@ -335,7 +350,7 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
                 nbtUUIDs.add(uuid);
                 if (this.outgoing.containsKey(uuid)) {
                     final Connection connection = this.outgoing.get(uuid);
-                    connection.deserialize(connectionCompound.getCompound("connection"));
+                    connection.deserialize(connectionCompound.getCompound("connection"), provider);
                 } else {
                     // getValue() removed - use get() with RegistryKey
                     final ResourceLocation typeId = ResourceLocation.tryParse(connectionCompound.getString("type"));
@@ -349,12 +364,12 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
                             );
                             type = registry.get(key);
                         } catch (Exception e) {
-                            // Registry lookup failed - type will remain null
+                            LOGGER.error("FL_DEBUG: Registry lookup failed for type " + typeId, e);
                         }
                     }
                     if (type != null && this.world != null) {
                         final Connection connection = type.create(this.world, this, uuid);
-                        connection.deserialize(connectionCompound.getCompound("connection"));
+                        connection.deserialize(connectionCompound.getCompound("connection"), provider);
                         this.outgoing.put(uuid, connection);
                     }
                 }

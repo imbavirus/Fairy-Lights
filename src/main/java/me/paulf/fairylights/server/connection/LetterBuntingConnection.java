@@ -215,8 +215,8 @@ public final class LetterBuntingConnection extends Connection implements Lettere
     }
 
     @Override
-    public void deserializeLogic(final CompoundTag compound) {
-        super.deserializeLogic(compound);
+    public void deserializeLogic(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
+        super.deserializeLogic(compound, provider);
         this.text = StyledString.deserialize(compound.getCompound("text"));
     }
 }

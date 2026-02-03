@@ -17,7 +17,7 @@ import java.util.UUID;
 public interface Fastener<F extends FastenerAccessor> {
     CompoundTag serializeNBT();
 
-    void deserializeNBT(CompoundTag nbt);
+    void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider provider);
 
     Optional<Connection> get(final UUID id);
 

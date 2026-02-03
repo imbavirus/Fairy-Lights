@@ -28,6 +28,12 @@ public final class FenceFastenerRenderer extends EntityRenderer<FenceFastenerEnt
     }
 
     @Override
+    public boolean shouldRender(final FenceFastenerEntity entity, final net.minecraft.client.renderer.culling.Frustum frustum, final double camX, final double camY, final double camZ) {
+        // Always render - connections can extend far beyond the entity's bounding box
+        return true;
+    }
+
+    @Override
     protected int getBlockLightLevel(final FenceFastenerEntity entity, final BlockPos delta) {
         return entity.level().getBrightness(LightLayer.BLOCK, entity.blockPosition());
     }

@@ -31,8 +31,8 @@ public final class GarlandTinselConnection extends Connection {
     }
 
     @Override
-    public void deserializeLogic(final CompoundTag compound) {
-        super.deserializeLogic(compound);
+    public void deserializeLogic(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
+        super.deserializeLogic(compound, provider);
         this.color = DyeableItem.getColor(compound);
         org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] GarlandTinselConnection.deserializeLogic: compound={}, color={}", compound, Integer.toHexString(this.color));
     }

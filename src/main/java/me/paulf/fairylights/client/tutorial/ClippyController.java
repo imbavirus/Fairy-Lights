@@ -135,10 +135,7 @@ public class ClippyController {
 
         @Override
         public void tick(final LocalPlayer player, final ClippyController controller) {
-            if (!player.getInventory().contains(FLCraftingRecipes.LIGHTS) &&
-                    !player.getInventory().getSelected().is(FLCraftingRecipes.LIGHTS)) {
-                controller.setState(new NoProgressState());
-            } else if (FLItems.HANGING_LIGHTS.value() != null && (
+            if (FLItems.HANGING_LIGHTS.value() != null && (
                     player.getInventory().getSelected().getItem() == FLItems.HANGING_LIGHTS.value() ||
                     player.getInventory().contains(new ItemStack(FLItems.HANGING_LIGHTS.value())) ||
                     player.getStats().getValue(Stats.ITEM_CRAFTED.get(FLItems.HANGING_LIGHTS.value())) > 0)) {
@@ -179,9 +176,14 @@ public class ClippyController {
 
         @Override
         public Visibility render(final GuiGraphics stack, final ToastComponent toastGui, final long delta) {
+            if (delta > 5000L) {
+                this.hide();
+                return Visibility.HIDE;
+            }
             // Toast texture location in 1.21.1
-            final net.minecraft.resources.ResourceLocation TEXTURE = net.minecraft.resources.ResourceLocation.withDefaultNamespace("textures/gui/toasts.png");
-            stack.blit(TEXTURE, 0, 0, 0, 96, 160, 32);
+            // Toast texture location in 1.21.1 - use sprite
+            final net.minecraft.resources.ResourceLocation TEXTURE = net.minecraft.resources.ResourceLocation.withDefaultNamespace("toast/advancement");
+            stack.blitSprite(TEXTURE, 0, 0, 160, 32);
             stack.renderFakeItem(this.stack.get(), 6 + 2, 6 + 2);
             if (this.subtitle == null) {
                 stack.drawString(toastGui.getMinecraft().font, this.title, 30, 12, 0xFF500050);

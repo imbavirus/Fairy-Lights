@@ -108,6 +108,7 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
 
     @Override
     public BlockEntity newBlockEntity(final BlockPos pos, final BlockState state) {
+        System.err.println("FL_DEBUG_CRITICAL: FastenerBlock.newBlockEntity at " + pos);
         return new FastenerBlockEntity(pos, state);
     }
 

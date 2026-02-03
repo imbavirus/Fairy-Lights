@@ -12,10 +12,15 @@ public class FixedColorBehavior implements ColorLightBehavior {
 
     private final float blue;
 
+    private static int logCount = 0;
     public FixedColorBehavior(final float red, final float green, final float blue) {
         this.red = red;
         this.green = green;
         this.blue = blue;
+        // FL_DEBUG: Log creation unconditional for first 100
+        if (logCount++ < 100) {
+             com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: FixedColorBehavior created: R=" + red + " G=" + green + " B=" + blue);
+        }
     }
 
     @Override

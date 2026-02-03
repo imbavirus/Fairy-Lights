@@ -34,7 +34,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import java.util.Optional;
 
 public abstract class ConnectionItem extends Item {
-    private static final Logger LOGGER = LogManager.getLogger();
     private final DeferredHolder<ConnectionType<?>, ? extends ConnectionType<?>> type;
 
     public ConnectionItem(final Properties properties,
@@ -106,6 +105,7 @@ public abstract class ConnectionItem extends Item {
         // (meaning you're trying to use a mismatched connection variant).
         // - If it has logic, block unless the stack tag matches the logic.
         final CompoundTag logic = connection.serializeLogic();
+        this.removeBackups(logic);
         final CompoundTag stackTag = getData(stack);
 
         if (stackTag == null) {
@@ -196,12 +196,6 @@ public abstract class ConnectionItem extends Item {
         final boolean logicImpliesStack = me.paulf.fairylights.util.Utils.impliesNbt(logic, stackTag);
         final boolean stackImpliesLogic = me.paulf.fairylights.util.Utils.impliesNbt(stackTag, logic);
         final boolean matches = logicImpliesStack && stackImpliesLogic;
-        if (!matches && (connection instanceof me.paulf.fairylights.server.connection.GarlandTinselConnection ||
-                connection instanceof me.paulf.fairylights.server.connection.PennantBuntingConnection)) {
-            LOGGER.warn(
-                    "[FairyLights] isConnectionInOtherHand: connection={}, logic={}, stackTag={}, logicImpliesStack={}, stackImpliesLogic={}",
-                    connection.getClass().getSimpleName(), logic, stackTag, logicImpliesStack, stackImpliesLogic);
-        }
         return !matches;
     }
 
@@ -214,6 +208,19 @@ public abstract class ConnectionItem extends Item {
             tag.put("text", stack.get(FLDataComponents.STYLED_STRING.get()));
         }
         return tag.isEmpty() ? null : tag;
+    }
+
+    private void removeBackups(final net.minecraft.nbt.Tag tag) {
+        if (tag instanceof CompoundTag compound) {
+            compound.remove("fl_backup_color");
+            for (final String key : compound.getAllKeys()) {
+                removeBackups(compound.get(key));
+            }
+        } else if (tag instanceof net.minecraft.nbt.ListTag list) {
+            for (int i = 0; i < list.size(); i++) {
+                removeBackups(list.get(i));
+            }
+        }
     }
 
     private void connect(final ItemStack stack, final Player user, final Level world, final BlockPos pos) {
@@ -253,17 +260,7 @@ public abstract class ConnectionItem extends Item {
             final Optional<Connection> placing = attacher.getFirstConnection();
             if (placing.isPresent()) {
                 final Connection conn = placing.get();
-                final var oldDestType = conn.getDestination().getType();
                 final boolean ok = conn.reconnect(fastener);
-                final var newDestType = conn.getDestination().getType();
-                LOGGER.info(
-                        "[FairyLights] connect 2nd: user={}, ok={}, oldDest={}, newDest={}, originPos={}, newPos={}",
-                        user.getGameProfile().getName(),
-                        ok,
-                        oldDestType,
-                        newDestType,
-                        conn.getFastener() != null ? conn.getFastener().getPos() : null,
-                        fastener.getPos());
                 if (ok) {
                     conn.onConnect(world, user, stack);
                     stack.shrink(1);
@@ -274,8 +271,6 @@ public abstract class ConnectionItem extends Item {
                     playSound = false;
                 }
             } else {
-                LOGGER.info("[FairyLights] connect 1st: user={}, destPos={}, item={}", user.getGameProfile().getName(),
-                        fastener.getPos(), stack.getItem().toString());
                 // Get stack NBT so connection logic matches on second placement
                 // For connections with default values (tinsel color, pennant pattern), we need
                 // to pass the stack's NBT
@@ -283,12 +278,10 @@ public abstract class ConnectionItem extends Item {
                 if (data == null) {
                     // Create empty tag if stack has no NBT
                     final CompoundTag empty = new CompoundTag();
-                    LOGGER.info("[FairyLights] connect 1st: stack has no NBT, using empty tag");
                     fastener.connect(world, attacher, this.getConnectionType(), empty, false);
                 } else {
                     // Copy stack NBT so connection can deserialize it
                     final CompoundTag dataCopy = data.copy();
-                    LOGGER.info("[FairyLights] connect 1st: passing NBT to connection: {}", dataCopy);
                     fastener.connect(world, attacher, this.getConnectionType(), dataCopy, false);
                 }
                 /*

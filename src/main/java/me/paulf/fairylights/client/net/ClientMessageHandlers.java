@@ -33,7 +33,7 @@ public class ClientMessageHandlers {
         final Entity entity = Minecraft.getInstance().level.getEntity(message.getEntityId());
         if (entity != null) {
             me.paulf.fairylights.server.capability.CapabilityHandler.getFastenerCapability(entity).ifPresent(fastener ->
-                    fastener.deserializeNBT(message.getCompound()));
+                    fastener.deserializeNBT(message.getCompound(), Minecraft.getInstance().level.registryAccess()));
         }
     }
 }

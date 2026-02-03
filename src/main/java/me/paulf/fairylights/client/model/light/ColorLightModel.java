@@ -10,6 +10,7 @@ public class ColorLightModel extends LightModel<StandardLightBehavior> {
         super(root);
     }
 
+    private static int debugCounter = 0;
     @Override
     public void animate(final Light<?> light, final StandardLightBehavior behavior, final float delta) {
         super.animate(light, behavior, delta);
@@ -17,5 +18,8 @@ public class ColorLightModel extends LightModel<StandardLightBehavior> {
         this.red = behavior.getRed(delta);
         this.green = behavior.getGreen(delta);
         this.blue = behavior.getBlue(delta);
+        if (debugCounter++ < 100) {
+             com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: ColorLightModel.animate: R=" + this.red + " G=" + this.green + " B=" + this.blue);
+        }
     }
 }

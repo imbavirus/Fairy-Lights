@@ -96,6 +96,10 @@ public final class ClientProxy extends ServerProxy {
         // FLClientConfig.SPEC);
         ClientEventHandler clientEventHandler = new ClientEventHandler();
         NeoForge.EVENT_BUS.register(clientEventHandler);
+        // Hook updateHitConnection to run after the game's pick logic each frame
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientTickEvent.Post event) -> {
+            ClientEventHandler.updateHitConnection();
+        });
         modBus.<RegisterGuiLayersEvent>addListener(e -> {
             // RegisterGuiLayersEvent.registerBelowAll() - comment out for now, needs proper
             // interface
