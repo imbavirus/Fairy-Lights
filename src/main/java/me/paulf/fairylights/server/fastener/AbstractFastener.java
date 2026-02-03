@@ -20,6 +20,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +46,8 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
      * multiple fasteners (block <-> player <-> fence).
      */
     private static final Object CONNECTION_MAP_LOCK = new Object();
+    
+    private static final Logger LOGGER = LogManager.getLogger();
     
     private final Map<UUID, Connection> outgoing = new HashMap<>();
 
