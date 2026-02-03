@@ -690,7 +690,7 @@ function Resolve-ModrinthGameVersions([hashtable]$mr, [string]$minecraftVersion)
     return $versions
   }
 
-  # Auto-detect from gradle.properties
+  # Auto-detect from gradle.properties - ensure it's always an array
   return @($minecraftVersion)
 }
 
@@ -787,19 +787,37 @@ function Upload-ToModrinth([string]$version, [array]$artifacts) {
 
   # Build metadata per Modrinth API v2
   # Note: project_id is included in the metadata, not the URL
+  # Ensure game_versions and loaders are always arrays (not single strings)
+  # PowerShell's ConvertTo-Json can serialize single-element arrays as strings, so we need to force array type
+  $gameVersionsArray = [string[]]@(if ($gameVersions -is [array]) { $gameVersions } else { $gameVersions })
+  $loadersArray = [string[]]@(if ($loaders -is [array]) { $loaders } else { $loaders })
+  
   $metadata = @{
     name = "v$version"
     version_number = $version
     changelog = $changelog
     dependencies = @()
-    game_versions = $gameVersions
-    loaders = $loaders
-    release_type = $releaseType
+    game_versions = $gameVersionsArray
+    loaders = $loadersArray
+    release_channel = $releaseType
     featured = $false
     project_id = $mr.ProjectId
+    file_parts = @($fileName)
   }
 
+  # Convert to JSON, ensuring arrays are always arrays
+  # PowerShell's ConvertTo-Json can serialize single-element arrays as strings
+  # Fix by replacing string values with array syntax in JSON
   $metadataJson = $metadata | ConvertTo-Json -Compress -Depth 10
+  
+  # Fix game_versions: replace "game_versions":"value" with "game_versions":["value"]
+  $metadataJson = $metadataJson -replace '("game_versions"\s*:\s*)"([^"]+)"', '$1["$2"]'
+  
+  # Fix loaders: replace "loaders":"value" with "loaders":["value"]  
+  $metadataJson = $metadataJson -replace '("loaders"\s*:\s*)"([^"]+)"', '$1["$2"]'
+  
+  # Fix file_parts: replace "file_parts":"value" with "file_parts":["value"]
+  $metadataJson = $metadataJson -replace '("file_parts"\s*:\s*)"([^"]+)"', '$1["$2"]'
 
   $uploadUri = "$($mr.BaseUrl)/v2/version"
   Write-Host "Uploading to Modrinth project $($mr.ProjectId)..."
