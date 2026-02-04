@@ -9,6 +9,7 @@ import me.paulf.fairylights.server.collision.Intersection;
 import me.paulf.fairylights.server.connection.Connection;
 import me.paulf.fairylights.server.connection.HangingLightsConnection;
 import me.paulf.fairylights.server.connection.PlayerAction;
+import me.paulf.fairylights.server.feature.light.Light;
 import me.paulf.fairylights.server.entity.FenceFastenerEntity;
 import me.paulf.fairylights.server.fastener.CollectFastenersEvent;
 import me.paulf.fairylights.server.fastener.Fastener;
@@ -100,18 +101,118 @@ public final class ClientEventHandler {
         }
     }
 
+    private static HitConnection lastHitConnection = null;
+    private static String lastComponentDescription = null;
+    
+    private static String getComponentDescription(final HitResult result) {
+        // Check if it's a CORD feature (rope/wire) by comparing with Connection.CORD_FEATURE
+        final boolean isCord = result.intersection.getFeatureType() == me.paulf.fairylights.server.connection.Connection.CORD_FEATURE;
+        
+        // For FEATURE type, we can detect it by checking if the feature is a Light
+        final boolean isFeature = result.intersection.getFeature() instanceof Light;
+        
+        if (result.connection instanceof HangingLightsConnection) {
+            final HangingLightsConnection conn = (HangingLightsConnection) result.connection;
+            if (isFeature) {
+                // Individual light
+                final int lightIndex = result.intersection.getFeature().getId();
+                final Light<?>[] lights = conn.getFeatures();
+                if (lightIndex >= 0 && lightIndex < lights.length) {
+                    final Light<?> light = lights[lightIndex];
+                    final ItemStack lightItem = light.getItem();
+                    final String lightName = lightItem.isEmpty() ? "Empty" : lightItem.getDisplayName().getString();
+                    return String.format("LIGHT[%d]: %s", lightIndex, lightName);
+                }
+                return String.format("LIGHT[%d]", lightIndex);
+            } else if (isCord) {
+                return "ROPE/WIRE";
+            }
+        }
+        // Fallback for other connection types
+        final String typeName = isCord ? "CORD" : (isFeature ? "FEATURE" : ("TYPE_" + result.intersection.getFeatureType().getId()));
+        return typeName + "[" + result.intersection.getFeature().getId() + "]";
+    }
+    
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+    private static int tickCounter = 0;
+    
     public static void updateHitConnection() {
+        tickCounter++;
+        // Log every 20 ticks (1 second) to confirm method is being called
+        if (tickCounter % 20 == 0) {
+            LOGGER.info("FL_DEBUG: updateHitConnection() called (tick " + tickCounter + ")");
+        }
+        
         final Minecraft mc = Minecraft.getInstance();
         final Entity viewer = mc.getCameraEntity();
         if (mc.hitResult != null && mc.level != null && viewer != null) {
+            // First check for fastener entities/blocks
+            if (mc.hitResult instanceof EntityHitResult entityHit) {
+                final Entity entity = entityHit.getEntity();
+                if (entity instanceof FenceFastenerEntity) {
+                    final String desc = "FASTENER[FENCE]";
+                    if (!desc.equals(lastComponentDescription)) {
+                        LOGGER.info("FL_DEBUG: MOUSEOVER - " + desc + " at " + entityHit.getLocation());
+                        lastComponentDescription = desc;
+                        lastHitConnection = null;
+                    }
+                    return;
+                }
+            }
+            
+            // Check for block fasteners
+            if (mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult blockHit) {
+                final var blockState = mc.level.getBlockState(blockHit.getBlockPos());
+                if (blockState.getBlock() == me.paulf.fairylights.server.block.FLBlocks.FASTENER.get()) {
+                    final String desc = "FASTENER[BLOCK] at " + blockHit.getBlockPos();
+                    if (!desc.equals(lastComponentDescription)) {
+                        LOGGER.info("FL_DEBUG: MOUSEOVER - " + desc);
+                        lastComponentDescription = desc;
+                        lastHitConnection = null;
+                    }
+                    return;
+                }
+            }
+            
+            // Check for connection hits
             final HitResult result = getHitConnection(mc.level, viewer);
             if (result != null) {
                 final Vec3 eyes = viewer.getEyePosition(1.0F);
                 if (result.intersection.getResult().distanceTo(eyes) < mc.hitResult.getLocation().distanceTo(eyes)) {
-                    mc.hitResult = new EntityHitResult(new HitConnection(mc.level, result));
+                    final HitConnection hitConnection = new HitConnection(mc.level, result);
+                    mc.hitResult = new EntityHitResult(hitConnection);
                     mc.crosshairPickEntity = null;
-                    // Log hit detection for debugging
-                    // System.out.println("Fairy Lights: Hit connection " + result.connection.getUUID());
+                    currentHoveredHitConnection = hitConnection; // Store for click handling
+                    
+                    // Track mouseover changes with detailed component description
+                    final String componentDesc = getComponentDescription(result);
+                    if (lastHitConnection == null || !lastHitConnection.result.connection.getUUID().equals(result.connection.getUUID()) || 
+                        lastHitConnection.result.intersection.getFeature().getId() != result.intersection.getFeature().getId() ||
+                        !componentDesc.equals(lastComponentDescription)) {
+                        LOGGER.info("FL_DEBUG: MOUSEOVER - Connection: " + result.connection.getUUID() + 
+                            " Component: " + componentDesc +
+                            " FeatureType=" + result.intersection.getFeatureType().getId() + 
+                            " FeatureId=" + result.intersection.getFeature().getId() +
+                            " HitPos=" + result.intersection.getResult());
+                        lastHitConnection = hitConnection;
+                        lastComponentDescription = componentDesc;
+                    }
+                } else {
+                    // No longer hovering over a connection
+                    if (lastHitConnection != null) {
+                        LOGGER.info("FL_DEBUG: MOUSEOVER - No longer over connection (block/entity closer)");
+                        lastHitConnection = null;
+                        lastComponentDescription = null;
+                        currentHoveredHitConnection = null;
+                    }
+                }
+            } else {
+                // No connection found in raycast
+                if (lastHitConnection != null) {
+                    LOGGER.info("FL_DEBUG: MOUSEOVER - No connection found in raycast");
+                    lastHitConnection = null;
+                    lastComponentDescription = null;
+                    currentHoveredHitConnection = null;
                 }
             }
         }
@@ -121,7 +222,12 @@ public final class ClientEventHandler {
     private static HitResult getHitConnection(final Level world, final Entity viewer) {
         final AABB bounds = new AABB(viewer.blockPosition()).inflate(Connection.MAX_LENGTH + 1.0D);
         final Set<Fastener<?>> fasteners = collectFasteners(world, bounds);
-        return getHitConnection(viewer, bounds, fasteners);
+        final HitResult result = getHitConnection(viewer, bounds, fasteners);
+        if (result == null && fasteners.size() > 0) {
+            // Debug: log when we have fasteners but no hit
+            System.out.println("FL_DEBUG: Raycast found " + fasteners.size() + " fasteners but no connection hit");
+        }
+        return result;
     }
 
     private static Set<Fastener<?>> collectFasteners(final Level world, final AABB bounds) {
@@ -162,14 +268,18 @@ public final class ClientEventHandler {
         Connection found = null;
         Intersection rayTrace = null;
         double distance = Double.MAX_VALUE;
+        int connectionCount = 0;
+        int intersectionCount = 0;
         for (final Fastener<?> fastener : fasteners) {
             for (final Connection connection : fastener.getOwnConnections()) {
+                connectionCount++;
                 if (connection.getDestination().getType() == FastenerType.PLAYER) {
                     continue;
                 }
                 final Collidable collision = connection.getCollision();
                 final Intersection result = collision.intersect(origin, end);
                 if (result != null) {
+                    intersectionCount++;
                     final double dist = result.getResult().distanceTo(origin);
                     if (dist < distance) {
                         distance = dist;
@@ -178,6 +288,10 @@ public final class ClientEventHandler {
                     }
                 }
             }
+        }
+        // Debug logging for raycast results (only log occasionally to avoid spam)
+        if (connectionCount > 0 && found == null && tickCounter % 100 == 0) {
+            LOGGER.info("FL_DEBUG: Raycast checked " + connectionCount + " connections, " + intersectionCount + " intersections, but none were closest");
         }
         if (found == null) {
             return null;
@@ -194,6 +308,59 @@ public final class ClientEventHandler {
     
     // TODO: Entity highlight rendering - RenderHighlightEvent.Entity may not exist in NeoForge 1.21.1
     // The original implementation is commented out until we find the correct event
+    
+    @SubscribeEvent
+    public void onPlayerInteract(final net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract event) {
+        // Handle interaction with HitConnection entities directly
+        if (event.getTarget() instanceof HitConnection hitConnection) {
+            LOGGER.info("FL_DEBUG: EntityInteract event caught for HitConnection");
+            hitConnection.processAction(PlayerAction.INTERACT);
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+        }
+    }
+    
+    @SubscribeEvent
+    public void onPlayerAttack(final net.neoforged.neoforge.event.entity.player.AttackEntityEvent event) {
+        // Handle attack on HitConnection entities directly
+        if (event.getTarget() instanceof HitConnection hitConnection) {
+            LOGGER.info("FL_DEBUG: AttackEntityEvent caught for HitConnection");
+            hitConnection.processAction(PlayerAction.ATTACK);
+            event.setCanceled(true);
+        }
+    }
+    
+    @SubscribeEvent
+    public void onRightClickEntity(final net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteractSpecific event) {
+        // Alternative event for entity interactions
+        if (event.getTarget() instanceof HitConnection hitConnection) {
+            LOGGER.info("FL_DEBUG: EntityInteractSpecific event caught for HitConnection");
+            hitConnection.processAction(PlayerAction.INTERACT);
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+        }
+    }
+    
+    // Store the last HitConnection we're hovering over for direct click handling
+    private static HitConnection currentHoveredHitConnection = null;
+    
+    @SubscribeEvent
+    public void onRightClickEmpty(final net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickEmpty event) {
+        // Check if we're hovering over a HitConnection
+        if (currentHoveredHitConnection != null) {
+            LOGGER.info("FL_DEBUG: RightClickEmpty event - processing HitConnection interaction");
+            currentHoveredHitConnection.processAction(PlayerAction.INTERACT);
+        }
+    }
+    
+    @SubscribeEvent
+    public void onRightClickItem(final net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickItem event) {
+        // Check if we're hovering over a HitConnection
+        if (currentHoveredHitConnection != null) {
+            LOGGER.info("FL_DEBUG: RightClickItem event - processing HitConnection interaction");
+            currentHoveredHitConnection.processAction(PlayerAction.INTERACT);
+        }
+    }
     /*
     @SubscribeEvent
     public void drawEntityHighlight(final RenderHighlightEvent.Entity event) {
@@ -367,13 +534,14 @@ public final class ClientEventHandler {
         @Override
         public InteractionResult interact(final Player player, final InteractionHand hand) {
             if (player == Minecraft.getInstance().player) {
+                com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: HitConnection.interact() called");
                 this.processAction(PlayerAction.INTERACT);
                 return InteractionResult.SUCCESS;
             }
             return super.interact(player, hand);
         }
 
-        private void processAction(final PlayerAction action) {
+        public void processAction(final PlayerAction action) {
             this.result.connection.processClientAction(Minecraft.getInstance().player, action, this.result.intersection);
         }
 

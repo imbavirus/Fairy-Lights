@@ -127,7 +127,11 @@ public class LightBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag compound, net.minecraft.core.HolderLookup.Provider provider) {
         super.saveAdditional(compound, provider);
         // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess or Provider
-        compound.put("item", this.light.getItem().save(provider));
+        // Minecraft 1.21.1 throws IllegalStateException when trying to save empty ItemStack
+        final ItemStack item = this.light.getItem();
+        if (!item.isEmpty()) {
+            compound.put("item", item.save(provider));
+        }
         compound.putBoolean("on", this.on);
     }
 

@@ -88,13 +88,34 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     @Override
     public boolean interact(final Player player, final Vec3 hit, final FeatureType featureType, final int feature, final ItemStack heldStack, final InteractionHand hand) {
         if (featureType == FEATURE && heldStack.is(FLCraftingRecipes.LIGHTS)) {
-            final int index = feature % this.pattern.size();
+            // Handle empty pattern case - initialize pattern if needed
+            if (this.pattern.isEmpty()) {
+                // When pattern is empty, get the current light from the feature being clicked
+                // to know what we're replacing
+                ItemStack currentLight = ItemStack.EMPTY;
+                if (feature >= 0 && feature < this.features.length) {
+                    currentLight = this.features[feature].getItem();
+                }
+                // Initialize pattern with the current light (or empty if no current light)
+                this.pattern.add(currentLight.isEmpty() ? ItemStack.EMPTY : currentLight.copy());
+            }
+            
+            // Calculate which pattern index this feature corresponds to (pattern cycles)
+            final int index = this.pattern.isEmpty() ? 0 : feature % this.pattern.size();
             final ItemStack light = this.pattern.get(index);
+            
+            // Only swap if the held light is different from the current light
             if (!ItemStack.matches(light, heldStack)) {
                 final ItemStack placed = heldStack.split(1);
                 this.pattern.set(index, placed);
-                ItemHandlerHelper.giveItemToPlayer(player, light);
+                // Give the old light back to player (or empty stack if it was empty)
+                if (!light.isEmpty()) {
+                    ItemHandlerHelper.giveItemToPlayer(player, light);
+                }
                 this.computeCatenary();
+                // Mark fastener dirty to sync pattern change to clients
+                this.fastener.setDirty();
+                this.getDestination().get(this.world, false).ifPresent(Fastener::setDirty);
                 this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.FEATURE_COLOR_CHANGE.get(), SoundSource.BLOCKS, 1, 1);
                 return true;
             }
@@ -102,6 +123,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         if (super.interact(player, hit, featureType, feature, heldStack, hand)) {
             return true;
         }
+        // Toggle on/off state
         this.isOn = !this.isOn;
         final SoundEvent lightSnd;
         final float pitch;
@@ -114,6 +136,9 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         }
         this.world.playSound(null, hit.x, hit.y, hit.z, lightSnd, SoundSource.BLOCKS, 1, pitch);
         this.computeCatenary();
+        // Mark fastener dirty to sync state change to clients
+        this.fastener.setDirty();
+        this.getDestination().get(this.world, false).ifPresent(Fastener::setDirty);
         return true;
     }
 
