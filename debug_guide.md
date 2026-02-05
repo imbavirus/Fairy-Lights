@@ -75,7 +75,21 @@ This guide documents the step-by-step process used to identify and fix JEI recip
 *   Updated `GenericRecipeWrapper` to use the exact same color logic as the Creative Tab generation.
 *   Ensured defaults match: If Creative Tab defaults to "Black String", the recipe must also produce "Black String" (or explicitly handle the conversion).
 
-## 5. Debugging Tools Used
+## 5. The "ID" vs "Item" Key Trap (1.21.x Specific)
+
+**Problem:** Recipes fail to load silently or with generic parsing errors.
+**Diagnosis:**
+*   Legacy versions often accepted `"id"` inside input ingredients (e.g. `{"id": "minecraft:dirt"}`).
+*   Minecraft 1.21 strict codecs require `"item"` for single items (e.g. `{"item": "minecraft:dirt"}`) or `"tag"` for tags.
+*   **Crucially:** Output results (`"result"`, `"output"`) often *still* accept or require `"id"`.
+*   **Result:** A recipe with `"id"` in the input keys (like `key`, `ingredients`, `item_input`) will be rejected by the recipe loader.
+
+**Fix:**
+*   Batch replaced `"id"` with `"item"` **only** within input structures.
+*   Preserved `"id"` keys within `"result"` and `"output"` blocks.
+*   Used a script to scan and fix 100+ files to ensure consistency.
+
+## 6. Debugging Tools Used
 
 *   **Logging:** heavily added `LOGGER.info()` inside `registerVanillaCategoryExtensions` and `setRecipe` to trace execution.
 *   **NBT Inspection:** Used `System.out.println(stack.getTag())` to compare the NBT of the "Ghost Item" in JEI vs the "Real Item" in the Creative Tab.
