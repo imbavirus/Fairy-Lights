@@ -355,7 +355,9 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
                 nbtUUIDs.add(uuid);
                 if (this.outgoing.containsKey(uuid)) {
                     final Connection connection = this.outgoing.get(uuid);
-                    connection.deserialize(connectionCompound.getCompound("connection"), provider);
+                    final CompoundTag connectionTag = connectionCompound.getCompound("connection");
+                    com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: AbstractFastener.deserializeNBT - calling connection.deserialize() for existing connection " + uuid + " isOn in NBT=" + (connectionTag.contains("isOn") ? connectionTag.getBoolean("isOn") : "MISSING"));
+                    connection.deserialize(connectionTag, provider);
                 } else {
                     // getValue() removed - use get() with RegistryKey
                     final ResourceLocation typeId = ResourceLocation.tryParse(connectionCompound.getString("type"));

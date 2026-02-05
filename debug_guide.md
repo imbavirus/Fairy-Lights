@@ -1,5 +1,34 @@
 # JEI Debugging & Fix Guide (NeoForge 1.21.1)
 
+## Test Recipe (Removed)
+
+A test recipe file was found and removed from the codebase:
+
+**Location:** `src/main/resources/data/fairylights/recipe/test_recipe.json`
+
+**Content:**
+```json
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:dirt"
+    }
+  },
+  "result": {
+    "id": "minecraft:diamond",
+    "count": 1
+  }
+}
+```
+
+**Description:** This was a test recipe that allowed crafting 9 dirt blocks into 1 diamond. It was likely left over from testing/debugging and has been removed from the codebase.
+
 This guide documents the step-by-step process used to identify and fix JEI recipe visibility issues in the Fairy Lights mod. It serves as a reference for debugging similar issues in other mods.
 
 ## 1. Verify Basic JEI Integration

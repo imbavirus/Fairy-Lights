@@ -57,6 +57,8 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     private boolean wasPlaying = false;
 
     private boolean isOn = true;
+    
+    private long lastToggleTick = -1; // Track last toggle tick to prevent double-toggles
 
     private final Set<BlockPos> litBlocks = new HashSet<>();
 
@@ -87,21 +89,35 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
 
     @Override
     public boolean interact(final Player player, final Vec3 hit, final FeatureType featureType, final int feature, final ItemStack heldStack, final InteractionHand hand) {
-        if (featureType == FEATURE && heldStack.is(FLCraftingRecipes.LIGHTS)) {
-            // Handle empty pattern case - initialize pattern if needed
-            if (this.pattern.isEmpty()) {
-                // When pattern is empty, get the current light from the feature being clicked
-                // to know what we're replacing
+        // Check if the held item is a LightItem (more robust than tag check)
+        final boolean isLightItem = heldStack.getItem() instanceof me.paulf.fairylights.server.item.LightItem;
+        // Also check the tag as a fallback for compatibility
+        final boolean isInLightsTag = heldStack.is(FLCraftingRecipes.LIGHTS);
+        
+        if (featureType == FEATURE && (isLightItem || isInLightsTag)) {
+            // Ensure pattern has enough entries for ALL features (one per light)
+            // Expand pattern to match the total number of features if needed
+            final int totalFeatures = this.features.length;
+            while (this.pattern.size() < totalFeatures) {
+                final int targetIndex = this.pattern.size(); // Index we're about to add
                 ItemStack currentLight = ItemStack.EMPTY;
-                if (feature >= 0 && feature < this.features.length) {
-                    currentLight = this.features[feature].getItem();
+                
+                // Try to get the actual light from the feature at this index
+                if (targetIndex < this.features.length) {
+                    currentLight = this.features[targetIndex].getItem();
                 }
-                // Initialize pattern with the current light (or empty if no current light)
+                
+                // If no feature exists at this index, use empty (don't cycle - we want individual entries)
                 this.pattern.add(currentLight.isEmpty() ? ItemStack.EMPTY : currentLight.copy());
             }
             
-            // Calculate which pattern index this feature corresponds to (pattern cycles)
-            final int index = this.pattern.isEmpty() ? 0 : feature % this.pattern.size();
+            // Also ensure we have at least one entry for the feature being clicked
+            while (this.pattern.size() <= feature) {
+                this.pattern.add(ItemStack.EMPTY);
+            }
+            
+            // Use feature ID directly as index (each light has its own pattern entry)
+            final int index = feature;
             final ItemStack light = this.pattern.get(index);
             
             // Only swap if the held light is different from the current light
@@ -123,8 +139,22 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         if (super.interact(player, hit, featureType, feature, heldStack, hand)) {
             return true;
         }
+        // Only toggle on/off state if player has nothing in hand
+        if (!heldStack.isEmpty()) {
+            return false; // Don't toggle if holding something
+        }
+        // Prevent double-toggles from the same tick (interaction might be called twice)
+        final long currentTick = this.world.getGameTime();
+        if (currentTick == this.lastToggleTick) {
+            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Ignoring duplicate toggle on same tick");
+            return true; // Already handled this tick
+        }
+        this.lastToggleTick = currentTick;
+        
         // Toggle on/off state
+        final boolean wasOn = this.isOn;
         this.isOn = !this.isOn;
+        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Toggling lights - wasOn=" + wasOn + " isOn=" + this.isOn);
         final SoundEvent lightSnd;
         final float pitch;
         if (this.isOn) {
@@ -135,10 +165,40 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
             pitch = 0.5F;
         }
         this.world.playSound(null, hit.x, hit.y, hit.z, lightSnd, SoundSource.BLOCKS, 1, pitch);
-        this.computeCatenary();
+        
+        // Immediately update power state of all existing features
+        final boolean on = !this.isDynamic() && this.isOn;
+        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Setting power state - on=" + on + " isDynamic=" + this.isDynamic() + " features.length=" + this.features.length);
+        for (final Light<?> light : this.features) {
+            light.power(on, true); // Use 'now=true' for immediate visual update
+        }
+        
+        // If turning off, remove all light blocks immediately
+        if (!on) {
+            for (final BlockPos pos : this.litBlocks) {
+                this.removeLight(pos);
+            }
+            this.litBlocks.clear();
+        }
+        
         // Mark fastener dirty to sync state change to clients
+        // Don't call computeCatenary() - it triggers feature updates that interfere with power state
         this.fastener.setDirty();
         this.getDestination().get(this.world, false).ifPresent(Fastener::setDirty);
+        
+        // Force immediate block entity update to sync state to clients
+        // This ensures deserialize() is called on the client with the new isOn value
+        if (!this.world.isClientSide() && this.fastener instanceof me.paulf.fairylights.server.fastener.BlockFastener blockFastener) {
+            final BlockPos pos = blockFastener.getPos();
+            final net.minecraft.world.level.block.entity.BlockEntity be = this.world.getBlockEntity(pos);
+            if (be instanceof me.paulf.fairylights.server.block.entity.FastenerBlockEntity fastenerBE) {
+                fastenerBE.setChanged();
+                final net.minecraft.world.level.block.state.BlockState state = this.world.getBlockState(pos);
+                this.world.sendBlockUpdated(pos, state, state, 3);
+            }
+        }
+        // Also handle entity fasteners if needed (they sync via different mechanism)
+        
         return true;
     }
 
@@ -189,7 +249,16 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     }
 
     private ItemStack getPatternStack(final int index) {
-        return this.pattern.isEmpty() ? ItemStack.EMPTY : this.pattern.get(index % this.pattern.size());
+        if (this.pattern.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        // Use direct indexing if pattern is large enough, otherwise cycle
+        if (index < this.pattern.size()) {
+            return this.pattern.get(index);
+        } else {
+            // Fallback to cycling only if index is beyond pattern size
+            return this.pattern.get(index % this.pattern.size());
+        }
     }
 
     @Override
@@ -230,9 +299,16 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
 
     @Override
     protected void onAfterUpdateFeatures() {
-        final boolean on = !this.isDynamic() && this.isOn;
-        for (final Light<?> light : this.features) {
-            light.power(on, this.isDynamic() || this.prevCatenary == null);
+        // Only apply power state on server side
+        // Client will get it via deserialize() - don't override with stale state here
+        if (!this.world.isClientSide()) {
+            final boolean on = !this.isDynamic() && this.isOn;
+            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: onAfterUpdateFeatures (SERVER) - isOn=" + this.isOn + " on=" + on + " features.length=" + this.features.length);
+            for (final Light<?> light : this.features) {
+                light.power(on, true); // Use 'now=true' to ensure immediate update
+            }
+        } else {
+            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: onAfterUpdateFeatures (CLIENT) - skipping power state update, will be set via deserialize() - isOn=" + this.isOn + " features.length=" + this.features.length);
         }
         this.oldLitBlocks.removeAll(this.litBlocks);
         final Iterator<BlockPos> oldIter = this.oldLitBlocks.iterator();
@@ -273,6 +349,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     public CompoundTag serialize() {
         final CompoundTag compound = super.serialize();
         compound.put("jinglePlayer", this.jinglePlayer.serialize());
+        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: serialize (" + (this.world.isClientSide() ? "CLIENT" : "SERVER") + ") - isOn=" + this.isOn);
         compound.putBoolean("isOn", this.isOn);
         final ListTag litBlocks = new ListTag();
         for (final BlockPos litBlock : this.litBlocks) {
@@ -284,20 +361,70 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
 
     @Override
     public void deserialize(final CompoundTag compound) {
-        super.deserialize(compound);
+        throw new UnsupportedOperationException("Use deserialize(CompoundTag, HolderLookup.Provider)");
+    }
+    
+    @Override
+    public void deserialize(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
+        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize(CompoundTag, Provider) ENTRY - world=" + (this.world != null ? (this.world.isClientSide() ? "CLIENT" : "SERVER") : "NULL") + " isOn=" + this.isOn + " compound.hasIsOn=" + compound.contains("isOn"));
+        
+        // Call parent to handle destination, slack, drop, etc.
+        super.deserialize(compound, provider);
+        
+        // Now handle HangingLightsConnection-specific data
+        // The connection compound structure: {destination, logic, slack, drop, jinglePlayer, isOn, litBlocks}
+        // But we're being called with the full connection compound, so we can read isOn directly
         if (this.jinglePlayer == null) {
             this.jinglePlayer = new JinglePlayer();
         }
-        if (!this.jinglePlayer.isPlaying()) {
+        if (!this.jinglePlayer.isPlaying() && compound.contains("jinglePlayer")) {
             this.jinglePlayer.deserialize(compound.getCompound("jinglePlayer"));
         }
-        this.isOn = compound.getBoolean("isOn");
+        
+        // Read isOn state, defaulting to true if not present
+        final boolean oldIsOn = this.isOn;
+        final boolean hasIsOn = compound.contains("isOn");
+        final boolean newIsOn = hasIsOn ? compound.getBoolean("isOn") : this.isOn;
+        this.isOn = newIsOn;
+        
+        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize (" + (this.world != null && this.world.isClientSide() ? "CLIENT" : "SERVER") + ") - hasIsOn=" + hasIsOn + " oldIsOn=" + oldIsOn + " newIsOn=" + newIsOn + " isOn=" + this.isOn + " features.length=" + (this.features != null ? this.features.length : 0));
+        
+        // On client side, always update power state when deserializing (state might have changed)
+        if (this.world != null && this.world.isClientSide() && this.features != null) {
+            final boolean on = !this.isDynamic() && this.isOn;
+            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize (CLIENT) - updating power state - on=" + on + " isDynamic=" + this.isDynamic() + " features.length=" + this.features.length);
+            for (final Light<?> light : this.features) {
+                light.power(on, true); // Use 'now=true' for immediate visual update
+            }
+            
+            // Remove all light blocks if turning off (before reading new litBlocks from NBT)
+            if (!on) {
+                // Remove all existing light blocks from the set
+                for (final BlockPos pos : this.litBlocks) {
+                    this.removeLight(pos);
+                }
+                this.litBlocks.clear();
+            }
+        }
+        
+        // Read litBlocks from NBT (server sends empty list when lights are off)
         this.litBlocks.clear();
-        final ListTag litBlocks = compound.getList("litBlocks", Tag.TAG_COMPOUND);
-        for (int i = 0; i < litBlocks.size(); i++) {
-            // NbtUtils.readBlockPos() API changed - takes CompoundTag and key in 1.21.1
-            final CompoundTag blockPosTag = litBlocks.getCompound(i);
-            NbtUtils.readBlockPos(blockPosTag, "Pos").ifPresent(pos -> this.litBlocks.add(pos));
+        if (compound.contains("litBlocks", Tag.TAG_LIST)) {
+            final ListTag litBlocks = compound.getList("litBlocks", Tag.TAG_COMPOUND);
+            for (int i = 0; i < litBlocks.size(); i++) {
+                // NbtUtils.readBlockPos() API changed - takes CompoundTag and key in 1.21.1
+                final CompoundTag blockPosTag = litBlocks.getCompound(i);
+                NbtUtils.readBlockPos(blockPosTag, "Pos").ifPresent(pos -> this.litBlocks.add(pos));
+            }
+        }
+        
+        // On client side, if lights are off, ensure no light blocks exist (double-check)
+        if (this.world != null && this.world.isClientSide() && !this.isOn) {
+            // Remove any light blocks that might still exist (safety check)
+            for (final BlockPos pos : this.litBlocks) {
+                this.removeLight(pos);
+            }
+            this.litBlocks.clear();
         }
     }
 

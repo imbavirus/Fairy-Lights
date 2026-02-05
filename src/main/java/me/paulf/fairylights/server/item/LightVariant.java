@@ -22,9 +22,19 @@ public interface LightVariant<T extends LightBehavior> {
 
     boolean isOrientable();
 
-    // TODO: Refactor to use NeoForge 1.21.1 data attachment system
+    // Get the LightVariant from an ItemStack
+    // If the item is a LightItem, get the variant from its LightBlock
     static Optional<LightVariant<?>> get(final ItemStack stack) {
-        // For now, return empty - needs proper implementation
+        if (stack.isEmpty()) {
+            return Optional.empty();
+        }
+        final var item = stack.getItem();
+        if (item instanceof LightItem lightItem) {
+            final var block = lightItem.getBlock();
+            if (block instanceof me.paulf.fairylights.server.block.LightBlock lightBlock) {
+                return Optional.of(lightBlock.getVariant());
+            }
+        }
         return Optional.empty();
     }
 }

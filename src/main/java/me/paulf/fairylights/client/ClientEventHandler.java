@@ -347,18 +347,32 @@ public final class ClientEventHandler {
     @SubscribeEvent
     public void onRightClickEmpty(final net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickEmpty event) {
         // Check if we're hovering over a HitConnection
-        if (currentHoveredHitConnection != null) {
+        final Minecraft mc = Minecraft.getInstance();
+        HitConnection target = null;
+        if (mc.hitResult instanceof EntityHitResult entityHit && entityHit.getEntity() instanceof HitConnection hitConnection) {
+            target = hitConnection;
+        } else if (currentHoveredHitConnection != null) {
+            target = currentHoveredHitConnection;
+        }
+        if (target != null) {
             LOGGER.info("FL_DEBUG: RightClickEmpty event - processing HitConnection interaction");
-            currentHoveredHitConnection.processAction(PlayerAction.INTERACT);
+            target.processAction(PlayerAction.INTERACT);
         }
     }
     
     @SubscribeEvent
     public void onRightClickItem(final net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickItem event) {
         // Check if we're hovering over a HitConnection
-        if (currentHoveredHitConnection != null) {
+        final Minecraft mc = Minecraft.getInstance();
+        HitConnection target = null;
+        if (mc.hitResult instanceof EntityHitResult entityHit && entityHit.getEntity() instanceof HitConnection hitConnection) {
+            target = hitConnection;
+        } else if (currentHoveredHitConnection != null) {
+            target = currentHoveredHitConnection;
+        }
+        if (target != null) {
             LOGGER.info("FL_DEBUG: RightClickItem event - processing HitConnection interaction");
-            currentHoveredHitConnection.processAction(PlayerAction.INTERACT);
+            target.processAction(PlayerAction.INTERACT);
         }
     }
     /*
