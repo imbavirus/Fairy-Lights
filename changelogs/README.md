@@ -4,6 +4,7 @@ This folder contains user-relevant changelogs for all versions since the NeoForg
 
 ## Available Versions
 
+- [8.0.6](8.0.6.md) - Hanging Lights Interaction & On/Off Toggle Fixes
 - [8.0.5](8.0.5.md) - Server Crash Fix
 - [8.0.4](8.0.4.md) - Breaking & Color Fixes
 - [8.0.3](8.0.3.md) - Recipe & Visual Fixes
