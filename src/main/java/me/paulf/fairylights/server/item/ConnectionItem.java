@@ -57,9 +57,12 @@ public abstract class ConnectionItem extends Item {
         final BlockPos clickPos = context.getClickedPos();
         final Block fastener = FLBlocks.FASTENER.get();
         final ItemStack stack = context.getItemInHand();
+        org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: useOn called at {} with stack {}", clickPos, stack.getItem());
         if (this.isConnectionInOtherHand(world, user, stack)) {
+            org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: useOn - blocked by isConnectionInOtherHand, returning PASS");
             return InteractionResult.PASS;
         }
+        org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: useOn - not blocked, proceeding with placement");
         final BlockState fastenerState = fastener.defaultBlockState().setValue(FastenerBlock.FACING, side);
         final BlockState currentBlockState = world.getBlockState(clickPos);
         final BlockPlaceContext blockContext = new BlockPlaceContext(context);
@@ -90,14 +93,43 @@ public abstract class ConnectionItem extends Item {
         // Capability might not be available - handle gracefully
         final Optional<Fastener<?>> attacherOpt = CapabilityHandler.getFastenerCapability(user);
         if (attacherOpt.isEmpty()) {
+            org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: isConnectionInOtherHand - no attacher capability");
             return false;
         }
         final Fastener<?> attacher = attacherOpt.get();
         final Optional<Connection> connOpt = attacher.getFirstConnection();
         if (connOpt.isEmpty()) {
+            org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: isConnectionInOtherHand - no connection in attacher");
             return false;
         }
         final Connection connection = connOpt.get();
+        
+        org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: isConnectionInOtherHand - found connection {}, isRemoved={}", 
+                connection.getUUID(), connection.isRemoved());
+        
+        // If the connection is removed (e.g., fastener was broken), ignore it and allow placement
+        if (connection.isRemoved()) {
+            org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: isConnectionInOtherHand - connection is removed, allowing placement");
+            return false;
+        }
+        
+        // Also check if the connection's destination fastener is still valid
+        // If the destination was a block fastener that was broken, the connection should be invalid
+        final Optional<Fastener<?>> destFastenerOpt = connection.getDestination().get(world, false);
+        if (destFastenerOpt.isEmpty()) {
+            // Destination fastener no longer exists (e.g., block was broken), ignore this connection
+            org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: isConnectionInOtherHand - destination fastener missing, allowing placement");
+            return false;
+        }
+        
+        org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: isConnectionInOtherHand - connection and destination valid, checking match");
+
+        // First check if connection types match - if they do, allow reconnecting to new destination
+        // This allows placing at different distances even if there's an existing connection
+        if (connection.getType() == this.getConnectionType()) {
+            org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: isConnectionInOtherHand - connection types match, allowing reconnection");
+            return false; // Allow placement - connect() will handle reconnecting
+        }
 
         // Port of upstream 1.12 behavior:
         // - If the placing connection has no logic NBT, then only block if the stack
@@ -260,15 +292,33 @@ public abstract class ConnectionItem extends Item {
             final Optional<Connection> placing = attacher.getFirstConnection();
             if (placing.isPresent()) {
                 final Connection conn = placing.get();
-                final boolean ok = conn.reconnect(fastener);
-                if (ok) {
-                    conn.onConnect(world, user, stack);
-                    stack.shrink(1);
-                    // Ensure both ends update client-side immediately (rope rendering)
-                    syncFastenerBlock(world, conn.getFastener());
-                    syncFastenerBlock(world, fastener);
+                // Check if the connection's old destination still exists
+                final Optional<Fastener<?>> oldDestOpt = conn.getDestination().get(world, false);
+                if (oldDestOpt.isPresent()) {
+                    // Old destination exists, try to reconnect
+                    final boolean ok = conn.reconnect(fastener);
+                    if (ok) {
+                        conn.onConnect(world, user, stack);
+                        stack.shrink(1);
+                        // Ensure both ends update client-side immediately (rope rendering)
+                        syncFastenerBlock(world, conn.getFastener());
+                        syncFastenerBlock(world, fastener);
+                    } else {
+                        playSound = false;
+                    }
                 } else {
-                    playSound = false;
+                    // Old destination no longer exists (e.g., block was broken)
+                    // Remove the old connection and create a new one
+                    org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: connect - old destination gone, removing old connection and creating new");
+                    attacher.removeConnection(conn);
+                    // Fall through to create new connection
+                    final CompoundTag data = getData(stack);
+                    final ConnectionType<? extends Connection> type = this.getConnectionType();
+                    final Connection newConn = attacher.connect(world, fastener, type, data == null ? new CompoundTag() : data, true);
+                    newConn.onConnect(world, user, stack);
+                    stack.shrink(1);
+                    syncFastenerBlock(world, attacher);
+                    syncFastenerBlock(world, fastener);
                 }
             } else {
                 // Get stack NBT so connection logic matches on second placement

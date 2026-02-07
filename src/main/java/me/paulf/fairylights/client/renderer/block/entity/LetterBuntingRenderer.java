@@ -38,12 +38,25 @@ public class LetterBuntingRenderer extends ConnectionRenderer<LetterBuntingConne
     protected void render(final LetterBuntingConnection conn, final Curve catenary, final float delta, final PoseStack matrix, final MultiBufferSource source, final int packedLight, final int packedOverlay) {
         super.render(conn, catenary, delta, matrix, source, packedLight, packedOverlay);
         final Letter[] letters = conn.getLetters();
+        final StyledString text = conn.getText();
         if (letters == null) {
+            org.apache.logging.log4j.LogManager.getLogger().warn("LetterBuntingRenderer: letters array is null, text='{}' length={} conn={}", 
+                    text, text.length(), System.identityHashCode(conn));
             return;
         }
         final int count = letters.length;
         if (count == 0) {
+            // Only log occasionally to avoid spam
+            if (System.currentTimeMillis() % 1000 < 100) {
+                org.apache.logging.log4j.LogManager.getLogger().info("LetterBuntingRenderer: letters array is empty, text='{}' length={} conn={}", 
+                        text, text.length(), System.identityHashCode(conn));
+            }
             return;
+        }
+        // Log when we actually have letters to render
+        if (System.currentTimeMillis() % 1000 < 100) {
+            org.apache.logging.log4j.LogManager.getLogger().info("LetterBuntingRenderer: Rendering {} letters, text='{}' length={} conn={}", 
+                    count, text, text.length(), System.identityHashCode(conn));
         }
         final VertexConsumer buf = source.getBuffer(Sheets.cutoutBlockSheet());
         for (final Letter letter : letters) {

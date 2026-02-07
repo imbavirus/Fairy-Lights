@@ -24,6 +24,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -323,6 +324,67 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         for (final BlockPos pos : this.litBlocks) {
             this.removeLight(pos);
         }
+        
+        // Drop individual light items from the pattern when connection is broken
+        // This ensures swapped-in lights are returned to the player
+        // Only drop if world is valid and connection should drop (e.g., when breaking fastener)
+        if (this.shouldDrop() && this.world != null && !this.world.isClientSide() && 
+            this.pattern != null && !this.pattern.isEmpty()) {
+            final BlockPos dropPos = this.fastener != null ? this.fastener.getPos() : null;
+            if (dropPos != null) {
+                for (final ItemStack lightStack : this.pattern) {
+                    if (!lightStack.isEmpty()) {
+                        final float offsetX = this.world.random.nextFloat() * 0.8F + 0.1F;
+                        final float offsetY = this.world.random.nextFloat() * 0.8F + 0.1F;
+                        final float offsetZ = this.world.random.nextFloat() * 0.8F + 0.1F;
+                        final ItemEntity entityItem = new ItemEntity(
+                            this.world,
+                            dropPos.getX() + offsetX,
+                            dropPos.getY() + offsetY,
+                            dropPos.getZ() + offsetZ,
+                            lightStack.copy()
+                        );
+                        final float scale = 0.05F;
+                        entityItem.setDeltaMovement(
+                            this.world.random.nextGaussian() * scale,
+                            this.world.random.nextGaussian() * scale + 0.2F,
+                            this.world.random.nextGaussian() * scale
+                        );
+                        this.world.addFreshEntity(entityItem);
+                    }
+                }
+            }
+        }
+    }
+    
+    @Override
+    public void disconnect(final Player player, final Vec3 hit) {
+        // Drop individual light items from the pattern when connection is manually broken
+        // This ensures swapped-in lights are returned to the player
+        if (this.shouldDrop() && this.pattern != null && !this.pattern.isEmpty()) {
+            for (final ItemStack lightStack : this.pattern) {
+                if (!lightStack.isEmpty()) {
+                    final float offsetX = this.world.random.nextFloat() * 0.8F + 0.1F;
+                    final float offsetY = this.world.random.nextFloat() * 0.8F + 0.1F;
+                    final float offsetZ = this.world.random.nextFloat() * 0.8F + 0.1F;
+                    final ItemEntity entityItem = new ItemEntity(
+                        this.world,
+                        hit.x + offsetX,
+                        hit.y + offsetY,
+                        hit.z + offsetZ,
+                        lightStack.copy()
+                    );
+                    final float scale = 0.05F;
+                    entityItem.setDeltaMovement(
+                        this.world.random.nextGaussian() * scale,
+                        this.world.random.nextGaussian() * scale + 0.2F,
+                        this.world.random.nextGaussian() * scale
+                    );
+                    this.world.addFreshEntity(entityItem);
+                }
+            }
+        }
+        super.disconnect(player, hit);
     }
 
     private void removeLight(final BlockPos pos) {
