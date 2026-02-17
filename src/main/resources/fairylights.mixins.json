@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "me.paulf.fairylights.mixin",
+  "package": "za.co.infernos.fairylights.mixin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "fairylights.mixins.refmap.json",
   "mixins": [

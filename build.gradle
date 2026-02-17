@@ -5,7 +5,7 @@ plugins {
 }
 
 version = mod_version
-group = 'me.paulf.fairylights'
+group = 'za.co.infernos.fairylights'
 base {
     archivesName = 'fairylights'
 }
@@ -55,11 +55,11 @@ jar {
     manifest {
         attributes([
                 "Specification-Title"     : "fairylights",
-                "Specification-Vendor"    : "pau101",
+                "Specification-Vendor"    : "Infernos, pau101",
                 "Specification-Version"   : "1",
                 "Implementation-Title"    : project.name,
                 "Implementation-Version"  : project.jar.archiveVersion,
-                "Implementation-Vendor"   : "pau101",
+                "Implementation-Vendor"   : "Infernos, pau101",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
                 // "MixinConfigs"            : "fairylights.mixins.json"
         ])

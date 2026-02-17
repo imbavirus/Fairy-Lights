@@ -1,6 +1,6 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
-issueTrackerURL="https://github.com/pau101/Fairy-Lights/issues"
+issueTrackerURL="https://github.com/Infernos/Fairy-Lights/issues"
 license="${mod_license}"
 [[mods]]
 	modId="${mod_id}"

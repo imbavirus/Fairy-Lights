@@ -1,0 +1,104 @@
+package za.co.infernos.fairylights.client.renderer.block.entity;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
+import za.co.infernos.fairylights.client.ClientProxy;
+import za.co.infernos.fairylights.client.FLModelLayers;
+import za.co.infernos.fairylights.server.connection.GarlandTinselConnection;
+import za.co.infernos.fairylights.util.Catenary;
+import za.co.infernos.fairylights.util.RandomArray;
+import net.minecraft.client.model.Model;
+import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.builders.CubeListBuilder;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
+import net.minecraft.client.model.geom.builders.MeshDefinition;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.util.Mth;
+
+import java.util.function.Function;
+
+public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConnection> {
+    private static final RandomArray RAND = new RandomArray(9171, 128);
+
+    private final StripModel strip;
+
+    public GarlandTinselRenderer(final Function<ModelLayerLocation, ModelPart> baker) {
+        super(baker, FLModelLayers.TINSEL_WIRE);
+        this.strip = new StripModel(baker.apply(FLModelLayers.TINSEL_STRIP));
+    }
+
+    @Override
+    protected int getWireColor(final GarlandTinselConnection conn) {
+        return conn.getColor();
+    }
+
+    @Override
+    protected void renderSegment(final GarlandTinselConnection connection, final Catenary.SegmentView it, final float delta, final PoseStack matrix, final int packedLight, final MultiBufferSource source, final int packedOverlay) {
+        super.renderSegment(connection, it, delta, matrix, packedLight, source, packedOverlay);
+        final int color = connection.getColor();
+        final float r = ((color >> 16) & 0xFF) / 255.0F;
+        final float g = ((color >> 8) & 0xFF) / 255.0F;
+        final float b = (color & 0xFF) / 255.0F;
+        matrix.pushPose();
+        // Add depth offset to prevent culling when player gets too close
+        // Use a larger offset to prevent oversensitive culling
+        final double depthOffset = 0.01;
+        matrix.translate(it.getX(0.0F) + depthOffset, it.getY(0.0F) + depthOffset, it.getZ(0.0F) + depthOffset);
+        matrix.mulPose(Axis.YP.rotation(-it.getYaw()));
+        matrix.mulPose(Axis.ZP.rotation(it.getPitch()));
+        final float length = it.getLength();
+        final int rings = Mth.ceil(length * 64);
+        final int hash = connection.getUUID().hashCode();
+        final int index = it.getIndex();
+        final VertexConsumer buf = ClientProxy.SOLID_TEXTURE.buffer(source, RenderType::entityCutout);
+        for (int i = 0; i < rings; i++) {
+            final double t = i / (float) rings * length;
+            matrix.pushPose();
+            matrix.translate(t, 0.0F, 0.0F);
+            final float rotX = RAND.get(31 * (index + 31 * i) + hash) * 22;
+            final float rotY = RAND.get(31 * (index + 3 + 31 * i) + hash) * 180;
+            final float rotZ = RAND.get(31 * (index + 7 + 31 * i) + hash) * 180;
+            matrix.mulPose(Axis.XP.rotationDegrees(rotZ));
+            matrix.mulPose(Axis.YP.rotationDegrees(rotY));
+            matrix.mulPose(Axis.ZP.rotationDegrees(rotX));
+            matrix.scale(1.0F, RAND.get(i * 63) * 0.1F + 1.0F, 0.5F);
+            // Model.renderToBuffer() signature changed in 1.21.1 - pack color into int
+            final int packedColor = ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | (int)(b * 255) | 0xFF000000;
+            this.strip.renderToBuffer(matrix, buf, packedLight, packedOverlay, packedColor);
+            matrix.popPose();
+        }
+        
+        matrix.popPose();
+    }
+
+    public static LayerDefinition wireLayer() {
+        return WireModel.createLayer(62, 0, 1);
+    }
+
+    public static class StripModel extends Model {
+        final ModelPart root;
+
+        StripModel(final ModelPart root) {
+            super(RenderType::entityCutout);
+            this.root = root;
+        }
+
+        public static LayerDefinition createLayer() {
+            MeshDefinition mesh = new MeshDefinition();
+            mesh.getRoot().addOrReplaceChild("root", CubeListBuilder.create()
+                .texOffs(62, 0)
+                .addBox(-0.5F, -3.0F, 0.0F, 1.0F, 6.0F, 0.0F), PartPose.ZERO);
+            return LayerDefinition.create(mesh, 128, 128);
+        }
+
+        @Override
+        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+            // ModelPart.render() signature changed in 1.21.1 - use packed color directly
+            this.root.render(matrix, builder, light, overlay, packedColor);
+        }
+    }
+}

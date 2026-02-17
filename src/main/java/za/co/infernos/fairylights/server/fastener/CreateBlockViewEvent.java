@@ -1,0 +1,19 @@
+package za.co.infernos.fairylights.server.fastener;
+
+import net.neoforged.bus.api.Event;
+
+public class CreateBlockViewEvent extends Event {
+    private BlockView view;
+
+    public CreateBlockViewEvent(final BlockView view) {
+        this.view = view;
+    }
+
+    public BlockView getView() {
+        return this.view;
+    }
+
+    public void setView(final BlockView view) {
+        this.view = view;
+    }
+}
