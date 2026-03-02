@@ -48,19 +48,34 @@ public class EditLetteredConnectionMessage<C extends Connection & Lettered> exte
 
     public static void handle(final EditLetteredConnectionMessage message,
             final net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        org.apache.logging.log4j.LogManager.getLogger().info("EditLetteredConnectionMessage: handle() called - text='{}' length={}", 
+                message.text, message.text.length());
         context.enqueueWork(() -> {
             // Context has no player directly? Usually it does.
             // IPayloadContext.player() exists.
             net.minecraft.world.entity.player.Player player = context.player();
             if (player instanceof ServerPlayer serverPlayer) {
+                org.apache.logging.log4j.LogManager.getLogger().info("EditLetteredConnectionMessage: enqueueWork - looking for connection");
                 ConnectionMessage.getConnection(message, c -> c instanceof Lettered, serverPlayer.level())
-                        .ifPresent(connection -> {
+                        .ifPresentOrElse(connection -> {
+                            org.apache.logging.log4j.LogManager.getLogger().info("EditLetteredConnectionMessage: found connection {} isModifiable={} isSupportedText={}", 
+                                    System.identityHashCode(connection), connection.isModifiable(serverPlayer), 
+                                    ((Lettered) connection).isSupportedText(message.text));
                             if (connection.isModifiable(serverPlayer)
                                     && ((Lettered) connection).isSupportedText(message.text)) { // Cast needed or
                                                                                                 // predicate
+                                org.apache.logging.log4j.LogManager.getLogger().info("EditLetteredConnectionMessage: calling setText('{}') on connection {}", 
+                                        message.text, System.identityHashCode(connection));
                                 ((Lettered) connection).setText(message.text);
+                                org.apache.logging.log4j.LogManager.getLogger().info("EditLetteredConnectionMessage: setText() completed");
+                            } else {
+                                org.apache.logging.log4j.LogManager.getLogger().warn("EditLetteredConnectionMessage: connection not modifiable or text not supported");
                             }
+                        }, () -> {
+                            org.apache.logging.log4j.LogManager.getLogger().warn("EditLetteredConnectionMessage: connection not found!");
                         });
+            } else {
+                org.apache.logging.log4j.LogManager.getLogger().warn("EditLetteredConnectionMessage: player is not ServerPlayer");
             }
         });
     }

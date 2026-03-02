@@ -60,6 +60,9 @@ public final class LetterBuntingConnection extends Connection implements Lettere
     }
 
     public Letter[] getLetters() {
+        final boolean isClient = this.world != null && this.world.isClientSide();
+        LOGGER.info("LetterBuntingConnection: getLetters() called ({} side) - letters.length={} text='{}' length={} conn={}", 
+                isClient ? "CLIENT" : "SERVER", this.letters.length, this.text, this.text.length(), System.identityHashCode(this));
         return this.letters;
     }
 
@@ -89,30 +92,37 @@ public final class LetterBuntingConnection extends Connection implements Lettere
 
     @Override
     protected void onCalculateCatenary(final boolean relocated) {
-        // Only update letters if text is not empty
-        // If text is empty, don't clear letters here - let deserializeLogic handle it
-        // This prevents clearing letters when catenary is computed before text sync completes
-        if (!this.text.isEmpty()) {
-            this.updateLetters();
-        } else {
-            LOGGER.info("LetterBuntingConnection: onCalculateCatenary - skipping updateLetters because text is empty");
-        }
+        final boolean isClient = this.world != null && this.world.isClientSide();
+        final Curve catenary = this.getCatenary();
+        LOGGER.info("LetterBuntingConnection: onCalculateCatenary called ({} side) - relocated={} catenary={} text='{}' length={} isEmpty={} conn={}", 
+                isClient ? "CLIENT" : "SERVER", relocated, catenary != null ? "exists" : "null", 
+                this.text, this.text.length(), this.text.isEmpty(), System.identityHashCode(this));
+        // Always update letters when catenary is calculated
+        // This ensures letters are generated/updated whenever the catenary changes
+        // If text is empty, updateLetters() will clear the letters array
+        this.updateLetters();
+        LOGGER.info("LetterBuntingConnection: onCalculateCatenary - updated letters. text='{}' length={} letters.length={} conn={}", 
+                this.text, this.text.length(), this.letters.length, System.identityHashCode(this));
     }
 
     private void updateLetters() {
         final boolean isClient = this.world != null && this.world.isClientSide();
-        LOGGER.info("LetterBuntingConnection: updateLetters called ({} side) - text='{}' length={} isEmpty={}", 
-                isClient ? "CLIENT" : "SERVER", this.text, this.text.length(), this.text.isEmpty());
+        final int oldLettersLength = this.letters.length;
+        LOGGER.info("LetterBuntingConnection: updateLetters ENTRY ({} side) - text='{}' length={} isEmpty={} oldLetters.length={} conn={}", 
+                isClient ? "CLIENT" : "SERVER", this.text, this.text.length(), this.text.isEmpty(), 
+                oldLettersLength, System.identityHashCode(this));
         
         if (this.text.isEmpty()) {
             this.letters = new Letter[0];
-            LOGGER.info("LetterBuntingConnection: updateLetters - text is empty, cleared letters");
+            LOGGER.info("LetterBuntingConnection: updateLetters ({} side) - text is empty, cleared letters", 
+                    isClient ? "CLIENT" : "SERVER");
             return;
         }
         
         final Curve catenary = this.getCatenary();
         if (catenary == null) {
-            LOGGER.warn("LetterBuntingConnection: updateLetters - catenary is null, cannot create letters");
+            LOGGER.warn("LetterBuntingConnection: updateLetters ({} side) - catenary is null, cannot create letters. text='{}' length={} conn={}", 
+                    isClient ? "CLIENT" : "SERVER", this.text, this.text.length(), System.identityHashCode(this));
             this.letters = new Letter[0];
             return;
         }
@@ -121,19 +131,31 @@ public final class LetterBuntingConnection extends Connection implements Lettere
         int textLen = 0;
         final float[] pointOffsets = new float[this.text.length()];
         final float catLength = catenary.getLength();
-        LOGGER.info("LetterBuntingConnection: updateLetters - catenary length={}", catLength);
+        LOGGER.info("LetterBuntingConnection: updateLetters ({} side) - catenary exists, length={} text.length={}", 
+                isClient ? "CLIENT" : "SERVER", catLength, this.text.length());
         
         for (int i = 0; i < this.text.length(); i++) {
-            final float w = SYMBOLS.getWidth(this.text.charAt(i));
+            final char ch = this.text.charAt(i);
+            final float w = SYMBOLS.getWidth(ch);
             pointOffsets[i] = textWidth + w / 2.0F;
             textWidth += w + TRACKING;
             if (textWidth > catLength) {
+                LOGGER.info("LetterBuntingConnection: updateLetters ({} side) - text too long, stopping at char {} (width={} > catLength={})", 
+                        isClient ? "CLIENT" : "SERVER", i, textWidth, catLength);
                 break;
             }
             textLen++;
         }
         
-        LOGGER.info("LetterBuntingConnection: updateLetters - textWidth={} textLen={}", textWidth, textLen);
+        LOGGER.info("LetterBuntingConnection: updateLetters ({} side) - calculated textWidth={} textLen={} (will create {} letters)", 
+                isClient ? "CLIENT" : "SERVER", textWidth, textLen, textLen);
+        
+        if (textLen == 0) {
+            LOGGER.warn("LetterBuntingConnection: updateLetters ({} side) - textLen is 0, no letters to create!", 
+                    isClient ? "CLIENT" : "SERVER");
+            this.letters = new Letter[0];
+            return;
+        }
         
         final float offset = catLength / 2 - textWidth / 2;
         for (int i = 0; i < textLen; i++) {
@@ -144,7 +166,9 @@ public final class LetterBuntingConnection extends Connection implements Lettere
         final List<Letter> letters = new ArrayList<>(this.text.length());
         final Catenary.SegmentIterator it = catenary.iterator();
         float distance = 0;
+        int segmentsProcessed = 0;
         while (it.next()) {
+            segmentsProcessed++;
             final float length = it.getLength();
             for (int n = pointIdx; n < textLen; n++) {
                 final float pointOffset = pointOffsets[n];
@@ -156,9 +180,13 @@ public final class LetterBuntingConnection extends Connection implements Lettere
                         letter = prevLetters[pointIdx];
                         letter.set(point, it.getYaw(), it.getPitch());
                         letter.set(this.text.charAt(pointIdx), this.text.styleAt(pointIdx));
+                        LOGGER.debug("LetterBuntingConnection: updateLetters ({} side) - reused letter {} at point {}", 
+                                isClient ? "CLIENT" : "SERVER", pointIdx, point);
                     } else {
                         letter = new Letter(pointIdx, point, it.getYaw(), it.getPitch(), SYMBOLS,
                                 this.text.charAt(pointIdx), this.text.styleAt(pointIdx));
+                        LOGGER.debug("LetterBuntingConnection: updateLetters ({} side) - created new letter {} ('{}') at point {}", 
+                                isClient ? "CLIENT" : "SERVER", pointIdx, this.text.charAt(pointIdx), point);
                     }
                     letters.add(letter);
                     pointIdx++;
@@ -172,8 +200,14 @@ public final class LetterBuntingConnection extends Connection implements Lettere
             distance += length;
         }
         this.letters = letters.toArray(new Letter[0]);
-        LOGGER.info("LetterBuntingConnection: updateLetters - created {} letters, text='{}' length={} conn={}", 
-                this.letters.length, this.text, this.text.length(), System.identityHashCode(this));
+        LOGGER.info("LetterBuntingConnection: updateLetters EXIT ({} side) - created {} letters (expected {}), processed {} segments, text='{}' length={} conn={}", 
+                isClient ? "CLIENT" : "SERVER", this.letters.length, textLen, segmentsProcessed, 
+                this.text, this.text.length(), System.identityHashCode(this));
+        
+        if (this.letters.length != textLen) {
+            LOGGER.warn("LetterBuntingConnection: updateLetters ({} side) - MISMATCH! Created {} letters but expected {}! text='{}' conn={}", 
+                    isClient ? "CLIENT" : "SERVER", this.letters.length, textLen, this.text, System.identityHashCode(this));
+        }
     }
 
     @Override
@@ -205,9 +239,16 @@ public final class LetterBuntingConnection extends Connection implements Lettere
 
     @Override
     public void setText(final StyledString text) {
+        final boolean isClient = this.world != null && this.world.isClientSide();
+        final StyledString oldText = this.text;
+        LOGGER.info("LetterBuntingConnection: setText called ({} side) - oldText='{}' newText='{}' oldLength={} newLength={} conn={} catenary={}", 
+                isClient ? "CLIENT" : "SERVER", oldText, text, oldText.length(), text.length(), 
+                System.identityHashCode(this), this.getCatenary() != null ? "exists" : "null");
         this.text = text;
-        LOGGER.info("LetterBuntingConnection: setText called with '{}' length={}", text, text.length());
+        LOGGER.info("LetterBuntingConnection: setText - text set, calling computeCatenary()");
         this.computeCatenary();
+        LOGGER.info("LetterBuntingConnection: setText - computeCatenary() called, catenary={} letters.length={}", 
+                this.getCatenary() != null ? "exists" : "null", this.letters.length);
         // Mark fastener dirty to sync text change to clients
         if (!this.world.isClientSide()) {
             this.fastener.setDirty();
@@ -223,14 +264,19 @@ public final class LetterBuntingConnection extends Connection implements Lettere
                     fastenerBE.setChanged();
                     final net.minecraft.world.level.block.state.BlockState state = this.world.getBlockState(pos);
                     this.world.sendBlockUpdated(pos, state, state, 3);
-                    LOGGER.info("LetterBuntingConnection: setText - forced block entity update at {}", pos);
+                    LOGGER.info("LetterBuntingConnection: setText - forced block entity update at {} (SERVER)", pos);
                 }
             }
+        } else {
+            LOGGER.info("LetterBuntingConnection: setText - CLIENT side, not syncing");
         }
     }
 
     @Override
     public StyledString getText() {
+        final boolean isClient = this.world != null && this.world.isClientSide();
+        LOGGER.info("LetterBuntingConnection: getText() called ({} side) - text='{}' length={} isEmpty={} conn={}", 
+                isClient ? "CLIENT" : "SERVER", this.text, this.text.length(), this.text.isEmpty(), System.identityHashCode(this));
         return this.text;
     }
 
@@ -289,40 +335,65 @@ public final class LetterBuntingConnection extends Connection implements Lettere
 
     @Override
     public void deserializeLogic(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
-        super.deserializeLogic(compound, provider);
-        // Check if "text" compound exists before deserializing
+        final boolean isClient = this.world != null && this.world.isClientSide();
         final StyledString oldText = this.text;
+        final Curve oldCatenary = this.getCatenary();
+        final int oldLettersLength = this.letters.length;
+        LOGGER.info("LetterBuntingConnection: deserializeLogic ENTRY ({} side) - oldText='{}' oldLength={} oldCatenary={} oldLetters.length={} conn={} compound.hasText={}", 
+                isClient ? "CLIENT" : "SERVER", oldText, oldText.length(), 
+                oldCatenary != null ? "exists" : "null", oldLettersLength, 
+                System.identityHashCode(this), compound.contains("text", Tag.TAG_COMPOUND));
+        
+        super.deserializeLogic(compound, provider);
+        
+        // Check if "text" compound exists before deserializing
         if (compound.contains("text", Tag.TAG_COMPOUND)) {
             this.text = StyledString.deserialize(compound.getCompound("text"));
-            LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) text='{}' length={}", 
-                    this.world != null && this.world.isClientSide() ? "CLIENT" : "SERVER", 
-                    this.text, this.text.length());
+            LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - deserialized text='{}' length={} isEmpty={}", 
+                    isClient ? "CLIENT" : "SERVER", this.text, this.text.length(), this.text.isEmpty());
         } else {
             this.text = new StyledString();
             LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - no text compound found, using empty StyledString",
-                    this.world != null && this.world.isClientSide() ? "CLIENT" : "SERVER");
+                    isClient ? "CLIENT" : "SERVER");
         }
         
-        // If text changed or catenary exists, ensure letters are updated
-        // Don't call computeCatenary() here - it will be called naturally by the update loop
-        // Just update letters if catenary already exists
+        // Always ensure letters are updated after text changes
+        // The catenary might be computed in the same update cycle, so we need to handle both cases:
+        // 1. Catenary already exists - update letters immediately
+        // 2. Catenary doesn't exist yet - it will be computed and onCalculateCatenary() will call updateLetters()
         final boolean textChanged = oldText == null || !oldText.equals(this.text);
-        if (this.getCatenary() != null && !this.text.isEmpty()) {
-            // Catenary exists and text is not empty, update letters immediately
-            this.updateLetters();
-            LOGGER.info("LetterBuntingConnection: deserializeLogic - catenary exists, updated letters. letters.length={} textChanged={}", 
-                    this.letters.length, textChanged);
-        } else if (this.text.isEmpty()) {
+        final Curve currentCatenary = this.getCatenary();
+        LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - textChanged={} currentCatenary={} text.isEmpty={}", 
+                isClient ? "CLIENT" : "SERVER", textChanged, 
+                currentCatenary != null ? "exists" : "null", this.text.isEmpty());
+        
+        if (this.text.isEmpty()) {
             // Text is empty, clear letters
             this.letters = new Letter[0];
-            LOGGER.info("LetterBuntingConnection: deserializeLogic - text is empty, cleared letters");
-        } else if (textChanged && !this.text.isEmpty()) {
+            LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - text is empty, cleared letters", 
+                    isClient ? "CLIENT" : "SERVER");
+        } else if (currentCatenary != null) {
+            // Catenary exists and text is not empty, update letters immediately
+            LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - catenary exists, calling updateLetters()", 
+                    isClient ? "CLIENT" : "SERVER");
+            this.updateLetters();
+            LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - updateLetters() completed. letters.length={} textChanged={}", 
+                    isClient ? "CLIENT" : "SERVER", this.letters.length, textChanged);
+        } else if (textChanged) {
             // Text changed but catenary not computed yet - mark for update
             // The update loop will compute catenary and call onCalculateCatenary() -> updateLetters()
+            // But also ensure updateCatenary flag is set so catenary gets recomputed
+            LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - text changed but catenary not ready, calling computeCatenary()", 
+                    isClient ? "CLIENT" : "SERVER");
             this.computeCatenary();
-            LOGGER.info("LetterBuntingConnection: deserializeLogic - text changed but catenary not ready, marked for recomputation");
+            LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - computeCatenary() called, catenary will be computed in next update", 
+                    isClient ? "CLIENT" : "SERVER");
         } else {
-            LOGGER.info("LetterBuntingConnection: deserializeLogic - catenary not yet computed, letters will be updated when catenary is computed");
+            LOGGER.info("LetterBuntingConnection: deserializeLogic ({}) - catenary not yet computed, letters will be updated when catenary is computed", 
+                    isClient ? "CLIENT" : "SERVER");
         }
+        
+        LOGGER.info("LetterBuntingConnection: deserializeLogic EXIT ({} side) - text='{}' length={} letters.length={} conn={}", 
+                isClient ? "CLIENT" : "SERVER", this.text, this.text.length(), this.letters.length, System.identityHashCode(this));
     }
 }

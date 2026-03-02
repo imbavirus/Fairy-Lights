@@ -78,18 +78,18 @@ public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingCon
                 final float b = (color & 0xFF) / 255.0F;
                 // getModel() may need ModelResourceLocation in 1.21.1
                 final ResourceLocation modelLoc = this.models.getOrDefault(currPennant.getItem(), TRIANGLE_MODEL);
-                final net.minecraft.client.resources.model.ModelResourceLocation modelResourceLoc = new net.minecraft.client.resources.model.ModelResourceLocation(modelLoc, "inventory");
+                final net.minecraft.client.resources.model.ModelResourceLocation modelResourceLoc = new net.minecraft.client.resources.model.ModelResourceLocation(modelLoc, "standalone");
                 final BakedModel model = Minecraft.getInstance().getModelManager().getModel(modelResourceLoc);
                 final Vec3 pos = currPennant.getPoint(delta);
                 matrix.pushPose();
-                // Add depth offset to prevent culling when player gets too close
-                // Use a larger offset to prevent oversensitive culling
-                final double depthOffset = 0.01;
-                matrix.translate(pos.x + depthOffset, pos.y + depthOffset, pos.z + depthOffset);
+                matrix.translate(pos.x, pos.y, pos.z);
                 matrix.mulPose(Axis.YP.rotation(-currPennant.getYaw(delta)));
                 matrix.mulPose(Axis.ZP.rotation(currPennant.getPitch(delta)));
                 matrix.mulPose(Axis.XP.rotation(currPennant.getRoll(delta)));
                 matrix.pushPose();
+                // Center the model - matches the "fixed" display transform in the model JSONs
+                // Model transform is [-7.5, -16, -8] in 1/16 units = [-0.46875, -1.0, -0.5] in block units
+                matrix.translate(-0.46875F, -1.0F, -0.5F);
                 FastenerRenderer.renderBakedModel(model, matrix, buf, r, g, b, packedLight, packedOverlay);
                 matrix.popPose();
                 if (i >= offset && i < offset + text.length()) {
