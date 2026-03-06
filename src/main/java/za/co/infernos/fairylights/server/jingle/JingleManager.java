@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 
-public class JingleManager extends SimpleJsonResourceReloadListener {
+public class JingleManager extends SimpleJsonResourceReloadListener<Jingle> {
     private static final Logger LOGGER = LogManager.getLogger();
 
     private static final Gson GSON = new GsonBuilder().create();
@@ -26,7 +26,7 @@ public class JingleManager extends SimpleJsonResourceReloadListener {
     private Object2ObjectMap<String, JingleLibrary> libraries = Object2ObjectMaps.emptyMap();
 
     public JingleManager() {
-        super(GSON, "jingles");
+        super(Jingle.CODEC, "jingles");
     }
 
     public JingleLibrary get(final String library) {
@@ -34,16 +34,14 @@ public class JingleManager extends SimpleJsonResourceReloadListener {
     }
 
     @Override
-    protected void apply(final Map<ResourceLocation, JsonElement> elements, final ResourceManager manager, final ProfilerFiller profiler) {
+    protected void apply(final Map<ResourceLocation, Jingle> elements, final ResourceManager manager, final ProfilerFiller profiler) {
         final Object2ObjectMap<String, JingleLibrary.Builder> builders = new Object2ObjectOpenHashMap<>();
-        elements.forEach((file, json) -> {
+        elements.forEach((file, jingle) -> {
             final String path = file.getPath();
             final int sl = path.indexOf('/');
             final String library = path.substring(0, Math.max(0, sl));
             final ResourceLocation name = ResourceLocation.fromNamespaceAndPath(file.getNamespace(), path.substring(sl + 1));
-            Jingle.CODEC.parse(JsonOps.INSTANCE, json)
-                .resultOrPartial(error -> LOGGER.warn("Parsing error loading jingle {}: {}", file, error))
-                .ifPresent(jingle -> builders.computeIfAbsent(library, l -> new JingleLibrary.Builder()).add(name, jingle));
+            builders.computeIfAbsent(library, l -> new JingleLibrary.Builder()).add(name, jingle);
         });
         final Object2ObjectMap<String, JingleLibrary> libraries = new Object2ObjectOpenHashMap<>(builders.size());
         Object2ObjectMaps.fastForEach(builders, e -> libraries.put(e.getKey(), e.getValue().build()));

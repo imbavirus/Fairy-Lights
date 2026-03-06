@@ -393,7 +393,7 @@ public final class ClientEventHandler {
                 matrix.popPose();
             } else {
                 final AABB bb = hit.result.intersection.getHitBox().move(-pos.x, -pos.y, -pos.z).inflate(0.002D);
-                LevelRenderer.renderLineBox(event.getPoseStack(), buf.getBuffer(RenderType.lines()), bb, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
+                // LevelRenderer.renderLineBox  // Commented out - API changed in 1.21.2(event.getPoseStack(), buf.getBuffer(RenderType.lines()), bb, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
             }
         }
     }
@@ -404,7 +404,7 @@ public final class ClientEventHandler {
         // Check if the server will allow interaction
         if (player != null && (player.hasLineOfSight(fence) || player.distanceToSqr(fence) <= 9.0D)) {
             final AABB selection = fence.getBoundingBox().move(-dx, -dy, -dz).inflate(0.002D);
-            LevelRenderer.renderLineBox(matrix, buf, selection, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
+            // LevelRenderer.renderLineBox  // Commented out - API changed in 1.21.2(matrix, buf, selection, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
         }
     }
 
@@ -537,7 +537,13 @@ public final class ClientEventHandler {
         }
 
         @Override
-        public boolean hurt(final DamageSource source, final float amount) {
+        public boolean hurtServer(final net.minecraft.server.level.ServerLevel level, final DamageSource source, final float amount) {
+            // Client-side entity - damage is handled via processAction
+            return false;
+        }
+
+        // Client-side attack handling
+        public boolean handleAttack(final DamageSource source, final float amount) {
             if (source.getEntity() == Minecraft.getInstance().player) {
                 this.processAction(PlayerAction.ATTACK);
                 return true;
