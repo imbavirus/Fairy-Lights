@@ -3,6 +3,7 @@ package za.co.infernos.fairylights.client.gui.component;
 import com.mojang.blaze3d.systems.RenderSystem;
 import za.co.infernos.fairylights.client.gui.EditLetteredConnectionScreen;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -59,7 +60,7 @@ public class ToggleButton extends Button {
                     t = 0;
                 }
             }
-            stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), this.u, this.v + this.height * t, this.width, this.height);
+            stack.blit(RenderType::guiTextured, EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), this.u, this.v + this.height * t, this.width, this.height, 256, 256);
         }
     }
 }

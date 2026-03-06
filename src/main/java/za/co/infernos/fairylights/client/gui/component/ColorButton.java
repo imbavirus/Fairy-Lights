@@ -6,6 +6,7 @@ import za.co.infernos.fairylights.client.gui.EditLetteredConnectionScreen;
 import za.co.infernos.fairylights.util.styledstring.StyledString;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -50,11 +51,11 @@ public final class ColorButton extends Button {
     public void renderWidget(final GuiGraphics stack, final int mouseX, final int mouseY, final float delta) {
         if (this.visible) {
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U, this.isHovered ? TEX_V + this.height : TEX_V, this.width, this.height);
+            stack.blit(RenderType::guiTextured, EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U, this.isHovered ? TEX_V + this.height : TEX_V, this.width, this.height, 256, 256);
             if (this.displayColor != null) {
-                stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U + this.width, TEX_V, this.width, this.height);
+                stack.blit(RenderType::guiTextured, EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U + this.width, TEX_V, this.width, this.height, 256, 256);
                 RenderSystem.setShaderColor(this.displayColorR, this.displayColorG, this.displayColorB, 1.0F);
-                stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U + this.width, TEX_V + this.height, this.width, this.height);
+                stack.blit(RenderType::guiTextured, EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U + this.width, TEX_V + this.height, this.width, this.height, 256, 256);
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             }
         }

@@ -46,18 +46,18 @@ public final class FairyLightsJEIPlugin implements IModPlugin {
             return;
         }
 
-        final RecipeManager recipeManager = world.getRecipeManager();
+        final net.minecraft.world.item.crafting.RecipeManager recipeManager = (net.minecraft.world.item.crafting.RecipeManager) net.minecraft.client.Minecraft.getInstance().getConnection().recipes();
         List<RecipeHolder<?>> allRecipes = new ArrayList<>(recipeManager.getRecipes());
         LOGGER.info("FairyLightsJEIPlugin: RecipeManager contains " + allRecipes.size() + " total recipes.");
         
         Map<String, Long> recipesByNamespace = allRecipes.stream()
-                .collect(Collectors.groupingBy(h -> h.id().getNamespace(), Collectors.counting()));
+                .collect(Collectors.groupingBy(h -> h.id().location().getNamespace(), Collectors.counting()));
         
         LOGGER.info("FairyLightsJEIPlugin: Recipe counts by namespace:");
         recipesByNamespace.forEach((ns, count) -> LOGGER.info(" - " + ns + ": " + count));
 
         List<RecipeHolder<CraftingRecipe>> fairylightsRecipes = allRecipes.stream()
-                .filter(holder -> holder.id().getNamespace().equals(FairyLights.ID))
+                .filter(holder -> holder.id().location().getNamespace().equals(FairyLights.ID))
                 .filter(holder -> holder.value() instanceof GenericRecipe)
                 .map(holder -> (RecipeHolder<CraftingRecipe>) holder)
                 .collect(Collectors.toList());

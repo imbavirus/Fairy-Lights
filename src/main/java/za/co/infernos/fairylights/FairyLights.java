@@ -95,10 +95,7 @@ public final class FairyLights {
         // registryOrThrow() needs a RegistryKey, not ResourceLocation
         CONNECTION_TYPES = () -> {
             try {
-                return net.minecraft.core.RegistryAccess
-                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)
-                    .registryOrThrow(net.minecraft.resources.ResourceKey
-                            .createRegistryKey(FairyLights.CONNECTION_TYPE));
+                return ((net.minecraft.core.Registry<ConnectionType<?>>) net.minecraft.core.registries.BuiltInRegistries.REGISTRY.getValue(FairyLights.CONNECTION_TYPE));
             } catch (Exception e) {
                 com.mojang.logging.LogUtils.getLogger().error("FL_DEBUG: Failed to get CONNECTION_TYPES registry", e);
                 throw e;
@@ -106,10 +103,7 @@ public final class FairyLights {
         };
         STRING_TYPES = () -> {
             try {
-                return net.minecraft.core.RegistryAccess
-                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)
-                    .registryOrThrow(net.minecraft.resources.ResourceKey
-                            .createRegistryKey(FairyLights.STRING_TYPE));
+                return ((net.minecraft.core.Registry<za.co.infernos.fairylights.server.string.StringType>) net.minecraft.core.registries.BuiltInRegistries.REGISTRY.getValue(FairyLights.STRING_TYPE));
             } catch (Exception e) {
                 com.mojang.logging.LogUtils.getLogger().error("FL_DEBUG: Failed to get STRING_TYPES registry", e);
                 throw e;
