@@ -311,8 +311,8 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
         synchronized (CONNECTION_MAP_LOCK) {
             final CompoundTag compound = new CompoundTag();
             final ListTag outgoing = new ListTag();
-            // FL_DEBUG: Log outgoing size
-            LOGGER.error("FL_DEBUG_CRITICAL: AbstractFastener.serializeNBT outgoing size: {}", this.outgoing.size());
+           //  // FL_DEBUG: Log outgoing size
+            // LOGGER.error("FL_DEBUG_CRITICAL: AbstractFastener.serializeNBT outgoing size: {}", this.outgoing.size());
             for (final Entry<UUID, Connection> connectionEntry : this.outgoing.entrySet()) {
                 final UUID uuid = connectionEntry.getKey();
                 final Connection connection = connectionEntry.getValue();
@@ -356,7 +356,7 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
                 if (this.outgoing.containsKey(uuid)) {
                     final Connection connection = this.outgoing.get(uuid);
                     final CompoundTag connectionTag = connectionCompound.getCompound("connection");
-                    com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: AbstractFastener.deserializeNBT - calling connection.deserialize() for existing connection " + uuid + " isOn in NBT=" + (connectionTag.contains("isOn") ? connectionTag.getBoolean("isOn") : "MISSING"));
+                    // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: AbstractFastener.deserializeNBT - calling connection.deserialize() for existing connection " + uuid + " isOn in NBT=" + (connectionTag.contains("isOn") ? connectionTag.getBoolean("isOn") : "MISSING"));
                     connection.deserialize(connectionTag, provider);
                 } else {
                     // getValue() removed - use get() with RegistryKey
@@ -371,7 +371,7 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
                             );
                             type = registry.get(key).map(ref -> ref.value()).orElse(null);
                         } catch (Exception e) {
-                            LOGGER.error("FL_DEBUG: Registry lookup failed for type " + typeId, e);
+                            // LOGGER.error("FL_DEBUG: Registry lookup failed for type " + typeId, e);
                         }
                     }
                     if (type != null && this.world != null) {
