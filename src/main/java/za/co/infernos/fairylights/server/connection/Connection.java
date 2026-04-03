@@ -188,7 +188,7 @@ public abstract class Connection implements NBTSerializable {
     }
 
     public void processClientAction(final Player player, final PlayerAction action, final Intersection intersection) {
-        System.out.println("FL_DEBUG: Sending interaction packet for " + this.getUUID() + " action=" + action);
+        // System.out.println("FL_DEBUG: Sending interaction packet for " + this.getUUID() + " action=" + action);
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(
                 new za.co.infernos.fairylights.server.net.serverbound.InteractionConnectionMessage(this, action, intersection));
     }

@@ -80,11 +80,11 @@ public final class FastenerBlockEntity extends BlockEntity {
     public void handleUpdateTag(final CompoundTag tag, final HolderLookup.Provider provider) {
         super.handleUpdateTag(tag, provider);
         if (tag.contains("fastener", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
-            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: FastenerBlockEntity.handleUpdateTag (CLIENT) - received update tag");
+            // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: FastenerBlockEntity.handleUpdateTag (CLIENT) - received update tag");
             this.getFastener().ifPresent(f -> {
                 if (f instanceof za.co.infernos.fairylights.server.fastener.AbstractFastener<?> af) {
                     CompoundTag fastenerTag = tag.getCompound("fastener");
-                    com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: FastenerBlockEntity.handleUpdateTag - calling deserializeNBT");
+                    // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: FastenerBlockEntity.handleUpdateTag - calling deserializeNBT");
                     af.deserializeNBT(fastenerTag, provider);
                 }
             });
@@ -115,7 +115,7 @@ public final class FastenerBlockEntity extends BlockEntity {
     @Override
     public void onLoad() {
         super.onLoad();
-        LOGGER.error("FL_DEBUG_CRITICAL: FastenerBlockEntity.onLoad at " + this.worldPosition);
+        // LOGGER.error("FL_DEBUG_CRITICAL: FastenerBlockEntity.onLoad at " + this.worldPosition);
     }
 
     @Override
