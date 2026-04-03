@@ -19,7 +19,7 @@ public class ColorLightModel extends LightModel<StandardLightBehavior> {
         this.green = behavior.getGreen(delta);
         this.blue = behavior.getBlue(delta);
         if (debugCounter++ < 100) {
-             com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: ColorLightModel.animate: R=" + this.red + " G=" + this.green + " B=" + this.blue);
+             // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: ColorLightModel.animate: R=" + this.red + " G=" + this.green + " B=" + this.blue);
         }
     }
 }

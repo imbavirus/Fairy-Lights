@@ -68,12 +68,12 @@ public abstract class EntityFastenerAccessor<E extends Entity> implements Fasten
                 for (final E entity : world.getEntitiesOfClass(this.entityClass, new AABB(this.pos.subtract(4.0D, 4.0D, 4.0D), this.pos.add(4.0D, 4.0D, 4.0D)))) {
                     if (this.uuid.equals(entity.getUUID())) {
                         this.entity = entity;
-                        // System.out.println("FL_DEBUG: Resolved entity " + this.uuid + " at " + this.pos);
+                       //  // System.out.println("FL_DEBUG: Resolved entity " + this.uuid + " at " + this.pos);
                         break;
                     }
                 }
                 if (this.entity == null) {
-                    // System.out.println("FL_DEBUG: Failed to resolve entity " + this.uuid + " at " + this.pos);
+                   //  // System.out.println("FL_DEBUG: Failed to resolve entity " + this.uuid + " at " + this.pos);
                 }
             }
         }
