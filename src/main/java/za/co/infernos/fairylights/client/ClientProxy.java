@@ -94,10 +94,10 @@ public final class ClientProxy extends ServerProxy {
         // TODO: Update to use new config registration API
         // ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT,
         // FLClientConfig.SPEC);
-        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: ClientProxy.init() called - registering client event handlers");
+        // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: ClientProxy.init() called - registering client event handlers");
         ClientEventHandler clientEventHandler = new ClientEventHandler();
         NeoForge.EVENT_BUS.register(clientEventHandler);
-        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: ClientEventHandler registered");
+        // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: ClientEventHandler registered");
         // Hook updateHitConnection to run after the game's pick logic each frame
         // Use EntityTickEvent.Post for LocalPlayer (similar to ClippyController)
         NeoForge.EVENT_BUS.addListener((final net.neoforged.neoforge.event.tick.EntityTickEvent.Post event) -> {
@@ -105,7 +105,7 @@ public final class ClientProxy extends ServerProxy {
                 ClientEventHandler.updateHitConnection();
             }
         });
-        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: EntityTickEvent.Post listener registered for LocalPlayer");
+        // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: EntityTickEvent.Post listener registered for LocalPlayer");
         modBus.<RegisterGuiLayersEvent>addListener(e -> {
             // RegisterGuiLayersEvent.registerBelowAll() - comment out for now, needs proper
             // interface
