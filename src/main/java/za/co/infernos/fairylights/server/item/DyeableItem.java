@@ -85,7 +85,7 @@ public final class DyeableItem {
         // Primary source: Data Component
         if (stack.has(FLDataComponents.COLOR.get())) {
             int color = stack.get(FLDataComponents.COLOR.get());
-            // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from COMPONENT: " + Integer.toHexString(color) + " stack: " + stack);
+           //  // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from COMPONENT: " + Integer.toHexString(color) + " stack: " + stack);
             return color;
         }
         
@@ -95,12 +95,12 @@ public final class DyeableItem {
             final CompoundTag tag = customData.getUnsafe();
             if (tag.contains("color", Tag.TAG_ANY_NUMERIC)) {
                 int color = tag.getInt("color");
-                // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from CUSTOM_DATA 'color': " + Integer.toHexString(color) + " stack: " + stack);
+               //  // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from CUSTOM_DATA 'color': " + Integer.toHexString(color) + " stack: " + stack);
                 return color;
             }
             if (tag.contains("fl_backup_color", Tag.TAG_ANY_NUMERIC)) {
                 int color = tag.getInt("fl_backup_color");
-                // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from CUSTOM_DATA 'fl_backup_color': " + Integer.toHexString(color) + " stack: " + stack);
+               //  // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from CUSTOM_DATA 'fl_backup_color': " + Integer.toHexString(color) + " stack: " + stack);
                 return color;
             }
         }

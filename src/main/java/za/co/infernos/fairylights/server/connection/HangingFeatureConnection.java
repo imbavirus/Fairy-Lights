@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 public abstract class HangingFeatureConnection<F extends HangingFeature> extends Connection {
     private static final Logger LOGGER = LogUtils.getLogger();
     static {
-        LOGGER.error("FL_DEBUG_CRITICAL: HangingFeatureConnection CLASS LOADED");
+        // LOGGER.error("FL_DEBUG_CRITICAL: HangingFeatureConnection CLASS LOADED");
     }
     protected static final FeatureType FEATURE = FeatureType.register("feature");
 
@@ -60,7 +60,7 @@ public abstract class HangingFeatureConnection<F extends HangingFeature> extends
                 feature = prev[index];
                 feature.set(new Vec3(x, y, z), yaw, pitch);
             } else {
-                LOGGER.error("FL_DEBUG_CRITICAL: HangingFeatureConnection creating feature at index " + index);
+                // LOGGER.error("FL_DEBUG_CRITICAL: HangingFeatureConnection creating feature at index " + index);
                 feature = this.createFeature(index, new Vec3(x, y, z), yaw, pitch);
             }
             this.updateFeature(feature);
