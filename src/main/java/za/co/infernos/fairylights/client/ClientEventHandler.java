@@ -190,10 +190,10 @@ public final class ClientEventHandler {
                         lastHitConnection.result.intersection.getFeature().getId() != result.intersection.getFeature().getId() ||
                         !componentDesc.equals(lastComponentDescription)) {
                         // LOGGER.info("FL_DEBUG: MOUSEOVER - Connection: " + result.connection.getUUID() + 
-                            " Component: " + componentDesc +
-                            " FeatureType=" + result.intersection.getFeatureType().getId() + 
-                            " FeatureId=" + result.intersection.getFeature().getId() +
-                            " HitPos=" + result.intersection.getResult());
+                        //     " Component: " + componentDesc +
+                        //     " FeatureType=" + result.intersection.getFeatureType().getId() + 
+                        //     " FeatureId=" + result.intersection.getFeature().getId() +
+                        //     " HitPos=" + result.intersection.getResult());
                         lastHitConnection = hitConnection;
                         lastComponentDescription = componentDesc;
                     }
