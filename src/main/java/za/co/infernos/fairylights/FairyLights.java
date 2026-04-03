@@ -100,7 +100,7 @@ public final class FairyLights {
                     .registryOrThrow(net.minecraft.resources.ResourceKey
                             .createRegistryKey(FairyLights.CONNECTION_TYPE));
             } catch (Exception e) {
-                com.mojang.logging.LogUtils.getLogger().error("FL_DEBUG: Failed to get CONNECTION_TYPES registry", e);
+                // com.mojang.logging.LogUtils.getLogger().error("FL_DEBUG: Failed to get CONNECTION_TYPES registry", e);
                 throw e;
             }
         };
@@ -111,7 +111,7 @@ public final class FairyLights {
                     .registryOrThrow(net.minecraft.resources.ResourceKey
                             .createRegistryKey(FairyLights.STRING_TYPE));
             } catch (Exception e) {
-                com.mojang.logging.LogUtils.getLogger().error("FL_DEBUG: Failed to get STRING_TYPES registry", e);
+                // com.mojang.logging.LogUtils.getLogger().error("FL_DEBUG: Failed to get STRING_TYPES registry", e);
                 throw e;
             }
         };
