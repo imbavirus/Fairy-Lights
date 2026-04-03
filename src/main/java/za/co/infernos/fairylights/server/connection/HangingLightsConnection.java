@@ -147,7 +147,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         // Prevent double-toggles from the same tick (interaction might be called twice)
         final long currentTick = this.world.getGameTime();
         if (currentTick == this.lastToggleTick) {
-            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Ignoring duplicate toggle on same tick");
+            // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Ignoring duplicate toggle on same tick");
             return true; // Already handled this tick
         }
         this.lastToggleTick = currentTick;
@@ -155,7 +155,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         // Toggle on/off state
         final boolean wasOn = this.isOn;
         this.isOn = !this.isOn;
-        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Toggling lights - wasOn=" + wasOn + " isOn=" + this.isOn);
+        // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Toggling lights - wasOn=" + wasOn + " isOn=" + this.isOn);
         final SoundEvent lightSnd;
         final float pitch;
         if (this.isOn) {
@@ -169,7 +169,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         
         // Immediately update power state of all existing features
         final boolean on = !this.isDynamic() && this.isOn;
-        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Setting power state - on=" + on + " isDynamic=" + this.isDynamic() + " features.length=" + this.features.length);
+        // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: Setting power state - on=" + on + " isDynamic=" + this.isDynamic() + " features.length=" + this.features.length);
         for (final Light<?> light : this.features) {
             light.power(on, true); // Use 'now=true' for immediate visual update
         }
@@ -304,12 +304,12 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         // Client will get it via deserialize() - don't override with stale state here
         if (!this.world.isClientSide()) {
             final boolean on = !this.isDynamic() && this.isOn;
-            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: onAfterUpdateFeatures (SERVER) - isOn=" + this.isOn + " on=" + on + " features.length=" + this.features.length);
+            // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: onAfterUpdateFeatures (SERVER) - isOn=" + this.isOn + " on=" + on + " features.length=" + this.features.length);
             for (final Light<?> light : this.features) {
                 light.power(on, true); // Use 'now=true' to ensure immediate update
             }
         } else {
-            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: onAfterUpdateFeatures (CLIENT) - skipping power state update, will be set via deserialize() - isOn=" + this.isOn + " features.length=" + this.features.length);
+            // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: onAfterUpdateFeatures (CLIENT) - skipping power state update, will be set via deserialize() - isOn=" + this.isOn + " features.length=" + this.features.length);
         }
         this.oldLitBlocks.removeAll(this.litBlocks);
         final Iterator<BlockPos> oldIter = this.oldLitBlocks.iterator();
@@ -411,7 +411,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     public CompoundTag serialize() {
         final CompoundTag compound = super.serialize();
         compound.put("jinglePlayer", this.jinglePlayer.serialize());
-        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: serialize (" + (this.world.isClientSide() ? "CLIENT" : "SERVER") + ") - isOn=" + this.isOn);
+        // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: serialize (" + (this.world.isClientSide() ? "CLIENT" : "SERVER") + ") - isOn=" + this.isOn);
         compound.putBoolean("isOn", this.isOn);
         final ListTag litBlocks = new ListTag();
         for (final BlockPos litBlock : this.litBlocks) {
@@ -428,7 +428,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     
     @Override
     public void deserialize(final CompoundTag compound, final net.minecraft.core.HolderLookup.Provider provider) {
-        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize(CompoundTag, Provider) ENTRY - world=" + (this.world != null ? (this.world.isClientSide() ? "CLIENT" : "SERVER") : "NULL") + " isOn=" + this.isOn + " compound.hasIsOn=" + compound.contains("isOn"));
+        // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize(CompoundTag, Provider) ENTRY - world=" + (this.world != null ? (this.world.isClientSide() ? "CLIENT" : "SERVER") : "NULL") + " isOn=" + this.isOn + " compound.hasIsOn=" + compound.contains("isOn"));
         
         // Call parent to handle destination, slack, drop, etc.
         super.deserialize(compound, provider);
@@ -449,12 +449,12 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         final boolean newIsOn = hasIsOn ? compound.getBoolean("isOn") : this.isOn;
         this.isOn = newIsOn;
         
-        com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize (" + (this.world != null && this.world.isClientSide() ? "CLIENT" : "SERVER") + ") - hasIsOn=" + hasIsOn + " oldIsOn=" + oldIsOn + " newIsOn=" + newIsOn + " isOn=" + this.isOn + " features.length=" + (this.features != null ? this.features.length : 0));
+        // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize (" + (this.world != null && this.world.isClientSide() ? "CLIENT" : "SERVER") + ") - hasIsOn=" + hasIsOn + " oldIsOn=" + oldIsOn + " newIsOn=" + newIsOn + " isOn=" + this.isOn + " features.length=" + (this.features != null ? this.features.length : 0));
         
         // On client side, always update power state when deserializing (state might have changed)
         if (this.world != null && this.world.isClientSide() && this.features != null) {
             final boolean on = !this.isDynamic() && this.isOn;
-            com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize (CLIENT) - updating power state - on=" + on + " isDynamic=" + this.isDynamic() + " features.length=" + this.features.length);
+            // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: deserialize (CLIENT) - updating power state - on=" + on + " isDynamic=" + this.isDynamic() + " features.length=" + this.features.length);
             for (final Light<?> light : this.features) {
                 light.power(on, true); // Use 'now=true' for immediate visual update
             }
