@@ -1,19 +1,18 @@
 package za.co.infernos.fairylights.server.integration.jei;
 
 import za.co.infernos.fairylights.server.item.FLDataComponents;
-import mezz.jei.api.ingredients.subtypes.IIngredientSubtypeInterpreter;
+import mezz.jei.api.ingredients.subtypes.ISubtypeInterpreter;
 import mezz.jei.api.ingredients.subtypes.UidContext;
 import net.minecraft.world.item.ItemStack;
 import java.util.Optional;
 
-public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpreter<ItemStack> {
+public final class ColorSubtypeInterpreter implements ISubtypeInterpreter<ItemStack> {
     private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger();
 
     @Override
-    public String apply(final ItemStack stack, final UidContext context) {
+    public String getLegacyStringSubtypeInfo(final ItemStack stack, final UidContext context) {
         StringBuilder sb = new StringBuilder();
 
-        // 1. Base Item Color
         // 1. Base Item Color
         // Only check color if there is no connection logic, as connection items use logic for identity
         // and the base color tag is often just for the creative tab icon.
@@ -68,6 +67,11 @@ public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpre
             return result;
         }
         
-        return IIngredientSubtypeInterpreter.NONE;
+        return ""; // ISubtypeInterpreter.NONE removed in JEI 15+
+    }
+
+    @Override
+    public Object getSubtypeData(final ItemStack stack, final UidContext context) {
+        return this.getLegacyStringSubtypeInfo(stack, context);
     }
 }

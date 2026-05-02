@@ -33,7 +33,6 @@ import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
-import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import net.neoforged.neoforge.common.Tags;
 import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -177,99 +176,99 @@ public final class FLCraftingRecipes {
     }
 
     public static CustomRecipe createCopyColorWrapper(CraftingBookCategory category) {
-        return new CopyColorRecipe(PLACEHOLDER_ID, category);
+        return new CopyColorRecipe(category);
     }
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> HANGING_LIGHTS = REG
             .register("crafting_special_hanging_lights",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createHangingLightsWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createHangingLightsWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> HANGING_LIGHTS_AUGMENTATION = REG
-            .register("crafting_special_hanging_lights_augmentation", () -> new SimpleCraftingRecipeSerializer<>(
+            .register("crafting_special_hanging_lights_augmentation", () -> new CustomRecipe.Serializer<>(
                     FLCraftingRecipes::createHangingLightsAugmentationWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> TINSEL_GARLAND = REG
             .register("crafting_special_tinsel_garland",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createTinselGarlandWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createTinselGarlandWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> PENNANT_BUNTING = REG
             .register("crafting_special_pennant_bunting",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createPennantBuntingWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createPennantBuntingWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> PENNANT_BUNTING_AUGMENTATION = REG
-            .register("crafting_special_pennant_bunting_augmentation", () -> new SimpleCraftingRecipeSerializer<>(
+            .register("crafting_special_pennant_bunting_augmentation", () -> new CustomRecipe.Serializer<>(
                     FLCraftingRecipes::createPennantBuntingAugmentationWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> TRIANGLE_PENNANT = REG
             .register("crafting_special_triangle_pennant",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createTrianglePennantWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createTrianglePennantWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> SPEARHEAD_PENNANT = REG
             .register("crafting_special_spearhead_pennant",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSpearheadPennantWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createSpearheadPennantWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> SWALLOWTAIL_PENNANT = REG
             .register("crafting_special_swallowtail_pennant",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSwallowtailPennantWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createSwallowtailPennantWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> SQUARE_PENNANT = REG
             .register("crafting_special_square_pennant",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSquarePennantWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createSquarePennantWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> FAIRY_LIGHT = REG.register(
             "crafting_special_fairy_light",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createFairyLightWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createFairyLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> PAPER_LANTERN = REG
             .register("crafting_special_paper_lantern",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createPaperLanternWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createPaperLanternWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> ORB_LANTERN = REG.register(
             "crafting_special_orb_lantern",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createOrbLanternWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createOrbLanternWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> FLOWER_LIGHT = REG
             .register("crafting_special_flower_light",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createFlowerLightWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createFlowerLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> CANDLE_LANTERN_LIGHT = REG
             .register("crafting_special_candle_lantern_light",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createCandleLanternLightWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createCandleLanternLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> OIL_LANTERN_LIGHT = REG
             .register("crafting_special_oil_lantern_light",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createOilLanternLightWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createOilLanternLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> JACK_O_LANTERN = REG
             .register("crafting_special_jack_o_lantern",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createJackOLanternWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createJackOLanternWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> SKULL_LIGHT = REG.register(
             "crafting_special_skull_light",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSkullLightWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createSkullLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> GHOST_LIGHT = REG.register(
             "crafting_special_ghost_light",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createGhostLightWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createGhostLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> SPIDER_LIGHT = REG
             .register("crafting_special_spider_light",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSpiderLightWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createSpiderLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> WITCH_LIGHT = REG.register(
             "crafting_special_witch_light",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createWitchLightWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createWitchLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> SNOWFLAKE_LIGHT = REG
             .register("crafting_special_snowflake_light",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSnowflakeLightWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createSnowflakeLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> HEART_LIGHT = REG.register(
             "crafting_special_heart_light",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createHeartLightWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createHeartLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> MOON_LIGHT = REG.register(
             "crafting_special_moon_light",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createMoonLightWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createMoonLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> STAR_LIGHT = REG.register(
             "crafting_special_star_light",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createStarLightWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createStarLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> ICICLE_LIGHTS = REG
             .register("crafting_special_icicle_lights",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createIcicleLightsWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createIcicleLightsWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> METEOR_LIGHT = REG
             .register("crafting_special_meteor_light",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createMeteorLightWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createMeteorLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> LIGHT_TWINKLE = REG
             .register("crafting_special_light_twinkle",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createLightTwinkleWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createLightTwinkleWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> COLOR_CHANGING_LIGHT = REG
             .register("crafting_special_color_changing_light",
-                    () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createColorChangingLightWrapper));
+                    () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createColorChangingLightWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<GenericRecipe>> EDIT_COLOR = REG.register(
             "crafting_special_edit_color",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createDyeColorWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createDyeColorWrapper));
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CustomRecipe>> COPY_COLOR = REG.register(
             "crafting_special_copy_color",
-            () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createCopyColorWrapper));
+            () -> new CustomRecipe.Serializer<>(FLCraftingRecipes::createCopyColorWrapper));
 
     public static final TagKey<Item> LIGHTS = ItemTags
             .create(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "lights"));
@@ -283,7 +282,7 @@ public final class FLCraftingRecipes {
             .create(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "dyeable_lights"));
 
     public static final RegularIngredient DYE_SUBTYPE_INGREDIENT = new BasicRegularIngredient(
-            Ingredient.of(OreDictUtils.getAllDyes().stream())) {
+            Ingredient.of(OreDictUtils.getAllDyes().stream().map(ItemStack::getItem))) {
         @Override
         public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
             return DyeableItem.getDyeColor(output).map(dye -> ImmutableList.of(OreDictUtils.getDyes(dye)))
@@ -322,7 +321,7 @@ public final class FLCraftingRecipes {
                 .withShape("I")
                 .withIngredient('I', DYEABLE).withOutput('I')
                 .withAuxiliaryIngredient(
-                        new BasicAuxiliaryIngredient<Blender>(Ingredient.of(OreDictUtils.getAllDyes().stream()), true, 8) {
+                        new BasicAuxiliaryIngredient<Blender>(Ingredient.of(OreDictUtils.getAllDyes().stream().map(ItemStack::getItem)), true, 8) {
                             @Override
                             public Blender accumulator() {
                                 return new Blender();
@@ -439,7 +438,7 @@ public final class FLCraftingRecipes {
                 .withIngredient('F', new BasicRegularIngredient(Ingredient.of(FLItems.HANGING_LIGHTS.get())) {
                     @Override
                     public ImmutableList<ItemStack> getInputs() {
-                        return Arrays.stream(this.ingredient.getItems())
+                        return this.ingredient.items().stream().map(net.minecraft.core.Holder::value).map(ItemStack::new)
                                 .map(ItemStack::copy)
                                 .flatMap(stack -> makeHangingLightsExamples(stack).stream())
                                 .collect(ImmutableList.toImmutableList());
@@ -530,7 +529,7 @@ public final class FLCraftingRecipes {
                 .withIngredient('B', new BasicRegularIngredient(Ingredient.of(FLItems.PENNANT_BUNTING.get())) {
                     @Override
                     public ImmutableList<ItemStack> getInputs() {
-                        return Arrays.stream(this.ingredient.getItems())
+                        return this.ingredient.items().stream().map(net.minecraft.core.Holder::value).map(ItemStack::new)
                                 .map(ItemStack::copy)
                                 .flatMap(stack -> makePennantExamples(stack).stream())
                                 .collect(ImmutableList.toImmutableList());
@@ -704,7 +703,7 @@ public final class FLCraftingRecipes {
 
     private static class LightIngredient extends BasicAuxiliaryIngredient<ListTag> {
         private LightIngredient(final boolean isRequired) {
-            super(Ingredient.of(FLItems.lights().map(ItemStack::new)), isRequired, 8);
+            super(Ingredient.of(FLItems.lights()), isRequired, 8);
         }
 
         @Override
@@ -774,7 +773,7 @@ public final class FLCraftingRecipes {
                     FLItems.SPEARHEAD_PENNANT.get(),
                     FLItems.SWALLOWTAIL_PENNANT.get(),
                     FLItems.SQUARE_PENNANT.get()
-            ).map(ItemStack::new)), true, 8);
+            )), true, 8);
         }
 
         @Override

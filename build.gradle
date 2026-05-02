@@ -23,6 +23,10 @@ repositories {
         name = 'ModMaven'
         url = 'https://modmaven.dev'
     }
+    maven {
+        name = 'BlameJared Maven'
+        url = 'https://maven.blamejared.com'
+    }
 }
 
 dependencies {
@@ -33,10 +37,10 @@ dependencies {
     // If mixins are already processed, this may not be needed at runtime
     // annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    // JEI - comment out if version not available
-    // compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
-    // runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+    // JEI (using 1.21.1 artifacts as JEI has no 1.21.2-specific build)
+    compileOnly "mezz.jei:jei-${jei_mc_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${jei_mc_version}-neoforge-api:${jei_version}"
+    runtimeOnly "mezz.jei:jei-${jei_mc_version}-neoforge:${jei_version}"
 }
 
 // Configure Mixin annotation processor - disabled due to ASM conflict

@@ -68,7 +68,7 @@ public final class HangingLightsConnectionItem extends ConnectionItem {
         final net.minecraft.core.Registry<StringType> registry = FairyLights.STRING_TYPES.get();
         final net.minecraft.resources.ResourceKey<StringType> key = net.minecraft.resources.ResourceKey
                 .create(net.minecraft.resources.ResourceKey.createRegistryKey(FairyLights.STRING_TYPE), stringId);
-        final StringType result = registry.get(key);
+        final StringType result = registry.get(key).map(ref -> ref.value()).orElse(null);
         return result != null ? result : StringTypes.BLACK_STRING.get();
     }
 

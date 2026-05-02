@@ -55,9 +55,9 @@ public class LightRenderer {
             )));
         }
 
-        // renderToBuffer() signature changed in 1.21.1
+        // render() signature changed in 1.21.1
         @Override
-        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+        public void render(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
         }
     }
 
@@ -135,7 +135,7 @@ public class LightRenderer {
 
     public <T extends LightBehavior> void render(final PoseStack matrix, final Data data, final Light<T> light, final LightModel<T> model, final float delta, final int packedLight, final int packedOverlay) {
         model.animate(light, light.getBehavior(), delta);
-        model.renderToBuffer(matrix, data.solid, packedLight, packedOverlay, 0xFFFFFFFF); // White color
+        model.render(matrix, data.solid, packedLight, packedOverlay, 0xFFFFFFFF); // White color
         model.renderTranslucent(matrix, data.translucent, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
     }
 

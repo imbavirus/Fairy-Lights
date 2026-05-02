@@ -369,7 +369,7 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
                                 net.minecraft.resources.ResourceKey.createRegistryKey(FairyLights.CONNECTION_TYPE),
                                 typeId
                             );
-                            type = registry.get(key);
+                            type = registry.get(key).map(ref -> ref.value()).orElse(null);
                         } catch (Exception e) {
                             // LOGGER.error("FL_DEBUG: Registry lookup failed for type " + typeId, e);
                         }

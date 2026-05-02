@@ -190,10 +190,10 @@ public final class ClientEventHandler {
                         lastHitConnection.result.intersection.getFeature().getId() != result.intersection.getFeature().getId() ||
                         !componentDesc.equals(lastComponentDescription)) {
                         // LOGGER.info("FL_DEBUG: MOUSEOVER - Connection: " + result.connection.getUUID() + 
-                            " Component: " + componentDesc +
-                            " FeatureType=" + result.intersection.getFeatureType().getId() + 
-                            " FeatureId=" + result.intersection.getFeature().getId() +
-                            " HitPos=" + result.intersection.getResult());
+                        //     " Component: " + componentDesc +
+                        //     " FeatureType=" + result.intersection.getFeatureType().getId() + 
+                        //     " FeatureId=" + result.intersection.getFeature().getId() +
+                        //     " HitPos=" + result.intersection.getResult());
                         lastHitConnection = hitConnection;
                         lastComponentDescription = componentDesc;
                     }
@@ -393,7 +393,7 @@ public final class ClientEventHandler {
                 matrix.popPose();
             } else {
                 final AABB bb = hit.result.intersection.getHitBox().move(-pos.x, -pos.y, -pos.z).inflate(0.002D);
-                LevelRenderer.renderLineBox(event.getPoseStack(), buf.getBuffer(RenderType.lines()), bb, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
+                // LevelRenderer.renderLineBox  // Commented out - API changed in 1.21.2(event.getPoseStack(), buf.getBuffer(RenderType.lines()), bb, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
             }
         }
     }
@@ -404,7 +404,7 @@ public final class ClientEventHandler {
         // Check if the server will allow interaction
         if (player != null && (player.hasLineOfSight(fence) || player.distanceToSqr(fence) <= 9.0D)) {
             final AABB selection = fence.getBoundingBox().move(-dx, -dy, -dz).inflate(0.002D);
-            LevelRenderer.renderLineBox(matrix, buf, selection, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
+            // LevelRenderer.renderLineBox  // Commented out - API changed in 1.21.2(matrix, buf, selection, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
         }
     }
 
@@ -480,23 +480,10 @@ public final class ClientEventHandler {
         builder.accept(this.get(edge, p, v1, v2, r));
     }
 
-    // Helper method to add vertex - workaround for vertex() method API changes in 1.21.1
+    // TODO: Reimplement when drawEntityHighlight is re-enabled for 1.21.1 VertexConsumer API
+    // The old vertex(double,double,double) chained API no longer exists
     private static void addVertexToBuffer(VertexConsumer buf, org.joml.Vector3f pos, Vector3f normal, float alpha) {
-        try {
-            // Try to call vertex() method via reflection
-            final java.lang.reflect.Method vertexMethod = VertexConsumer.class.getMethod("vertex", double.class, double.class, double.class);
-            final Object v = vertexMethod.invoke(buf, (double)pos.x(), (double)pos.y(), (double)pos.z());
-            // Call color, normal, endVertex via reflection
-            final java.lang.reflect.Method colorMethod = VertexConsumer.class.getMethod("color", int.class, int.class, int.class, int.class);
-            final java.lang.reflect.Method normalMethod = VertexConsumer.class.getMethod("normal", float.class, float.class, float.class);
-            final java.lang.reflect.Method endVertexMethod = VertexConsumer.class.getMethod("endVertex");
-            colorMethod.invoke(v, (int)(0.0F * 255), (int)(0.0F * 255), (int)(0.0F * 255), (int)(alpha * 255));
-            normalMethod.invoke(v, normal.x(), normal.y(), normal.z());
-            endVertexMethod.invoke(v);
-        } catch (Exception e) {
-            // vertex() method not available - skip rendering
-            // TODO: Implement alternative for 1.21.1 VertexConsumer API
-        }
+        // Not implemented - highlight rendering is currently disabled (drawEntityHighlight is commented out)
     }
 
     private Vector3f get(final int edge, final Vector3f p, final Vector3f v1, final Vector3f v2, final float r) {
@@ -537,7 +524,13 @@ public final class ClientEventHandler {
         }
 
         @Override
-        public boolean hurt(final DamageSource source, final float amount) {
+        public boolean hurtServer(final net.minecraft.server.level.ServerLevel level, final DamageSource source, final float amount) {
+            // Client-side entity - damage is handled via processAction
+            return false;
+        }
+
+        // Client-side attack handling
+        public boolean handleAttack(final DamageSource source, final float amount) {
             if (source.getEntity() == Minecraft.getInstance().player) {
                 this.processAction(PlayerAction.ATTACK);
                 return true;
