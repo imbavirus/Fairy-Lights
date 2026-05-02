@@ -260,38 +260,10 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
     public void readSpawnData(final net.minecraft.network.RegistryFriendlyByteBuf buf) {
         this.getFastener().ifPresent(fastener -> {
             try {
-                // NbtAccounter API changed in 1.21.1 - use reflection to find correct method
-                NbtAccounter accounter;
-                try {
-                    accounter = (NbtAccounter) NbtAccounter.class.getMethod("unlimitedHeap").invoke(null);
-                } catch (Exception e1) {
-                    try {
-                        accounter = (NbtAccounter) NbtAccounter.class.getMethod("createUnlimited", int.class)
-                                .invoke(null, 0x200000);
-                    } catch (Exception e2) {
-                        // NbtAccounter constructor may have changed - use default
-                        accounter = NbtAccounter.create(0x200000);
-                    }
-                }
-                // NbtIo.read() API may have changed in 1.21.1
-                CompoundTag tag = null;
-                try {
-                    tag = NbtIo.read(new ByteBufInputStream(buf), accounter);
-                } catch (Exception e3) {
-                    try {
-                        // Try alternative API without accounter
-                        tag = NbtIo.read(new ByteBufInputStream(buf));
-                    } catch (Exception e4) {
-                        // If both fail, create empty tag
-                        tag = new CompoundTag();
-                    }
-                }
-                if (tag != null) {
-                    // Fastener is an interface, deserializeNBT is in AbstractFastener
-                    // Cast to AbstractFastener to access the method
-                    if (fastener instanceof za.co.infernos.fairylights.server.fastener.AbstractFastener) {
-                        ((za.co.infernos.fairylights.server.fastener.AbstractFastener<?>) fastener).deserializeNBT(tag, buf.registryAccess());
-                    }
+                final NbtAccounter accounter = NbtAccounter.create(0x200000);
+                CompoundTag tag = NbtIo.read(new ByteBufInputStream(buf), accounter);
+                if (tag != null && fastener instanceof za.co.infernos.fairylights.server.fastener.AbstractFastener) {
+                    ((za.co.infernos.fairylights.server.fastener.AbstractFastener<?>) fastener).deserializeNBT(tag, buf.registryAccess());
                 }
             } catch (final Exception e) {
                 throw new RuntimeException(e);

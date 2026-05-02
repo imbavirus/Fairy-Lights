@@ -123,32 +123,8 @@ public final class ClientProxy extends ServerProxy {
         modBus.addListener(this::setupModels);
     }
 
-    private int getUvIndex(VertexFormat vertexFormat) {
-        int position = 0;
-        for (final VertexFormatElement ee : vertexFormat.getElements()) {
-            // VertexFormatElement.Usage API changed in 1.21.1
-            // Usage enum may have moved or changed - use reflection to access
-            try {
-                final java.lang.reflect.Method getUsage = ee.getClass().getMethod("getUsage");
-                final Object usage = getUsage.invoke(ee);
-                if (usage != null) {
-                    final String usageStr = usage.toString();
-                    // Check for UV usage by string comparison
-                    if (usageStr.contains("UV") || usageStr.endsWith("UV") || usageStr.equals("UV")) {
-                        if (position % 4 == 0) {
-                            return position / 4;
-                        }
-                        break;
-                    }
-                }
-            } catch (Exception ex) {
-                // Usage API may have changed - skip UV check
-            }
-            // getByteSize() may have been renamed to byteSize()
-            position += ee.byteSize();
-        }
-        return -1;
-    }
+
+
 
     private void recomputeUv(final int stride, final int finalUvOffset, final BakedModel model) {
         final TextureAtlasSprite sprite = model.getParticleIcon(ModelData.EMPTY);
