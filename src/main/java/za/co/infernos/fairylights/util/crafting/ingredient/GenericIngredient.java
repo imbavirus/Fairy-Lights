@@ -43,7 +43,7 @@ public interface GenericIngredient<I extends GenericIngredient<I, M>, M extends 
 
     default ImmutableList<ItemStack> getMatchingSubtypes(final Ingredient stack) {
         Objects.requireNonNull(stack, "stack");
-        return ImmutableList.copyOf(stack.getItems());
+        return ImmutableList.copyOf(stack.items().stream().map(net.minecraft.world.item.ItemStack::new).toArray(net.minecraft.world.item.ItemStack[]::new));
     }
 
     default void addTooltip(final List<Component> tooltip) {}

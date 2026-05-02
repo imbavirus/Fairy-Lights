@@ -33,21 +33,17 @@ public class GenericRecipeBuilder {
 
     public void build(final RecipeOutput consumer, final ResourceLocation id) {
         AdvancementHolder advancement = null;
-        // Check if criteria is not empty - try to access criteria map size
+        net.minecraft.resources.ResourceKey<net.minecraft.world.item.crafting.Recipe<?>> recipeKey = net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.RECIPE, id);
         try {
-            // Try to check if we have any criteria by attempting to build
             final ResourceLocation advancementId = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipes/" + FairyLights.ID + "/" + id.getPath());
-            // Create advancement builder with parent and recipe unlock trigger
             final Advancement.Builder builder = this.advancementBuilder.parent(ResourceLocation.parse("minecraft:recipes/root"))
-                .addCriterion("has_the_recipe", RecipeUnlockedTrigger.unlocked(id))
-                .rewards(AdvancementRewards.Builder.recipe(id))
+                .addCriterion("has_the_recipe", RecipeUnlockedTrigger.unlocked(recipeKey))
+                .rewards(AdvancementRewards.Builder.recipe(recipeKey))
                 .requirements(net.minecraft.advancements.AdvancementRequirements.Strategy.OR);
             advancement = builder.build(advancementId);
         } catch (Exception e) {
-            // If building fails, advancement stays null
         }
-        // Create a simple recipe for now - the actual recipe creation will need to be handled by the serializer
-        consumer.accept(id, new Result(this.serializer, id), advancement);
+        consumer.accept(recipeKey, new Result(this.serializer, id), advancement);
     }
 
     public static GenericRecipeBuilder customRecipe(final RecipeSerializer<?> serializer) {
@@ -64,8 +60,8 @@ public class GenericRecipeBuilder {
         }
 
         @Override
-        public RecipeSerializer<?> getSerializer() {
-            return this.serializer;
+        public RecipeSerializer<? extends net.minecraft.world.item.crafting.CraftingRecipe> getSerializer() {
+            return (RecipeSerializer<? extends net.minecraft.world.item.crafting.CraftingRecipe>) this.serializer;
         }
 
         @Override
@@ -75,7 +71,7 @@ public class GenericRecipeBuilder {
 
         // Recipe interface methods
         @Override
-        public net.minecraft.world.item.crafting.RecipeType<?> getType() {
+        public net.minecraft.world.item.crafting.RecipeType<net.minecraft.world.item.crafting.CraftingRecipe> getType() {
             return net.minecraft.world.item.crafting.RecipeType.CRAFTING;
         }
 
@@ -89,14 +85,16 @@ public class GenericRecipeBuilder {
             return net.minecraft.world.item.ItemStack.EMPTY;
         }
 
+
+
         @Override
-        public boolean canCraftInDimensions(int width, int height) {
-            return true;
+        public net.minecraft.world.item.crafting.PlacementInfo placementInfo() {
+            return net.minecraft.world.item.crafting.PlacementInfo.NOT_PLACEABLE;
         }
 
         @Override
-        public net.minecraft.world.item.ItemStack getResultItem(net.minecraft.core.HolderLookup.Provider provider) {
-            return net.minecraft.world.item.ItemStack.EMPTY;
+        public net.minecraft.world.item.crafting.RecipeBookCategory recipeBookCategory() {
+            return net.minecraft.world.item.crafting.RecipeBookCategories.CRAFTING_MISC;
         }
     }
 }

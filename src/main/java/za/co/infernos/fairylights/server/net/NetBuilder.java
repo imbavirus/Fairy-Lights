@@ -71,35 +71,13 @@ public final class NetBuilder {
     
     @SuppressWarnings("unchecked")
     public <T extends Message> void sendToClient(T message, net.minecraft.server.level.ServerPlayer player) {
-        if (this.registrar != null && message != null) {
-            try {
-                // Use PayloadRegistrar.send() to send the message to the player
-                // The message should be registered as a payload
-                final java.lang.reflect.Method sendMethod = this.registrar.getClass().getMethod("send", Object.class, net.minecraft.server.level.ServerPlayer.class);
-                sendMethod.invoke(this.registrar, message, player);
-            } catch (NoSuchMethodException e) {
-                // Try alternative method names
-                try {
-                    final java.lang.reflect.Method sendToPlayer = this.registrar.getClass().getMethod("sendToPlayer", Object.class, net.minecraft.server.level.ServerPlayer.class);
-                    sendToPlayer.invoke(this.registrar, message, player);
-                } catch (Exception e2) {
-                    // Try using PayloadRegistrar's playToClient handler directly
-                    try {
-                        // Get the handler from our stored handlers and invoke it directly on client
-                        // This is a workaround - proper networking would use the registered payload
-                        final BiConsumer<? extends Message, ? extends MessageContext> handler = this.getClientboundHandler(message.getClass());
-                        if (handler != null) {
-                            // Create a mock context - this won't work perfectly but might help
-                            final ClientMessageContext ctx = new ClientMessageContext(player);
-                            ((BiConsumer<T, ClientMessageContext>) handler).accept(message, ctx);
-                        }
-                    } catch (Exception e3) {
-                        // All methods failed - message won't be sent
-                        // Connection will sync on next tick via regular update mechanism
-                    }
-                }
-            } catch (Exception e) {
-                // Method invocation failed
+        if (message != null) {
+            // Use stored handler to process message directly
+            // TODO: Implement proper PayloadRegistrar-based networking
+            final BiConsumer<? extends Message, ? extends MessageContext> handler = this.getClientboundHandler(message.getClass());
+            if (handler != null) {
+                final ClientMessageContext ctx = new ClientMessageContext(player);
+                ((BiConsumer<T, ClientMessageContext>) handler).accept(message, ctx);
             }
         }
     }
