@@ -20,6 +20,8 @@ import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
 import net.minecraft.world.level.Level;
 
 import java.util.ArrayList;
@@ -63,7 +65,7 @@ public final class GenericRecipe extends CustomRecipe {
             final int outputIngredient) {
         // CustomRecipe constructor signature changed in 1.21.1 - may need different
         // parameters
-        super(CraftingBookCategory.MISC);
+        super(net.minecraft.world.item.crafting.CraftingBookCategory.MISC);
         com.mojang.logging.LogUtils.getLogger().info("Constructing GenericRecipe: " + id);
         Preconditions.checkArgument(width > 0, "width must be greater than zero");
         Preconditions.checkArgument(height > 0, "height must be greater than zero");
@@ -97,21 +99,21 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
     private NonNullList<Ingredient> getDisplayIngredients() {
-        final NonNullList<Ingredient> ingredients = NonNullList.withSize(9, Ingredient.EMPTY);
+        final NonNullList<Ingredient> ingredients = NonNullList.withSize(9, null);
         for (int i = 0; i < this.ingredients.length; i++) {
             final int x = i % this.width;
             final int y = i / this.width;
             final ItemStack[] stacks = this.ingredients[i].getInputs().toArray(new ItemStack[0]);
-            ingredients.set(x + y * 3, Ingredient.of(stacks));
+            ingredients.set(x + y * 3, Ingredient.of(java.util.Arrays.stream(stacks).map(ItemStack::getItem).toArray(Item[]::new)));
         }
         for (int i = 0, slot = 0; slot < ingredients.size(); slot++) {
             final Ingredient ing = ingredients.get(slot);
-            if (ing.isEmpty()) {
+            if (ing == null) {
                 while (i < this.auxiliaryIngredients.length) {
                     final AuxiliaryIngredient<?> aux = this.auxiliaryIngredients[i++];
                     if (aux.isRequired()) {
                         final ItemStack[] stacks = aux.getInputs().toArray(new ItemStack[0]);
-                        ingredients.set(slot, Ingredient.of(stacks));
+                        ingredients.set(slot, Ingredient.of(java.util.Arrays.stream(stacks).map(ItemStack::getItem).toArray(Item[]::new)));
                         break;
                     }
                 }
@@ -126,7 +128,17 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public net.minecraft.world.item.crafting.PlacementInfo placementInfo() {
+        return net.minecraft.world.item.crafting.PlacementInfo.NOT_PLACEABLE;
+    }
+
+    @Override
+    public RecipeBookCategory recipeBookCategory() {
+        return RecipeBookCategories.CRAFTING_MISC;
+    }
+
+    @Override
+    public RecipeSerializer<? extends CustomRecipe> getSerializer() {
         return this.serializer.get();
     }
 
@@ -150,20 +162,17 @@ public final class GenericRecipe extends CustomRecipe {
         return this.height;
     }
 
-    @Override
-    public NonNullList<Ingredient> getIngredients() {
-        return this.getDisplayIngredients();
-    }
+    
 
-    @Override
+    
     public boolean canCraftInDimensions(final int width, final int height) {
         return this.width <= width && this.height <= height
                 && (this.getRoom() >= 0 || width * height - this.width * this.height + this.getRoom() >= 0);
     }
 
     // matches() signature changed in 1.21.1 - now uses CraftingInput
-    @Override
-    public boolean matches(final net.minecraft.world.item.crafting.CraftingInput input, final Level world) {
+    
+    @Override public boolean matches(final net.minecraft.world.item.crafting.CraftingInput input, final Level world) {
         // LOGGER.debug("GenericRecipe.matches called for " + this.output);
         if (!this.canCraftInDimensions(input.width(), input.height())) {
             return false;
@@ -329,10 +338,7 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
     // getResultItem() signature changed in 1.21.1 - now uses Provider
-    @Override
-    public ItemStack getResultItem(final net.minecraft.core.HolderLookup.Provider provider) {
-        return this.output;
-    }
+    
 
     public interface MatchResult<I extends GenericIngredient<I, M>, M extends MatchResult<I, M>> {
         I getIngredient();

@@ -10,7 +10,7 @@ import za.co.infernos.fairylights.util.LazyItemStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.Toast;
-import net.minecraft.client.gui.components.toasts.ToastComponent;
+import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -130,7 +130,7 @@ public class ClippyController {
 
         @Override
         public void start() {
-            Minecraft.getInstance().getToasts().addToast(this.balloon);
+            Minecraft.getInstance().getToastManager().addToast(this.balloon);
         }
 
         @Override
@@ -175,22 +175,27 @@ public class ClippyController {
         }
 
         @Override
-        public Visibility render(final GuiGraphics stack, final ToastComponent toastGui, final long delta) {
-            if (delta > 5000L) {
-                this.hide();
-                return Visibility.HIDE;
-            }
-            // Toast texture location in 1.21.1
-            // Toast texture location in 1.21.1 - use sprite
+        public void render(final GuiGraphics stack, final net.minecraft.client.gui.Font font, final long delta) {
             final net.minecraft.resources.ResourceLocation TEXTURE = net.minecraft.resources.ResourceLocation.withDefaultNamespace("toast/advancement");
-            stack.blitSprite(TEXTURE, 0, 0, 160, 32);
+            stack.blitSprite(net.minecraft.client.renderer.RenderType::guiTextured, TEXTURE, 0, 0, 160, 32);
             stack.renderFakeItem(this.stack.get(), 6 + 2, 6 + 2);
             if (this.subtitle == null) {
-                stack.drawString(toastGui.getMinecraft().font, this.title, 30, 12, 0xFF500050);
+                stack.drawString(font, this.title, 30, 12, 0xFF500050);
             } else {
-                stack.drawString(toastGui.getMinecraft().font, this.title, 30, 7, 0xFF500050);
-                stack.drawString(toastGui.getMinecraft().font, this.subtitle, 30, 18, 0xFF000000);
+                stack.drawString(font, this.title, 30, 7, 0xFF500050);
+                stack.drawString(font, this.subtitle, 30, 18, 0xFF000000);
             }
+        }
+
+        @Override
+        public void update(final ToastManager manager, final long delta) {
+            if (delta > 5000L) {
+                this.hide();
+            }
+        }
+
+        @Override
+        public Toast.Visibility getWantedVisibility() {
             return this.visibility;
         }
     }

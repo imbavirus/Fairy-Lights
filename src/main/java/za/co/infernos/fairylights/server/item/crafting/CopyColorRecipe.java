@@ -1,11 +1,7 @@
 package za.co.infernos.fairylights.server.item.crafting;
 
 import za.co.infernos.fairylights.server.item.DyeableItem;
-import net.neoforged.neoforge.registries.DeferredHolder;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CustomRecipe;
@@ -13,7 +9,7 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 
 public class CopyColorRecipe extends CustomRecipe {
-    public CopyColorRecipe(final ResourceLocation id, CraftingBookCategory category) {
+    public CopyColorRecipe(CraftingBookCategory category) {
         super(category);
     }
 
@@ -26,7 +22,7 @@ public class CopyColorRecipe extends CustomRecipe {
                 return false;
             }
         }
-        return true;
+        return count == 2;
     }
 
     @Override
@@ -60,8 +56,9 @@ public class CopyColorRecipe extends CustomRecipe {
         final NonNullList<ItemStack> remaining = NonNullList.withSize(input.size(), ItemStack.EMPTY);
         for (int i = 0; i < remaining.size(); i++) {
             final ItemStack stack = input.getItem(i);
-            if (stack.hasCraftingRemainingItem()) {
-                remaining.set(i, stack.getCraftingRemainingItem());
+            ItemStack remainder = stack.getItem().getCraftingRemainder();
+            if (!remainder.isEmpty()) {
+                remaining.set(i, remainder);
             } else if (original.isEmpty() && !stack.isEmpty() && stack.is(FLCraftingRecipes.DYEABLE)) {
                 final ItemStack rem = stack.copy();
                 rem.setCount(1);
@@ -72,18 +69,10 @@ public class CopyColorRecipe extends CustomRecipe {
         return remaining;
     }
 
-    @Override
-    public boolean canCraftInDimensions(final int width, final int height) {
-        return width * height >= 2;
-    }
+
 
     @Override
-    public net.minecraft.world.item.crafting.RecipeType<?> getType() {
-        return net.minecraft.world.item.crafting.RecipeType.CRAFTING;
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<? extends CustomRecipe> getSerializer() {
         return FLCraftingRecipes.COPY_COLOR.get();
     }
 }
