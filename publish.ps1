@@ -603,15 +603,17 @@ function Upload-ToCurseForge([string]$version, [array]$artifacts) {
   }
 
   # Build metadata per CurseForge Upload API.
+  # Force changelog to plain string to prevent ConvertTo-Json serialization issues
+  $changelogStr = [string]$changelog
   $metadata = @{
-    changelog = $changelog
+    changelog = $changelogStr
     changelogType = "markdown"
     displayName = $fileName
     gameVersions = $gameVersionIds
     releaseType = $releaseType
   }
 
-  $metadataJson = $metadata | ConvertTo-Json -Compress
+  $metadataJson = $metadata | ConvertTo-Json -Compress -Depth 5
 
   $uploadUri = "$($cf.BaseUrl)/api/projects/$projectId/upload-file"
   Write-Host "Uploading to CurseForge project $projectId..."
@@ -795,7 +797,7 @@ function Upload-ToModrinth([string]$version, [array]$artifacts) {
   $metadata = @{
     name = "v$version"
     version_number = $version
-    changelog = $changelog
+    changelog = [string]$changelog
     dependencies = @()
     game_versions = $gameVersionsArray
     loaders = $loadersArray
@@ -829,6 +831,7 @@ function Upload-ToModrinth([string]$version, [array]$artifacts) {
 
   Add-Type -AssemblyName System.Net.Http
   $client = New-Object System.Net.Http.HttpClient
+  $client.Timeout = [System.TimeSpan]::FromSeconds(60)
   # Modrinth uses "Authorization: <token>" header format
   $client.DefaultRequestHeaders.Add("Authorization", $mr.Token)
 
