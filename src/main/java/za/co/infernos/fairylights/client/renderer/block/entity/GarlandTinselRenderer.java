@@ -66,9 +66,9 @@ public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConne
             matrix.mulPose(Axis.YP.rotationDegrees(rotY));
             matrix.mulPose(Axis.ZP.rotationDegrees(rotX));
             matrix.scale(1.0F, RAND.get(i * 63) * 0.1F + 1.0F, 0.5F);
-            // Model.renderToBuffer() signature changed in 1.21.1 - pack color into int
+            // Model.render() signature changed in 1.21.1 - pack color into int
             final int packedColor = ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | (int)(b * 255) | 0xFF000000;
-            this.strip.renderToBuffer(matrix, buf, packedLight, packedOverlay, packedColor);
+            this.strip.render(matrix, buf, packedLight, packedOverlay, packedColor);
             matrix.popPose();
         }
         
@@ -83,7 +83,7 @@ public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConne
         final ModelPart root;
 
         StripModel(final ModelPart root) {
-            super(RenderType::entityCutout);
+            super(root, RenderType::entityCutout);
             this.root = root;
         }
 
@@ -95,8 +95,8 @@ public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConne
             return LayerDefinition.create(mesh, 128, 128);
         }
 
-        @Override
-        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+        // @Override removed - render() signature changed in 1.21.2
+        public void render(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
             // ModelPart.render() signature changed in 1.21.1 - use packed color directly
             this.root.render(matrix, builder, light, overlay, packedColor);
         }

@@ -232,13 +232,8 @@ public abstract class Connection implements NBTSerializable {
 
     public boolean matches(final ItemStack stack) {
         if (this.getType().getItem().equals(stack.getItem())) {
-            // getTag() may not exist in 1.21.1 - using reflection
-            CompoundTag tag = null;
-            try {
-                tag = (CompoundTag) stack.getClass().getMethod("getTag").invoke(stack);
-            } catch (Exception e) {
-                // NBT methods removed - need data components API
-            }
+            // Use Data Components API (1.21.1) instead of legacy getTag()
+            final CompoundTag tag = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC.get());
             return tag == null || Utils.impliesNbt(this.serializeLogic(), tag);
         }
         return false;
@@ -251,13 +246,8 @@ public abstract class Connection implements NBTSerializable {
             if (this.shouldDrop()) {
                 ItemHandlerHelper.giveItemToPlayer(player, this.getItemStack());
             }
-            // getTag() may not exist in 1.21.1 - using reflection
-            CompoundTag data = null;
-            try {
-                data = (CompoundTag) heldStack.getClass().getMethod("getTag").invoke(heldStack);
-            } catch (Exception e) {
-                // NBT methods removed - need data components API
-            }
+            // Use Data Components API (1.21.1) instead of legacy getTag()
+            final CompoundTag data = heldStack.get(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC.get());
             final ConnectionType<? extends Connection> type = ((ConnectionItem) heldStack.getItem())
                     .getConnectionType();
             final Connection conn = this.fastener.connect(this.world, dest, type,

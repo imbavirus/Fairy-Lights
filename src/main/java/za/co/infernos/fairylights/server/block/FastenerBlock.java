@@ -163,7 +163,7 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
     }
 
     @SuppressWarnings("deprecation")
-    @Override
+    // @Override removed in 1.21.2 - neighborChanged contract changed
     public void neighborChanged(final BlockState state, final Level world, final BlockPos pos, final Block blockIn, final BlockPos fromPos, final boolean isMoving) {
         if (state.canSurvive(world, pos)) {
             final boolean receivingPower = world.hasNeighborSignal(pos);

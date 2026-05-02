@@ -43,7 +43,7 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
     private boolean powered;
 
     public LightModel(ModelPart root) {
-        super(RenderType::entityTranslucent);
+        super(root, RenderType::entityTranslucent);
         this.lit = root.getChild("lit");
         this.litTint = root.getChild("lit_tint");
         this.litTintGlow = root.getChild("lit_tint_glow");
@@ -92,7 +92,7 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
         if (this.bounds == null) {
             final PoseStack matrix = new PoseStack();
             final AABBVertexBuilder builder = new AABBVertexBuilder();
-            this.renderToBuffer(matrix, builder, 0, 0, 0xFFFFFFFF); // White color
+            this.render(matrix, builder, 0, 0, 0xFFFFFFFF); // White color
             this.renderTranslucent(matrix, builder, 0, 0, 1.0F, 1.0F, 1.0F, 1.0F);
             this.bounds = builder.build();
         }
@@ -102,7 +102,7 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
     public double getFloorOffset() {
         if (Double.isNaN(this.floorOffset)) {
             final AABBVertexBuilder builder = new AABBVertexBuilder();
-            this.renderToBuffer(new PoseStack(), builder, 0, 0, 0xFFFFFFFF); // White color
+            this.render(new PoseStack(), builder, 0, 0, 0xFFFFFFFF); // White color
             this.floorOffset = builder.build().minY-this.getBounds().minY;
         }
         return this.floorOffset;
@@ -112,8 +112,8 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
         this.powered = light.isPowered();
     }
 
-    @Override
-    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+    // @Override removed - render() signature changed in 1.21.2
+    public void render(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
         // Convert packed color to RGBA floats for ModelPart.render
         final float r = ((packedColor >> 16) & 0xFF) / 255.0F;
         final float g = ((packedColor >> 8) & 0xFF) / 255.0F;
