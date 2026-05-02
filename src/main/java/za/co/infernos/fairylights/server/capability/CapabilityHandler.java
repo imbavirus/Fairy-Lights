@@ -28,8 +28,7 @@ public final class CapabilityHandler {
         // Capabilities are registered via AttachCapabilitiesEvent, not here
     }
 
-    // Helper method to get capability from BlockEntity using reflection (for compatibility)
-    @SuppressWarnings("unchecked")
+    // Helper method to get fastener capability from BlockEntity
     public static Optional<Fastener<?>> getFastenerCapability(BlockEntity entity) {
         if (entity == null) return Optional.empty();
 
@@ -38,19 +37,12 @@ public final class CapabilityHandler {
             return fastenerBe.getFastener();
         }
 
-        // Legacy / fallback: try old-style reflection (kept for compatibility with other entities)
-        try {
-            final java.lang.reflect.Method getCapability = entity.getClass().getMethod("getCapability", ResourceLocation.class);
-            final Optional<Fastener<?>> cap = (Optional<Fastener<?>>) getCapability.invoke(entity, FASTENER_ID);
-            return cap != null ? cap : Optional.empty();
-        } catch (Throwable e) {
-            return Optional.empty();
-        }
+        // No other block entity types have fastener capabilities
+        return Optional.empty();
     }
 
-    // Helper method to get capability from Entity using NeoForge 1.21.1 data attachments
-    // Creates the capability if it doesn't exist (lazy initialization)
-    @SuppressWarnings("unchecked")
+    // Helper method to get fastener capability from Entity
+    // Creates the capability if it doesn't exist for Players (lazy initialization)
     public static Optional<Fastener<?>> getFastenerCapability(Entity entity) {
         if (entity == null) return Optional.empty();
 
@@ -70,58 +62,7 @@ public final class CapabilityHandler {
             return Optional.of(f);
         }
         
-        // Try multiple methods in order of likelihood
-        // 1. Try getData(ResourceLocation) - some NeoForge versions use this
-        try {
-            final java.lang.reflect.Method getData = entity.getClass().getMethod("getData", ResourceLocation.class);
-            Object data = getData.invoke(entity, FASTENER_ID);
-            if (data instanceof Fastener) {
-                return Optional.of((Fastener<?>) data);
-            }
-            // If data is null and entity is a Player, create and set it
-            if (data == null && entity instanceof Player) {
-                final PlayerFastener fastener = new PlayerFastener((Player) entity);
-                // Try to set the data
-                try {
-                    final java.lang.reflect.Method setData = entity.getClass().getMethod("setData", ResourceLocation.class, Object.class);
-                    setData.invoke(entity, FASTENER_ID, fastener);
-                    return Optional.of(fastener);
-                } catch (Exception e2) {
-                    // setData doesn't exist, fall through
-                }
-            }
-        } catch (Throwable e) {
-            // Method doesn't exist or failed, try next
-        }
-        // 2. Try getCapability(ResourceLocation) - old API
-        try {
-            final java.lang.reflect.Method getCapability = entity.getClass().getMethod("getCapability", ResourceLocation.class);
-            Optional<Fastener<?>> cap = (Optional<Fastener<?>>) getCapability.invoke(entity, FASTENER_ID);
-            if (cap != null && cap.isPresent()) {
-                return cap;
-            }
-            // If capability is empty and entity is a Player, create and attach it
-            if ((cap == null || cap.isEmpty()) && entity instanceof Player) {
-                final PlayerFastener fastener = new PlayerFastener((Player) entity);
-                // Try to attach the capability using addCapability or similar
-                try {
-                    final java.lang.reflect.Method addCapability = entity.getClass().getMethod("addCapability", ResourceLocation.class, Object.class);
-                    addCapability.invoke(entity, FASTENER_ID, fastener);
-                    return Optional.of(fastener);
-                } catch (Exception e2) {
-                    // addCapability doesn't exist, try getOrCreate
-                    try {
-                        final java.lang.reflect.Method getOrCreate = entity.getClass().getMethod("getOrCreateCapability", ResourceLocation.class, java.util.function.Supplier.class);
-                        cap = (Optional<Fastener<?>>) getOrCreate.invoke(entity, FASTENER_ID, (java.util.function.Supplier<Fastener<?>>) () -> fastener);
-                        return cap != null ? cap : Optional.of(fastener);
-                    } catch (Exception e3) {
-                        // All attachment methods failed
-                    }
-                }
-            }
-        } catch (Throwable e) {
-            // Method doesn't exist or failed
-        }
+        // No other entity types have fastener capabilities
         return Optional.empty();
     }
 }

@@ -49,7 +49,7 @@ public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnectio
             matrix.mulPose(Axis.ZP.rotationDegrees(RAND.get(index + hash) * 45.0F));
             matrix.mulPose(Axis.YP.rotationDegrees(RAND.get(index + 8 + hash) * 60.F + 90.0F));
             this.rings.setWhich(index % RING_COUNT);
-            this.rings.renderToBuffer(matrix, buf, packedLight, packedOverlay, 0xFFFFFFFF); // White color
+            this.rings.render(matrix, buf, packedLight, packedOverlay, 0xFFFFFFFF); // White color
             matrix.popPose();
         });
     }
@@ -63,7 +63,7 @@ public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnectio
         int which;
 
         RingsModel(final ModelPart root) {
-            super(RenderType::entityCutout);
+            super(root, RenderType::entityCutout);
             ModelPart[] roots = new ModelPart[RING_COUNT];
             for (int i = 0; i < RING_COUNT; i++) {
                 roots[i] = root.getChild(Integer.toString(i));
@@ -92,8 +92,8 @@ public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnectio
             this.which = which;
         }
 
-        @Override
-        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+        // @Override removed - render() signature changed in 1.21.2
+        public void render(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
             // ModelPart.render() signature changed in 1.21.1 - use packed color directly
             this.roots[this.which].render(matrix, builder, light, overlay, packedColor);
         }

@@ -30,13 +30,13 @@ public class IncandescentLightModel extends LightModel<BrightnessLightBehavior> 
     }
 
     @Override
-    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+    public void render(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
         // Convert packed color to RGBA floats
         final float r = ((packedColor >> 16) & 0xFF) / 255.0F;
         final float g = ((packedColor >> 8) & 0xFF) / 255.0F;
         final float b = (packedColor & 0xFF) / 255.0F;
         final float a = ((packedColor >> 24) & 0xFF) / 255.0F;
-        super.renderToBuffer(matrix, builder, light, overlay, packedColor);
+        super.render(matrix, builder, light, overlay, packedColor);
         final int emissiveLight = this.getLight(light);
         final float cr = 0.23F, cg = 0.18F, cb = 0.14F;
         final float br = this.brightness;

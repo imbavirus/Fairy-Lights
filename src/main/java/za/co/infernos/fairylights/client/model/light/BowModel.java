@@ -16,7 +16,7 @@ public class BowModel extends Model {
     private final ModelPart root;
 
     public BowModel(ModelPart root) {
-        super(RenderType::entityCutout);
+        super(root, RenderType::entityCutout);
         this.root = root;
     }
 
@@ -40,8 +40,8 @@ public class BowModel extends Model {
         return LayerDefinition.create(mesh, 128, 128);
     }
 
-    @Override
-    public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
+    // @Override removed - render() signature changed in 1.21.2
+    public void render(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int packedColor) {
         // ModelPart.render() signature changed in 1.21.1 - use packed color directly
         this.root.render(matrix, builder, light, overlay, packedColor);
     }

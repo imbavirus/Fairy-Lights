@@ -16,35 +16,15 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-// Ingredient is final in Minecraft 1.21.1, so we use composition instead of inheritance
+// In 1.21.2, Ingredient.of(TagKey) creates a lazy tag ingredient natively.
+// We keep this class just as a factory to minimize changes elsewhere.
 public class LazyTagIngredient {
     private final Ingredient ingredient;
-    private final TagKey<Item> tag;
 
     private LazyTagIngredient(final TagKey<Item> tag) {
-        this.tag = tag;
-        // Create an Ingredient from the tag
-        this.ingredient = Ingredient.of(StreamSupport.stream(BuiltInRegistries.ITEM.getTagOrEmpty(tag).spliterator(), false)
-            .map(ItemStack::new));
+        this.ingredient = Ingredient.of(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(tag).map(h -> (net.minecraft.core.HolderSet<Item>)h).orElse(net.minecraft.core.HolderSet.empty()));
     }
 
-    public ItemStack[] getItems() {
-        return this.ingredient.getItems();
-    }
-
-    public boolean test(@Nullable final ItemStack stack) {
-        return this.ingredient.test(stack);
-    }
-
-    public IntList getStackingIds() {
-        return this.ingredient.getStackingIds();
-    }
-
-    public boolean isEmpty() {
-        return this.ingredient.isEmpty();
-    }
-
-    // Get the underlying Ingredient for use in recipes
     public Ingredient asIngredient() {
         return this.ingredient;
     }

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import za.co.infernos.fairylights.FairyLights;
+import za.co.infernos.fairylights.client.renderer.item.tint.FairyLightTintSource;
 import za.co.infernos.fairylights.client.command.JinglerCommand;
 import za.co.infernos.fairylights.client.model.light.BowModel;
 import za.co.infernos.fairylights.client.model.light.CandleLanternModel;
@@ -123,32 +124,8 @@ public final class ClientProxy extends ServerProxy {
         modBus.addListener(this::setupModels);
     }
 
-    private int getUvIndex(VertexFormat vertexFormat) {
-        int position = 0;
-        for (final VertexFormatElement ee : vertexFormat.getElements()) {
-            // VertexFormatElement.Usage API changed in 1.21.1
-            // Usage enum may have moved or changed - use reflection to access
-            try {
-                final java.lang.reflect.Method getUsage = ee.getClass().getMethod("getUsage");
-                final Object usage = getUsage.invoke(ee);
-                if (usage != null) {
-                    final String usageStr = usage.toString();
-                    // Check for UV usage by string comparison
-                    if (usageStr.contains("UV") || usageStr.endsWith("UV") || usageStr.equals("UV")) {
-                        if (position % 4 == 0) {
-                            return position / 4;
-                        }
-                        break;
-                    }
-                }
-            } catch (Exception ex) {
-                // Usage API may have changed - skip UV check
-            }
-            // getByteSize() may have been renamed to byteSize()
-            position += ee.byteSize();
-        }
-        return -1;
-    }
+
+
 
     private void recomputeUv(final int stride, final int finalUvOffset, final BakedModel model) {
         final TextureAtlasSprite sprite = model.getParticleIcon(ModelData.EMPTY);
@@ -228,125 +205,18 @@ public final class ClientProxy extends ServerProxy {
     }
 
     private void setupModels(final ModelEvent.RegisterAdditional event) {
-        // NeoForge 1.21.1 requires 'standalone' variant for side-loaded models, not
-        // 'inventory'
-        event.register(new net.minecraft.client.resources.model.ModelResourceLocation(FenceFastenerRenderer.MODEL,
-                "standalone"));
-        this.entityModels.forEach(model -> event
-                .register(new net.minecraft.client.resources.model.ModelResourceLocation(model, "standalone")));
+        // NeoForge 1.21.4 registration for side-loaded models
+        event.register(FenceFastenerRenderer.MODEL);
+        this.entityModels.forEach(event::register);
     }
 
-    private void setupColors(final RegisterColorHandlersEvent.Item event) {
-        event.register((stack, index) -> {
-            if (index == 1) {
-                if (ColorChangingBehavior.exists(stack)) {
-                    return ColorChangingBehavior.animate(stack);
-                }
-                // Use DyeableItem.getColor() which now properly reads from NBT via save/parse
-                return DyeableItem.getColor(stack);
-            }
-            return 0xFFFFFF;
-        },
-                FLItems.FAIRY_LIGHT.get(),
-                FLItems.PAPER_LANTERN.get(),
-                FLItems.ORB_LANTERN.get(),
-                FLItems.FLOWER_LIGHT.get(),
-                FLItems.CANDLE_LANTERN_LIGHT.get(),
-                FLItems.OIL_LANTERN_LIGHT.get(),
-                FLItems.JACK_O_LANTERN.get(),
-                FLItems.SKULL_LIGHT.get(),
-                FLItems.GHOST_LIGHT.get(),
-                FLItems.SPIDER_LIGHT.get(),
-                FLItems.WITCH_LIGHT.get(),
-                FLItems.SNOWFLAKE_LIGHT.get(),
-                FLItems.HEART_LIGHT.get(),
-                FLItems.MOON_LIGHT.get(),
-                FLItems.STAR_LIGHT.get(),
-                FLItems.ICICLE_LIGHTS.get(),
-                FLItems.METEOR_LIGHT.get());
-        event.register((stack, index) -> {
-            if (index == 0) {
-                // HANGING_LIGHTS connection string
-                final CompoundTag logic = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
-                if (logic != null) {
-                    return HangingLightsConnectionItem.getString(logic).getColor();
-                }
-                return StringTypes.BLACK_STRING.get().getColor();
-            }
-            // HANGING_LIGHTS lights pattern
-            final CompoundTag logic = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
-            if (logic != null) {
-                final ListTag tagList = logic.getList("pattern", Tag.TAG_COMPOUND);
-                if (tagList.size() > 0) {
-                    // ItemStack.parse() needs RegistryAccess
-                    final var level = net.minecraft.client.Minecraft.getInstance().level;
-                    final var registryAccess = level != null ? level.registryAccess()
-                            : net.minecraft.core.RegistryAccess
-                                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                    final ItemStack item = ItemStack
-                            .parse(registryAccess, tagList.getCompound((index - 1) % tagList.size()))
-                            .orElse(ItemStack.EMPTY);
-                    if (ColorChangingBehavior.exists(item)) {
-                        return ColorChangingBehavior.animate(item);
-                    }
-                    return DyeableItem.getColor(item);
-                }
-            }
-            if (FairyLights.CHRISTMAS.isOccurringNow()) {
-                return (index + Util.getMillis() / 2000) % 2 == 0 ? 0x993333 : 0x7FCC19;
-            }
-            if (FairyLights.HALLOWEEN.isOccurringNow()) {
-                return index % 2 == 0 ? 0xf9801d : 0x8932b8;
-            }
-            return 0xFFD584;
-        }, FLItems.HANGING_LIGHTS.get());
-        event.register((stack, index) -> index == 0 ? DyeableItem.getColor(stack) : 0xFFFFFFFF, FLItems.TINSEL.get());
-        event.register((stack, index) -> {
-            if (index == 0) {
-                return 0xFFFFFFFF;
-            }
-            // PENNANT_BUNTING pattern
-            final CompoundTag logic = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
-            if (logic != null) {
-                final ListTag tagList = logic.getList("pattern", Tag.TAG_COMPOUND);
-                if (tagList.size() > 0) {
-                    final var level = net.minecraft.client.Minecraft.getInstance().level;
-                    final var registryAccess = level != null ? level.registryAccess()
-                            : net.minecraft.core.RegistryAccess
-                                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                    final ItemStack light = ItemStack
-                            .parse(registryAccess, tagList.getCompound((index - 1) % tagList.size()))
-                            .orElse(ItemStack.EMPTY);
-                    return DyeableItem.getColor(light);
-                }
-            }
-            return 0xFFFFFFFF;
-        }, FLItems.PENNANT_BUNTING.get());
-        event.register(ClientProxy::secondLayerColor, FLItems.TRIANGLE_PENNANT.get());
-        event.register(ClientProxy::secondLayerColor, FLItems.SPEARHEAD_PENNANT.get());
-        event.register(ClientProxy::secondLayerColor, FLItems.SWALLOWTAIL_PENNANT.get());
-        event.register(ClientProxy::secondLayerColor, FLItems.SQUARE_PENNANT.get());
-        event.register((stack, index) -> {
-            // LETTER_BUNTING text
-            if (index > 0 && stack.has(za.co.infernos.fairylights.server.item.FLDataComponents.STYLED_STRING)) {
-                final CompoundTag textTag = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.STYLED_STRING);
-                if (textTag != null) {
-                    final StyledString str = StyledString.deserialize(textTag);
-                    if (str.length() > 0) {
-                        ChatFormatting lastColor = null, color = null;
-                        int n = (index - 1) % str.length();
-                        for (int i = 0; i < str.length(); lastColor = color, i++) {
-                            color = str.styleAt(i).getColor();
-                            if (lastColor != color && (n-- == 0)) {
-                                break;
-                            }
-                        }
-                        return StyledString.getColor(color) | 0xFF000000;
-                    }
-                }
-            }
-            return 0xFFFFFFFF;
-        }, FLItems.LETTER_BUNTING.get());
+    private void setupColors(final net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.ItemTintSources event) {
+        event.register(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "light_color"), FairyLightTintSource.CODEC);
+        /*
+        // Index-based ItemColor registration is gone in 1.21.4
+        // Logic should be moved into specific ItemTintSource implementations
+        // and models updated to point to them.
+        */
     }
 
     private static int secondLayerColor(final ItemStack stack, final int index) {
