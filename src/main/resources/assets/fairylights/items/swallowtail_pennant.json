@@ -1,0 +1,11 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "fairylights:item/swallowtail_pennant",
+    "tints": [
+      { "type": "fairylights:light_color", "index": 0 },
+      { "type": "fairylights:light_color", "index": 1 }
+    ]
+  }
+}
+

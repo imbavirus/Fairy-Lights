@@ -44,21 +44,29 @@ public final class DataGatherer {
     @SubscribeEvent
     public static void onGatherData(final GatherDataEvent event) {
         final DataGenerator gen = event.getGenerator();
-        gen.addProvider(event.includeServer(), new RecipeGenerator(gen.getPackOutput()));
-        gen.addProvider(event.includeServer(), new LootTableGenerator(gen));
+        gen.addProvider(event.includeServer(), new RecipeGenerator(gen.getPackOutput(), event.getLookupProvider()));
+        gen.addProvider(event.includeServer(), new LootTableGenerator(gen, event.getLookupProvider()));
     }
 
-    static class RecipeGenerator extends RecipeProvider {
-        RecipeGenerator(final PackOutput generator) {
-            // RecipeProvider constructor in 1.21.1 - try with CompletableFuture
-            super(generator, java.util.concurrent.CompletableFuture.completedFuture(net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY)));
+    static class RecipeGenerator extends RecipeProvider.Runner {
+        RecipeGenerator(final PackOutput generator, java.util.concurrent.CompletableFuture<net.minecraft.core.HolderLookup.Provider> provider) {
+            super(generator, provider);
         }
 
         @Override
-        protected void buildRecipes(final RecipeOutput consumer) {
-            final CompoundTag nbt = new CompoundTag();
+        public String getName() {
+            return "Fairy Lights Recipes";
+        }
+
+        @Override
+        protected RecipeProvider createRecipeProvider(net.minecraft.core.HolderLookup.Provider registries, RecipeOutput consumer) {
+            return new RecipeProvider(registries, consumer) {
+                @Override
+                protected void buildRecipes() {
+                    net.minecraft.core.HolderGetter<net.minecraft.world.item.Item> items = registries.lookupOrThrow(net.minecraft.core.registries.Registries.ITEM);
+                    final CompoundTag nbt = new CompoundTag();
             nbt.put("text", StyledString.serialize(new StyledString()));
-            ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, FLItems.LETTER_BUNTING.get())
+            ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS, (net.minecraft.world.level.ItemLike)FLItems.LETTER_BUNTING.get())
                 .pattern("I-I")
                 .pattern("PBF")
                 .define('I', Tags.Items.INGOTS_IRON)
@@ -69,14 +77,14 @@ public final class DataGatherer {
                 .unlockedBy("has_iron", has(Tags.Items.INGOTS_IRON))
                 .unlockedBy("has_string", has(Items.STRING))
                 .save(addNbt(consumer, nbt));
-            ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS,FLItems.GARLAND.get(), 2)
+            ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS, (net.minecraft.world.level.ItemLike)FLItems.GARLAND.get(), 2)
                 .pattern("I-I")
                 .define('I', Tags.Items.INGOTS_IRON)
                 .define('-', Items.VINE)
                 .unlockedBy("has_iron", has(Tags.Items.INGOTS_IRON))
                 .unlockedBy("has_vine", has(Items.VINE))
                 .save(consumer);
-            ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS,FLItems.OIL_LANTERN.get(), 4)
+            ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS, (net.minecraft.world.level.ItemLike)FLItems.OIL_LANTERN.get(), 4)
                 .pattern(" I ")
                 .pattern("STS")
                 .pattern("IGI")
@@ -87,7 +95,7 @@ public final class DataGatherer {
                 .unlockedBy("has_iron", has(Tags.Items.INGOTS_IRON))
                 .unlockedBy("has_torch", has(Items.TORCH))
                 .save(consumer);
-            ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS,FLItems.CANDLE_LANTERN.get(), 4)
+            ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS, (net.minecraft.world.level.ItemLike)FLItems.CANDLE_LANTERN.get(), 4)
                 .pattern(" I ")
                 .pattern("GTG")
                 .pattern("IGI")
@@ -97,7 +105,7 @@ public final class DataGatherer {
                 .unlockedBy("has_iron", has(Tags.Items.INGOTS_IRON))
                 .unlockedBy("has_torch", has(Items.TORCH))
                 .save(consumer);
-            ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS,FLItems.INCANDESCENT_LIGHT.get(), 4)
+            ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS, (net.minecraft.world.level.ItemLike)FLItems.INCANDESCENT_LIGHT.get(), 4)
                 .pattern(" I ")
                 .pattern("ITI")
                 .pattern(" G ")
@@ -108,16 +116,16 @@ public final class DataGatherer {
                 .unlockedBy("has_torch", has(Items.TORCH))
                 .save(consumer);
             GenericRecipeBuilder.customRecipe(FLCraftingRecipes.HANGING_LIGHTS.get())
-                .unlockedBy("has_lights", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(FLCraftingRecipes.LIGHTS).build()))
+                .unlockedBy("has_lights", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(items, FLCraftingRecipes.LIGHTS).build()))
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "hanging_lights"));
             GenericRecipeBuilder.customRecipe(FLCraftingRecipes.HANGING_LIGHTS_AUGMENTATION.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "hanging_lights_augmentation"));
             GenericRecipeBuilder.customRecipe(FLCraftingRecipes.TINSEL_GARLAND.get())
-                .unlockedBy("has_iron", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(Tags.Items.INGOTS_IRON).build()))
+                .unlockedBy("has_iron", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(items, Tags.Items.INGOTS_IRON).build()))
                 .unlockedBy("has_string", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(Items.STRING))
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "tinsel_garland"));
             GenericRecipeBuilder.customRecipe(FLCraftingRecipes.PENNANT_BUNTING.get())
-                .unlockedBy("has_pennants", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(FLCraftingRecipes.PENNANTS).build()))
+                .unlockedBy("has_pennants", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(items, FLCraftingRecipes.PENNANTS).build()))
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "pennant_bunting"));
             GenericRecipeBuilder.customRecipe(FLCraftingRecipes.PENNANT_BUNTING_AUGMENTATION.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "pennant_bunting_augmentation"));
@@ -125,61 +133,63 @@ public final class DataGatherer {
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "edit_color"));
             GenericRecipeBuilder.customRecipe(FLCraftingRecipes.COPY_COLOR.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "copy_color"));
-            this.pennantRecipe(FLCraftingRecipes.TRIANGLE_PENNANT.get())
+            RecipeGenerator.this.pennantRecipe(items, FLCraftingRecipes.TRIANGLE_PENNANT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "triangle_pennant"));
-            this.pennantRecipe(FLCraftingRecipes.SPEARHEAD_PENNANT.get())
+            RecipeGenerator.this.pennantRecipe(items, FLCraftingRecipes.SPEARHEAD_PENNANT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "spearhead_pennant"));
-            this.pennantRecipe(FLCraftingRecipes.SWALLOWTAIL_PENNANT.get())
+            RecipeGenerator.this.pennantRecipe(items, FLCraftingRecipes.SWALLOWTAIL_PENNANT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "swallowtail_pennant"));
-            this.pennantRecipe(FLCraftingRecipes.SQUARE_PENNANT.get())
+            RecipeGenerator.this.pennantRecipe(items, FLCraftingRecipes.SQUARE_PENNANT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "square_pennant"));
-            this.lightRecipe(FLCraftingRecipes.FAIRY_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.FAIRY_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "fairy_light"));
-            this.lightRecipe(FLCraftingRecipes.PAPER_LANTERN.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.PAPER_LANTERN.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "paper_lantern"));
-            this.lightRecipe(FLCraftingRecipes.ORB_LANTERN.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.ORB_LANTERN.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "orb_lantern"));
-            this.lightRecipe(FLCraftingRecipes.FLOWER_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.FLOWER_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "flower_light"));
-            this.lightRecipe(FLCraftingRecipes.CANDLE_LANTERN_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.CANDLE_LANTERN_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "candle_lantern_light"));
-            this.lightRecipe(FLCraftingRecipes.OIL_LANTERN_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.OIL_LANTERN_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "oil_lantern_light"));
-            this.lightRecipe(FLCraftingRecipes.JACK_O_LANTERN.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.JACK_O_LANTERN.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "jack_o_lantern"));
-            this.lightRecipe(FLCraftingRecipes.SKULL_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.SKULL_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "skull_light"));
-            this.lightRecipe(FLCraftingRecipes.GHOST_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.GHOST_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "ghost_light"));
-            this.lightRecipe(FLCraftingRecipes.SPIDER_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.SPIDER_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "spider_light"));
-            this.lightRecipe(FLCraftingRecipes.WITCH_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.WITCH_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "witch_light"));
-            this.lightRecipe(FLCraftingRecipes.SNOWFLAKE_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.SNOWFLAKE_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "snowflake_light"));
-            this.lightRecipe(FLCraftingRecipes.HEART_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.HEART_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "heart_light"));
-            this.lightRecipe(FLCraftingRecipes.MOON_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.MOON_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "moon_light"));
-            this.lightRecipe(FLCraftingRecipes.STAR_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.STAR_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "star_light"));
-            this.lightRecipe(FLCraftingRecipes.ICICLE_LIGHTS.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.ICICLE_LIGHTS.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "icicle_lights"));
-            this.lightRecipe(FLCraftingRecipes.METEOR_LIGHT.get())
+            RecipeGenerator.this.lightRecipe(items, FLCraftingRecipes.METEOR_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "meteor_light"));
             GenericRecipeBuilder.customRecipe(FLCraftingRecipes.LIGHT_TWINKLE.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "light_twinkle"));
             GenericRecipeBuilder.customRecipe(FLCraftingRecipes.COLOR_CHANGING_LIGHT.get())
                 .build(consumer, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "color_changing_light"));
         }
-
-        GenericRecipeBuilder lightRecipe(final RecipeSerializer<?> serializer) {
-            return GenericRecipeBuilder.customRecipe(serializer)
-                .unlockedBy("has_iron", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(Tags.Items.INGOTS_IRON).build()))
-                .unlockedBy("has_dye", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(Tags.Items.DYES).build()));
+            };
         }
 
-        GenericRecipeBuilder pennantRecipe(final RecipeSerializer<?> serializer) {
+        GenericRecipeBuilder lightRecipe(net.minecraft.core.HolderGetter<net.minecraft.world.item.Item> items, final RecipeSerializer<?> serializer) {
+            return GenericRecipeBuilder.customRecipe(serializer)
+                .unlockedBy("has_iron", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(items, Tags.Items.INGOTS_IRON).build()))
+                .unlockedBy("has_dye", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(net.minecraft.advancements.critereon.ItemPredicate.Builder.item().of(items, Tags.Items.DYES).build()));
+        }
+
+        GenericRecipeBuilder pennantRecipe(net.minecraft.core.HolderGetter<net.minecraft.world.item.Item> items, final RecipeSerializer<?> serializer) {
             return GenericRecipeBuilder.customRecipe(serializer)
                 .unlockedBy("has_paper", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(Items.PAPER))
                 .unlockedBy("has_string", net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(Items.STRING));
@@ -187,14 +197,12 @@ public final class DataGatherer {
     }
 
     static class LootTableGenerator extends LootTableProvider {
-        LootTableGenerator(final DataGenerator generator) {
-            // LootTableProvider constructor signature in 1.21.1:
-            // PackOutput, Set<ResourceKey<LootTable>>, List<SubProviderEntry>, CompletableFuture<Provider>
+        LootTableGenerator(final DataGenerator generator, java.util.concurrent.CompletableFuture<net.minecraft.core.HolderLookup.Provider> provider) {
             super(
                 generator.getPackOutput(),
                 Set.of(),
-                ImmutableList.of(new SubProviderEntry((provider) -> new BlockLootTableGenerator(provider), LootContextParamSets.BLOCK)),
-                java.util.concurrent.CompletableFuture.completedFuture(net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY))
+                ImmutableList.of(new SubProviderEntry((p) -> new BlockLootTableGenerator(p), LootContextParamSets.BLOCK)),
+                provider
             );
         }
 
@@ -260,15 +268,18 @@ public final class DataGatherer {
     static RecipeOutput addNbt(final RecipeOutput consumer, final CompoundTag nbt) {
         return new RecipeOutput() {
             @Override
-            public void accept(ResourceLocation id, net.minecraft.world.item.crafting.Recipe<?> recipe, @Nullable net.minecraft.advancements.AdvancementHolder advancement, net.neoforged.neoforge.common.conditions.ICondition... conditions) {
-                // For NBT support, we need to handle this differently in 1.21.1
-                // The recipe output system has changed, so we'll need to modify the recipe builder
+            public void accept(net.minecraft.resources.ResourceKey<net.minecraft.world.item.crafting.Recipe<?>> id, net.minecraft.world.item.crafting.Recipe<?> recipe, @Nullable net.minecraft.advancements.AdvancementHolder advancement, net.neoforged.neoforge.common.conditions.ICondition... conditions) {
                 consumer.accept(id, recipe, advancement, conditions);
             }
             
             @Override
             public net.minecraft.advancements.Advancement.Builder advancement() {
                 return consumer.advancement();
+            }
+            
+            @Override
+            public void includeRootAdvancement() {
+                consumer.includeRootAdvancement();
             }
         };
     }

@@ -1,0 +1,11 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "fairylights:item/snowflake_light",
+    "tints": [
+      { "type": "fairylights:light_color", "index": 0 },
+      { "type": "fairylights:light_color", "index": 1 }
+    ]
+  }
+}
+

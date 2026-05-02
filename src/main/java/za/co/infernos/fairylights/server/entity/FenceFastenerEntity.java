@@ -40,6 +40,7 @@ import net.neoforged.neoforge.entity.IEntityWithComplexSpawn;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import net.minecraft.server.level.ServerLevel;
 import java.util.Optional;
 
 public final class FenceFastenerEntity extends HangingEntity implements IEntityWithComplexSpawn {
@@ -122,15 +123,15 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
         super.remove(reason);
     }
 
-    // Copy from super but remove() moved to after onBroken()
     @Override
-    public boolean hurt(final DamageSource source, final float amount) {
-        if (this.isInvulnerableTo(source)) {
+    public boolean hurtServer(final ServerLevel level, final DamageSource source, final float amount) {
+        // isInvulnerableTo removed in 1.21.2
+        if (source.is(net.minecraft.world.damagesource.DamageTypes.GENERIC_KILL)) {
             return false;
         }
-        if (!this.level().isClientSide() && this.isAlive()) {
+        if (this.isAlive()) {
             this.markHurt();
-            this.dropItem(source.getEntity());
+            this.dropItem(level, source.getEntity());
             this.remove(RemovalReason.KILLED);
         }
         return true;
@@ -142,10 +143,10 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
     }
 
     @Override
-    public void dropItem(@Nullable final Entity breaker) {
-        this.getFastener().ifPresent(fastener -> fastener.dropItems(this.level(), this.pos));
+    public void dropItem(final ServerLevel level, @Nullable final Entity breaker) {
+        this.getFastener().ifPresent(fastener -> fastener.dropItems(level, this.pos));
         if (breaker != null) {
-            this.level().levelEvent(2001, this.pos, Block.getId(FLBlocks.FASTENER.get().defaultBlockState()));
+            level.levelEvent(2001, this.pos, Block.getId(FLBlocks.FASTENER.get().defaultBlockState()));
         }
     }
 
@@ -181,18 +182,14 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
         return new AABB(posX - w, posY - h, posZ - w, posX + w, posY + h, posZ + w);
     }
 
-    @Override
-    public AABB getBoundingBoxForCulling() {
-        // Return infinite bounds so connections are always visible regardless of camera direction
-        // INFINITE_EXTENT_AABB was removed in 1.21.1, so we create an infinite AABB manually
-        return new AABB(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
-    }
+    // Override removed in 1.21.2 - getBoundingBoxForCulling no longer exists
+    // Connections handle their own visibility via shouldRender in the renderer
 
     @Override
     public void tick() {
         this.getFastener().ifPresent(fastener -> {
             if (!this.level().isClientSide() && (fastener.hasNoConnections() || this.checkSurface())) {
-                this.dropItem(null);
+                if (this.level() instanceof ServerLevel sl) { this.dropItem(sl, null); }
                 this.remove(RemovalReason.DISCARDED);
             } else if (fastener.update() && !this.level().isClientSide()) {
                 final UpdateEntityFastenerMessage msg = new UpdateEntityFastenerMessage(this, fastener.serializeNBT());
@@ -260,38 +257,10 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
     public void readSpawnData(final net.minecraft.network.RegistryFriendlyByteBuf buf) {
         this.getFastener().ifPresent(fastener -> {
             try {
-                // NbtAccounter API changed in 1.21.1 - use reflection to find correct method
-                NbtAccounter accounter;
-                try {
-                    accounter = (NbtAccounter) NbtAccounter.class.getMethod("unlimitedHeap").invoke(null);
-                } catch (Exception e1) {
-                    try {
-                        accounter = (NbtAccounter) NbtAccounter.class.getMethod("createUnlimited", int.class)
-                                .invoke(null, 0x200000);
-                    } catch (Exception e2) {
-                        // NbtAccounter constructor may have changed - use default
-                        accounter = NbtAccounter.create(0x200000);
-                    }
-                }
-                // NbtIo.read() API may have changed in 1.21.1
-                CompoundTag tag = null;
-                try {
-                    tag = NbtIo.read(new ByteBufInputStream(buf), accounter);
-                } catch (Exception e3) {
-                    try {
-                        // Try alternative API without accounter
-                        tag = NbtIo.read(new ByteBufInputStream(buf));
-                    } catch (Exception e4) {
-                        // If both fail, create empty tag
-                        tag = new CompoundTag();
-                    }
-                }
-                if (tag != null) {
-                    // Fastener is an interface, deserializeNBT is in AbstractFastener
-                    // Cast to AbstractFastener to access the method
-                    if (fastener instanceof za.co.infernos.fairylights.server.fastener.AbstractFastener) {
-                        ((za.co.infernos.fairylights.server.fastener.AbstractFastener<?>) fastener).deserializeNBT(tag, buf.registryAccess());
-                    }
+                final NbtAccounter accounter = NbtAccounter.create(0x200000);
+                CompoundTag tag = NbtIo.read(new ByteBufInputStream(buf), accounter);
+                if (tag != null && fastener instanceof za.co.infernos.fairylights.server.fastener.AbstractFastener) {
+                    ((za.co.infernos.fairylights.server.fastener.AbstractFastener<?>) fastener).deserializeNBT(tag, buf.registryAccess());
                 }
             } catch (final Exception e) {
                 throw new RuntimeException(e);
