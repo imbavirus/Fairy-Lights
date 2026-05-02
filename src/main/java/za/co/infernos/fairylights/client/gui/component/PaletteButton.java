@@ -7,6 +7,7 @@ import za.co.infernos.fairylights.util.FLMth;
 import za.co.infernos.fairylights.util.styledstring.StyledString;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -61,12 +62,12 @@ public class PaletteButton extends Button {
     public void renderWidget(final GuiGraphics stack, final int mouseX, final int mouseY, final float delta) {
         if (this.visible) {
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U, TEX_V, this.width, this.height);
+            stack.blit(RenderType::guiTextured, EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U, TEX_V, this.width, this.height, 256, 256);
             if (this.colorBtn.hasDisplayColor()) {
                 final int idx = COLOR_IDX[this.colorBtn.getDisplayColor().ordinal()];
                 final int selectX = this.getX() + 2 + (idx % 4) * 6;
                 final int selectY = this.getY() + 2 + (idx / 4) * 6;
-                stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, selectX, selectY, SELECT_U, SELECT_V, COLOR_WIDTH, COLOR_HEIGHT);
+                stack.blit(RenderType::guiTextured, EditLetteredConnectionScreen.WIDGETS_TEXTURE, selectX, selectY, SELECT_U, SELECT_V, COLOR_WIDTH, COLOR_HEIGHT, 256, 256);
             }
             for (int i = 0; i < IDX_COLOR.length; i++) {
                 final ChatFormatting color = IDX_COLOR[i];
@@ -75,7 +76,7 @@ public class PaletteButton extends Button {
                 final float g = (rgb >> 8 & 0xFF) / 255F;
                 final float b = (rgb & 0xFF) / 255F;
                 RenderSystem.setShaderColor(r, g, b, 1.0F);
-                stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX() + 2 + (i % 4) * 6, this.getY() + 2 + i / 4 * 6, COLOR_U, COLOR_V, COLOR_WIDTH, COLOR_HEIGHT);
+                stack.blit(RenderType::guiTextured, EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX() + 2 + (i % 4) * 6, this.getY() + 2 + i / 4 * 6, COLOR_U, COLOR_V, COLOR_WIDTH, COLOR_HEIGHT, 256, 256);
             }
             final int selectIndex = this.getMouseOverIndex(mouseX, mouseY);
             if (selectIndex > -1) {
@@ -84,7 +85,7 @@ public class PaletteButton extends Button {
                 RenderSystem.setShaderColor(1, 1, 1, 0.5F);
                 final int hoverSelectX = this.getX() + 2 + selectIndex % 4 * 6;
                 final int hoverSelectY = this.getY() + 2 + selectIndex / 4 * 6;
-                stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, hoverSelectX, hoverSelectY, SELECT_U, SELECT_V, COLOR_WIDTH, COLOR_HEIGHT);
+                stack.blit(RenderType::guiTextured, EditLetteredConnectionScreen.WIDGETS_TEXTURE, hoverSelectX, hoverSelectY, SELECT_U, SELECT_V, COLOR_WIDTH, COLOR_HEIGHT, 256, 256);
                 RenderSystem.disableBlend();
             }
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);

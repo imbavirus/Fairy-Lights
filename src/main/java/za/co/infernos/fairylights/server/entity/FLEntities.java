@@ -19,6 +19,6 @@ public final class FLEntities {
             .setUpdateInterval(Integer.MAX_VALUE)
             .setShouldReceiveVelocityUpdates(false)
             // setCustomClientFactory() removed in NeoForge 1.21.1
-            .build(FairyLights.ID + ":fastener")
+            .build(net.minecraft.resources.ResourceKey.create(Registries.ENTITY_TYPE, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "fastener")))
     );
 }

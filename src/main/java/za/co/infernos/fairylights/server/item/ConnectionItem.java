@@ -105,7 +105,7 @@ public abstract class ConnectionItem extends Item {
         final Connection connection = connOpt.get();
         
         // org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: isConnectionInOtherHand - found connection {}, isRemoved={}", 
-                connection.getUUID(), connection.isRemoved());
+        //         connection.getUUID(), connection.isRemoved());
         
         // If the connection is removed (e.g., fastener was broken), ignore it and allow placement
         if (connection.isRemoved()) {
