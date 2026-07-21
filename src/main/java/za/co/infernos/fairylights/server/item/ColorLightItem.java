@@ -1,12 +1,8 @@
 package za.co.infernos.fairylights.server.item;
 
 import za.co.infernos.fairylights.server.block.LightBlock;
-import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import za.co.infernos.fairylights.server.feature.light.ColorChangingBehavior;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
@@ -17,10 +13,7 @@ public class ColorLightItem extends LightItem {
 
     @Override
     public Component getName(final ItemStack stack) {
-        // ItemStack.getTag() removed in 1.21.1 - use getComponents() or create new CompoundTag
-        final CompoundTag tag = new CompoundTag();
-        // TODO: Migrate to data components API for 1.21.1
-        if (tag != null && tag.contains("colors", Tag.TAG_LIST)) {
+        if (ColorChangingBehavior.exists(stack)) {
             return Component.translatable("format.fairylights.color_changing", super.getName(stack));
         }
         return DyeableItem.getDisplayName(stack, super.getName(stack));

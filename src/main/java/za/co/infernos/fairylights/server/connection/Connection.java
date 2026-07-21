@@ -155,6 +155,9 @@ public abstract class Connection implements NBTSerializable {
         final CompoundTag tagCompound = this.serializeLogic();
         if (!tagCompound.isEmpty()) {
             stack.set(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC, tagCompound);
+            if (tagCompound.contains("color", Tag.TAG_ANY_NUMERIC)) {
+                za.co.infernos.fairylights.server.item.DyeableItem.setColor(stack, tagCompound.getInt("color"));
+            }
         }
         return stack;
     }
@@ -319,6 +322,7 @@ public abstract class Connection implements NBTSerializable {
 
     private boolean updateCatenary(final Vec3 from, final Fastener<?> dest, final Vec3 point) {
         if (this.updateCatenary || this.isDynamic()) {
+            final boolean forced = this.updateCatenary;
             final Vec3 vec = point.subtract(from);
             if (vec.length() > 1e-6) {
                 final Direction facing = this.fastener.getFacing();
@@ -336,7 +340,9 @@ public abstract class Connection implements NBTSerializable {
             }
             this.updateCatenary = false;
             this.prevDestination = this.destination;
-            return true;
+            // Recompute dynamic catenaries every tick for physics/render, but only mark the
+            // fastener dirty (network sync) when explicitly requested.
+            return forced;
         }
         return false;
     }

@@ -40,6 +40,7 @@ import za.co.infernos.fairylights.server.block.entity.FLBlockEntities;
 import za.co.infernos.fairylights.server.entity.FLEntities;
 import za.co.infernos.fairylights.server.feature.light.ColorChangingBehavior;
 import za.co.infernos.fairylights.server.item.DyeableItem;
+import za.co.infernos.fairylights.server.item.FLDataComponents;
 import za.co.infernos.fairylights.server.item.FLItems;
 import za.co.infernos.fairylights.server.item.HangingLightsConnectionItem;
 import za.co.infernos.fairylights.server.string.StringTypes;
@@ -216,12 +217,11 @@ public final class ClientProxy extends ServerProxy {
         event.register((stack, index) -> {
             if (index == 1) {
                 if (ColorChangingBehavior.exists(stack)) {
-                    return ColorChangingBehavior.animate(stack);
+                    return DyeableItem.opaque(ColorChangingBehavior.animate(stack));
                 }
-                // Use DyeableItem.getColor() which now properly reads from NBT via save/parse
                 return DyeableItem.getColor(stack);
             }
-            return 0xFFFFFF;
+            return 0xFFFFFFFF;
         },
                 FLItems.FAIRY_LIGHT.get(),
                 FLItems.PAPER_LANTERN.get(),
@@ -242,58 +242,42 @@ public final class ClientProxy extends ServerProxy {
                 FLItems.METEOR_LIGHT.get());
         event.register((stack, index) -> {
             if (index == 0) {
-                // HANGING_LIGHTS connection string
                 final CompoundTag logic = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
                 if (logic != null) {
-                    return HangingLightsConnectionItem.getString(logic).getColor();
+                    return DyeableItem.opaque(HangingLightsConnectionItem.getString(logic).getColor());
                 }
-                return StringTypes.BLACK_STRING.get().getColor();
+                return DyeableItem.opaque(StringTypes.BLACK_STRING.get().getColor());
             }
-            // HANGING_LIGHTS lights pattern
             final CompoundTag logic = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
             if (logic != null) {
                 final ListTag tagList = logic.getList("pattern", Tag.TAG_COMPOUND);
                 if (tagList.size() > 0) {
-                    // ItemStack.parse() needs RegistryAccess
-                    final var level = net.minecraft.client.Minecraft.getInstance().level;
-                    final var registryAccess = level != null ? level.registryAccess()
-                            : net.minecraft.core.RegistryAccess
-                                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                    final ItemStack item = ItemStack
-                            .parse(registryAccess, tagList.getCompound((index - 1) % tagList.size()))
-                            .orElse(ItemStack.EMPTY);
+                    final CompoundTag lightCompound = tagList.getCompound((index - 1) % tagList.size());
+                    final ItemStack item = parsePatternStack(lightCompound);
                     if (ColorChangingBehavior.exists(item)) {
-                        return ColorChangingBehavior.animate(item);
+                        return DyeableItem.opaque(ColorChangingBehavior.animate(item));
                     }
                     return DyeableItem.getColor(item);
                 }
             }
             if (FairyLights.CHRISTMAS.isOccurringNow()) {
-                return (index + Util.getMillis() / 2000) % 2 == 0 ? 0x993333 : 0x7FCC19;
+                return DyeableItem.opaque((index + Util.getMillis() / 2000) % 2 == 0 ? 0x993333 : 0x7FCC19);
             }
             if (FairyLights.HALLOWEEN.isOccurringNow()) {
-                return index % 2 == 0 ? 0xf9801d : 0x8932b8;
+                return DyeableItem.opaque(index % 2 == 0 ? 0xf9801d : 0x8932b8);
             }
-            return 0xFFD584;
+            return DyeableItem.opaque(0xFFD584);
         }, FLItems.HANGING_LIGHTS.get());
         event.register((stack, index) -> index == 0 ? DyeableItem.getColor(stack) : 0xFFFFFFFF, FLItems.TINSEL.get());
         event.register((stack, index) -> {
             if (index == 0) {
                 return 0xFFFFFFFF;
             }
-            // PENNANT_BUNTING pattern
             final CompoundTag logic = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC);
             if (logic != null) {
                 final ListTag tagList = logic.getList("pattern", Tag.TAG_COMPOUND);
                 if (tagList.size() > 0) {
-                    final var level = net.minecraft.client.Minecraft.getInstance().level;
-                    final var registryAccess = level != null ? level.registryAccess()
-                            : net.minecraft.core.RegistryAccess
-                                    .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                    final ItemStack light = ItemStack
-                            .parse(registryAccess, tagList.getCompound((index - 1) % tagList.size()))
-                            .orElse(ItemStack.EMPTY);
-                    return DyeableItem.getColor(light);
+                    return DyeableItem.getColor(parsePatternStack(tagList.getCompound((index - 1) % tagList.size())));
                 }
             }
             return 0xFFFFFFFF;
@@ -303,7 +287,6 @@ public final class ClientProxy extends ServerProxy {
         event.register(ClientProxy::secondLayerColor, FLItems.SWALLOWTAIL_PENNANT.get());
         event.register(ClientProxy::secondLayerColor, FLItems.SQUARE_PENNANT.get());
         event.register((stack, index) -> {
-            // LETTER_BUNTING text
             if (index > 0 && stack.has(za.co.infernos.fairylights.server.item.FLDataComponents.STYLED_STRING)) {
                 final CompoundTag textTag = stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.STYLED_STRING);
                 if (textTag != null) {
@@ -317,7 +300,7 @@ public final class ClientProxy extends ServerProxy {
                                 break;
                             }
                         }
-                        return StyledString.getColor(color) | 0xFF000000;
+                        return DyeableItem.opaque(StyledString.getColor(color));
                     }
                 }
             }
@@ -325,7 +308,23 @@ public final class ClientProxy extends ServerProxy {
         }, FLItems.LETTER_BUNTING.get());
     }
 
+    private static ItemStack parsePatternStack(final CompoundTag compound) {
+        final var level = net.minecraft.client.Minecraft.getInstance().level;
+        final var registryAccess = level != null ? level.registryAccess()
+                : net.minecraft.core.RegistryAccess
+                        .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
+        final ItemStack item = ItemStack.parse(registryAccess, compound).orElse(ItemStack.EMPTY);
+        if (!item.isEmpty()) {
+            if (compound.contains("fl_backup_color", Tag.TAG_ANY_NUMERIC)) {
+                DyeableItem.setColor(item, compound.getInt("fl_backup_color"));
+            } else if (compound.contains("color", Tag.TAG_ANY_NUMERIC) && !item.has(FLDataComponents.COLOR.get())) {
+                DyeableItem.setColor(item, compound.getInt("color"));
+            }
+        }
+        return item;
+    }
+
     private static int secondLayerColor(final ItemStack stack, final int index) {
-        return index == 0 ? 0xFFFFFF : DyeableItem.getColor(stack);
+        return index == 0 ? 0xFFFFFFFF : DyeableItem.getColor(stack);
     }
 }

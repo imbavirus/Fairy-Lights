@@ -28,12 +28,18 @@ public class ServerEventHandler {
             return;
         }
         CapabilityHandler.getFastenerCapability(player).ifPresent(fastener -> {
+            // PlayerFastener is not a ticking BE — must update here for abort cleanup / physics.
+            fastener.update();
             final Optional<Connection> connection = fastener.getFirstConnection();
             if (connection.isPresent()) {
                 if (isHoldingConnection(player, connection.get())) {
                     return;
                 }
-                fastener.removeConnection(connection.get());
+                final Connection conn = connection.get();
+                // Placing tethers are non-drop; ensure abort never rains items.
+                conn.noDrop();
+                // Fully abort: removeConnection on incoming now tears down owner outgoing too.
+                fastener.removeConnection(conn);
             }
         });
     }

@@ -324,14 +324,15 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         for (final BlockPos pos : this.litBlocks) {
             this.removeLight(pos);
         }
-        
-        // Drop individual light items from the pattern when connection is broken
-        // This ensures swapped-in lights are returned to the player
-        // Only drop if world is valid and connection should drop (e.g., when breaking fastener)
-        if (this.shouldDrop() && this.world != null && !this.world.isClientSide() && 
+        this.litBlocks.clear();
+
+        // Drop pattern lights only on intentional breaks (shouldDrop), never during
+        // chunk unload / soft setRemoved (caller sets noDrop first).
+        if (this.shouldDrop() && this.world != null && !this.world.isClientSide() &&
             this.pattern != null && !this.pattern.isEmpty()) {
             final BlockPos dropPos = this.fastener != null ? this.fastener.getPos() : null;
-            if (dropPos != null) {
+            // Skip drops if the fastener chunk is not loaded/ticking (unload path).
+            if (dropPos != null && this.world.isLoaded(dropPos)) {
                 for (final ItemStack lightStack : this.pattern) {
                     if (!lightStack.isEmpty()) {
                         final float offsetX = this.world.random.nextFloat() * 0.8F + 0.1F;
@@ -388,7 +389,9 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     }
 
     private void removeLight(final BlockPos pos) {
-        if (this.world.getBlockState(pos).is(Blocks.LIGHT)) {
+        // Must guard with isLoaded — getBlockState during chunk unload can force a blocking
+        // chunk load and deadlock the server (watchdog hang).
+        if (this.world != null && this.world.isLoaded(pos) && this.world.getBlockState(pos).is(Blocks.LIGHT)) {
             this.world.removeBlock(pos, false);
         }
     }

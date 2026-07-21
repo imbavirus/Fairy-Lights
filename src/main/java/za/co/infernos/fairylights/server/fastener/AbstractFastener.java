@@ -243,8 +243,15 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
                 connection.remove();
                 this.setDirty();
                 return true;
-            } else if (this.incoming.remove(uuid) != null) {
+            }
+            final Incoming incoming = this.incoming.remove(uuid);
+            if (incoming != null) {
                 this.setDirty();
+                // Incoming-only entries used to leave the owner's outgoing tethered (hotbar abort
+                // fling). Tear down the real connection on the other fastener.
+                if (this.world != null) {
+                    incoming.fastener.get(this.world, false).ifPresent(owner -> owner.removeConnection(uuid));
+                }
                 return true;
             }
             return false;

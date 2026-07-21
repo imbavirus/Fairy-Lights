@@ -19,6 +19,7 @@ import za.co.infernos.fairylights.util.crafting.ingredient.LazyTagIngredient;
 import za.co.infernos.fairylights.util.crafting.ingredient.RegularIngredient;
 import za.co.infernos.fairylights.util.styledstring.StyledString;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -363,13 +364,12 @@ public final class FLCraftingRecipes {
 
                             @Override
                             public void present(final CompoundTag nbt) {
-                                // nbt.putBoolean("twinkle", true);
-                                // TODO: GenericRecipe must map this to component.
+                                nbt.putBoolean("twinkle", true);
                             }
 
                             @Override
                             public void absent(final CompoundTag nbt) {
-                                // nbt.putBoolean("twinkle", false);
+                                nbt.putBoolean("twinkle", false);
                             }
 
                             @Override
@@ -381,10 +381,37 @@ public final class FLCraftingRecipes {
                 .build();
     }
 
-    // Omitted createColorChangingLight for brevity/safety - complex list logic
     private static GenericRecipe createColorChangingLight(final ResourceLocation name,
             CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(name, COLOR_CHANGING_LIGHT).build(); // Stub
+        return new GenericRecipeBuilder(name, COLOR_CHANGING_LIGHT)
+                .withShape("IG")
+                .withIngredient('I', DYEABLE_LIGHTS).withOutput('I')
+                .withIngredient('G', Tags.Items.NUGGETS_GOLD)
+                .withAuxiliaryIngredient(
+                        new BasicAuxiliaryIngredient<ListTag>(Ingredient.of(OreDictUtils.getAllDyes().stream()), true, 8) {
+                            @Override
+                            public ListTag accumulator() {
+                                return new ListTag();
+                            }
+
+                            @Override
+                            public void consume(final ListTag data, final ItemStack ingredient) {
+                                data.add(IntTag.valueOf(DyeableItem.getColor(OreDictUtils.getDyeColor(ingredient))));
+                            }
+
+                            @Override
+                            public boolean finish(final ListTag data, final CompoundTag nbt) {
+                                if (!data.isEmpty()) {
+                                    if (nbt.contains("color", Tag.TAG_INT)) {
+                                        data.add(0, IntTag.valueOf(nbt.getInt("color")));
+                                        nbt.remove("color");
+                                    }
+                                    nbt.put("colors", data);
+                                }
+                                return false;
+                            }
+                        })
+                .build();
     }
 
     private static GenericRecipe createHangingLights(ResourceLocation name, CraftingBookCategory craftingBookCategory) {
@@ -417,6 +444,7 @@ public final class FLCraftingRecipes {
 
                             @Override
                             public void absent(final CompoundTag nbt) {
+                                HangingLightsConnectionItem.setString(nbt, StringTypes.BLACK_STRING.get());
                             }
 
                             @Override

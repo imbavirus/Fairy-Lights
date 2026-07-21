@@ -214,7 +214,6 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
     @Override
     public void setRecipe(RecipeHolder<GenericRecipe> recipeHolder, IRecipeLayoutBuilder builder, ICraftingGridHelper craftingGridHelper, IFocusGroup focuses) {
         GenericRecipe recipe = recipeHolder.value();
-        LOGGER.info("GenericRecipeWrapper: setRecipe called for " + recipeHolder.id());
         this.recipe = recipe;
         final List<List<ItemStack>> allInputs = new ArrayList<>();
         final List<List<ItemStack>> minimalInputStacks = new ArrayList<>();
@@ -274,13 +273,9 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
         final ImmutableList.Builder<ItemStack> outputs = ImmutableList.builder();
         this.forOutputMatches((v, output) -> outputs.add(output));
         this.outputs = outputs.build();
-        LOGGER.info("GenericRecipeWrapper: Generated " + this.outputs.size() + " outputs for " + recipeHolder.id());
-        
+
         if (builder != null && craftingGridHelper != null && focuses != null) {
-             LOGGER.info("GenericRecipeWrapper: interacting with builder");
              this.setRecipe(builder, craftingGridHelper, focuses);
-        } else {
-             LOGGER.warn("GenericRecipeWrapper: builder or helper is null!");
         }
     }
 

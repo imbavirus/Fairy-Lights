@@ -1,12 +1,16 @@
 package za.co.infernos.fairylights.server.feature.light;
 
+import za.co.infernos.fairylights.server.item.DyeableItem;
+import za.co.infernos.fairylights.server.item.FLDataComponents;
 import za.co.infernos.fairylights.util.FLMth;
 import net.minecraft.Util;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
@@ -58,14 +62,26 @@ public class ColorChangingBehavior implements ColorLightBehavior {
     public void tick(final Level world, final Vec3 origin, final Light<?> light) {
     }
 
+    private static ListTag getColors(final ItemStack stack) {
+        final CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData != null) {
+            final CompoundTag tag = customData.getUnsafe();
+            if (tag.contains("colors", Tag.TAG_LIST)) {
+                return tag.getList("colors", Tag.TAG_INT);
+            }
+        }
+        final CompoundTag logic = stack.get(FLDataComponents.CONNECTION_LOGIC.get());
+        if (logic != null && logic.contains("colors", Tag.TAG_LIST)) {
+            return logic.getList("colors", Tag.TAG_INT);
+        }
+        return null;
+    }
+
     public static ColorLightBehavior create(final ItemStack stack) {
-        // getTag() removed in 1.21.1 - use data components instead
-        // For now, return default behavior
-        final CompoundTag tag = new CompoundTag();
-        if (tag.isEmpty()) {
+        final ListTag list = getColors(stack);
+        if (list == null || list.isEmpty()) {
             return new FixedColorBehavior(1.0F, 1.0F, 1.0F);
         }
-        final ListTag list = tag.getList("colors", Tag.TAG_INT);
         final float[] red = new float[list.size()];
         final float[] green = new float[list.size()];
         final float[] blue = new float[list.size()];
@@ -79,17 +95,12 @@ public class ColorChangingBehavior implements ColorLightBehavior {
     }
 
     public static int animate(final ItemStack stack) {
-        // getTag() removed in 1.21.1 - use data components instead
-        final CompoundTag tag = new CompoundTag();
-        if (tag.isEmpty()) {
-            return 0xFFFFFF;
-        }
-        final ListTag list = tag.getList("colors", Tag.TAG_INT);
-        if (list.isEmpty()) {
-            return 0xFFFFFF;
+        final ListTag list = getColors(stack);
+        if (list == null || list.isEmpty()) {
+            return DyeableItem.getColor(stack);
         }
         if (list.size() == 1) {
-            return list.getInt(0);
+            return DyeableItem.opaque(list.getInt(0));
         }
         final float p = FLMth.mod(Util.getMillis() * (20.0F / 1000.0F) * (list.size() / 960.0F), list.size());
         final int i = (int) p;
@@ -101,14 +112,15 @@ public class ColorChangingBehavior implements ColorLightBehavior {
         final float r1 = (c1 >> 16 & 0xFF) / 255.0F;
         final float g1 = (c1 >> 8 & 0xFF) / 255.0F;
         final float b1 = (c1 & 0xFF) / 255.0F;
-        return (int) (Mth.lerp(p - i, r0, r1) * 255.0F) << 16 |
+        return DyeableItem.opaque(
+            (int) (Mth.lerp(p - i, r0, r1) * 255.0F) << 16 |
             (int) (Mth.lerp(p - i, g0, g1) * 255.0F) << 8 |
-            (int) (Mth.lerp(p - i, b0, b1) * 255.0F);
+            (int) (Mth.lerp(p - i, b0, b1) * 255.0F)
+        );
     }
 
     public static boolean exists(final ItemStack stack) {
-        // getTag() removed in 1.21.1 - use data components instead
-        final CompoundTag tag = new CompoundTag();
-        return !tag.isEmpty() && tag.contains("colors", Tag.TAG_LIST);
+        final ListTag list = getColors(stack);
+        return list != null && !list.isEmpty();
     }
 }

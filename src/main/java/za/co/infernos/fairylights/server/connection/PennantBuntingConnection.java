@@ -119,8 +119,11 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
         final CompoundTag compound = super.serializeLogic();
         final ListTag patternList = new ListTag();
         for (final ItemStack entry : this.pattern) {
-            // ItemStack.save() API changed in 1.21.1 - needs RegistryAccess
-            patternList.add(entry.save(this.world.registryAccess()));
+            Tag savedTag = entry.save(this.world.registryAccess());
+            if (savedTag instanceof CompoundTag compoundTag) {
+                compoundTag.putInt("fl_backup_color", DyeableItem.getColor(entry));
+            }
+            patternList.add(savedTag);
         }
         compound.put("pattern", patternList);
         compound.put("text", StyledString.serialize(this.text));
@@ -133,10 +136,13 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
         this.pattern = new ArrayList<>();
         final ListTag patternList = compound.getList("pattern", Tag.TAG_COMPOUND);
         for (int i = 0; i < patternList.size(); i++) {
-            // Use the passed provider for registry access during deserialization
-            this.pattern.add(ItemStack.parse(provider, patternList.getCompound(i)).orElse(ItemStack.EMPTY));
+            final CompoundTag pennantCompound = patternList.getCompound(i);
+            final ItemStack stack = ItemStack.parse(provider, pennantCompound).orElse(ItemStack.EMPTY);
+            if (pennantCompound.contains("fl_backup_color", Tag.TAG_ANY_NUMERIC)) {
+                DyeableItem.setColor(stack, pennantCompound.getInt("fl_backup_color"));
+            }
+            this.pattern.add(stack);
         }
         this.text = StyledString.deserialize(compound.getCompound("text"));
-        org.apache.logging.log4j.LogManager.getLogger().info("[FairyLights] PennantBuntingConnection.deserializeLogic: compound={}, patternSize={}, hasText={}", compound, this.pattern.size(), !this.text.isEmpty());
     }
 }

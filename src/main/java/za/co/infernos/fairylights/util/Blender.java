@@ -19,8 +19,11 @@ public final class Blender {
         final int num = this.brightness;
         final int den = this.count * Math.max(this.red, Math.max(this.green, this.blue));
         if (den == 0) {
-            return 0;
+            return 0xFF000000;
         }
-        return (this.red * num / den) << 16 | (this.green * num / den) << 8 | (this.blue * num / den);
+        return 0xFF000000
+            | (this.red * num / den) << 16
+            | (this.green * num / den) << 8
+            | (this.blue * num / den);
     }
 }

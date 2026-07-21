@@ -7,6 +7,7 @@ import za.co.infernos.fairylights.server.fastener.BlockView;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public final class FastenerBlockEntityRenderer implements BlockEntityRenderer<FastenerBlockEntity> {
@@ -22,6 +23,11 @@ public final class FastenerBlockEntityRenderer implements BlockEntityRenderer<Fa
     @Override
     public boolean shouldRenderOffScreen(final FastenerBlockEntity fastener) {
         return true;
+    }
+
+    @Override
+    public AABB getRenderBoundingBox(final FastenerBlockEntity fastener) {
+        return fastener.getRenderBoundingBox();
     }
 
     @Override

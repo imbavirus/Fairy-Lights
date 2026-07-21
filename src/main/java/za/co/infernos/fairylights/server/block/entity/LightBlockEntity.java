@@ -66,7 +66,11 @@ public class LightBlockEntity extends BlockEntity {
 
     public void interact(final Level world, final BlockPos pos, final BlockState state, final Player player, final InteractionHand hand, final BlockHitResult hit) {
         this.setOn(!this.on);
-        world.setBlockAndUpdate(pos, state.setValue(LightBlock.LIT, this.on));
+        final BlockState newState = state.setValue(LightBlock.LIT, this.on);
+        world.setBlock(pos, newState, 3);
+        if (!world.isClientSide()) {
+            world.sendBlockUpdated(pos, state, newState, 3);
+        }
         final SoundEvent lightSnd;
         final float pitch;
         if (this.on) {

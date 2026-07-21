@@ -278,11 +278,17 @@ public final class GenericRecipe extends CustomRecipe {
             if (tag.contains("twinkle")) {
                 output.set(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE, tag.getBoolean("twinkle"));
             }
+            if (tag.contains("colors", net.minecraft.nbt.Tag.TAG_LIST)) {
+                final CompoundTag custom = output.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                        net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
+                custom.put("colors", tag.getList("colors", net.minecraft.nbt.Tag.TAG_INT));
+                output.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                        net.minecraft.world.item.component.CustomData.of(custom));
+            }
             CompoundTag logic = output
                     .getOrDefault(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC, new CompoundTag())
                     .copy();
             boolean updateLogic = false;
-            // Map specific keys to CONNECTION_LOGIC
             if (tag.contains("pattern")) {
                 logic.put("pattern", tag.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND));
                 updateLogic = true;
@@ -291,7 +297,6 @@ public final class GenericRecipe extends CustomRecipe {
                 logic.putString("string", tag.getString("string"));
                 updateLogic = true;
             }
-            // Add other keys needed for connection logic
             if (updateLogic) {
                 output.set(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC, logic);
             }

@@ -85,6 +85,7 @@ public final class FairyLights {
         ConnectionTypes.REG.register(bus);
         StringTypes.REG.register(bus);
         za.co.infernos.fairylights.server.item.FLDataComponents.REG.register(bus);
+        za.co.infernos.fairylights.server.capability.FLAttachments.REG.register(bus);
 
         // Create custom registries - ConnectionTypes and StringTypes already create the
         // DeferredRegisters

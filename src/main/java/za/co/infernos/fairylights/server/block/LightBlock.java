@@ -10,6 +10,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
@@ -169,12 +170,22 @@ public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implement
         return Collections.emptyList();
     }
 
-    // use() method signature may have changed in 1.21.1 - check if @Override is still valid
-    public InteractionResult use(final BlockState state, final Level world, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hit) {
+    @Override
+    protected ItemInteractionResult useItemOn(final ItemStack stack, final BlockState state, final Level world, final BlockPos pos, final Player player, final InteractionHand hand, final BlockHitResult hit) {
         final BlockEntity entity = world.getBlockEntity(pos);
-        if (entity instanceof LightBlockEntity) {
-            ((LightBlockEntity) entity).interact(world, pos, state, player, hand, hit);
-            return InteractionResult.SUCCESS;
+        if (entity instanceof LightBlockEntity light) {
+            light.interact(world, pos, state, player, hand, hit);
+            return ItemInteractionResult.sidedSuccess(world.isClientSide());
+        }
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(final BlockState state, final Level world, final BlockPos pos, final Player player, final BlockHitResult hit) {
+        final BlockEntity entity = world.getBlockEntity(pos);
+        if (entity instanceof LightBlockEntity light) {
+            light.interact(world, pos, state, player, InteractionHand.MAIN_HAND, hit);
+            return InteractionResult.sidedSuccess(world.isClientSide());
         }
         return InteractionResult.PASS;
     }
@@ -212,11 +223,11 @@ public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implement
         }
     }
 
-    // getCloneItemStack() method signature may have changed in 1.21.1 - check if @Override is still valid
-    public ItemStack getCloneItemStack(final BlockState state, final HitResult target, final BlockGetter world, final BlockPos pos, final Player player) {
-        final BlockEntity entity = world.getBlockEntity(pos);
-        if (entity instanceof LightBlockEntity) {
-            return ((LightBlockEntity) entity).getLight().getItem().copy();
+    @Override
+    public ItemStack getCloneItemStack(final BlockState state, final HitResult target, final LevelReader level, final BlockPos pos, final Player player) {
+        final BlockEntity entity = level.getBlockEntity(pos);
+        if (entity instanceof LightBlockEntity light) {
+            return light.getLight().getItem().copy();
         }
         final ItemStack stack = new ItemStack(this);
         DyeableItem.setColor(stack, DyeColor.YELLOW);

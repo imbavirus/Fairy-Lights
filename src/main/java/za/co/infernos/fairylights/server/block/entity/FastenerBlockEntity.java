@@ -35,10 +35,7 @@ public final class FastenerBlockEntity extends BlockEntity {
         super(FLBlockEntities.FASTENER.get(), pos ,state);
     }
 
-    // getRenderBoundingBox() may not be an override in 1.21.1
-    // getRenderBoundingBox() must return INFINITE because connections can stretch far outside the block.
-    // In NeoForge 1.21.1, this is usually still respected by the entity renderer.
-    // INFINITE_EXTENT_AABB was removed in 1.21.1, so we create an infinite AABB manually
+    // Kept for callers; NeoForge 1.21 culls via BlockEntityRenderer#getRenderBoundingBox.
     public AABB getRenderBoundingBox() {
         return new AABB(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
@@ -91,7 +88,7 @@ public final class FastenerBlockEntity extends BlockEntity {
         }
     }
 
-    // setLevel() may not be an override in 1.21.1
+    @Override
     public void setLevel(final Level world) {
         super.setLevel(world);
         this.getFastener().ifPresent(f -> f.setWorld(world));
@@ -102,6 +99,7 @@ public final class FastenerBlockEntity extends BlockEntity {
             if (!level.isClientSide() && fastener.hasNoConnections()) {
                 level.removeBlock(pos, false);
             } else if (!level.isClientSide() && fastener.update()) {
+                // Only sync on meaningful dirty (place/toggle/edit), not every dynamic catenary tick
                 be.setChanged();
                 level.sendBlockUpdated(pos, state, state, 3);
             }
@@ -115,12 +113,18 @@ public final class FastenerBlockEntity extends BlockEntity {
     @Override
     public void onLoad() {
         super.onLoad();
-        // LOGGER.error("FL_DEBUG_CRITICAL: FastenerBlockEntity.onLoad at " + this.worldPosition);
     }
 
     @Override
     public void setRemoved() {
-        this.getFastener().ifPresent(Fastener::remove);
+        // Soft teardown on chunk unload / BE clear: never drop items or force-load chunks.
+        // Intentional breaks already called dropItems() from FastenerBlock.onRemove (which noDrops).
+        this.getFastener().ifPresent(f -> {
+            for (final za.co.infernos.fairylights.server.connection.Connection c : f.getOwnConnections()) {
+                c.noDrop();
+            }
+            f.remove();
+        });
         super.setRemoved();
     }
 

@@ -17,7 +17,7 @@ public final class StringTypes {
         });
     }
 
-    public static final DeferredHolder<StringType,StringType> BLACK_STRING = REG.register("black_string", () -> new StringType(0x323232));
+    public static final DeferredHolder<StringType,StringType> BLACK_STRING = REG.register("black_string", () -> new StringType(0xFF323232));
 
-    public static final DeferredHolder<StringType,StringType> WHITE_STRING = REG.register("white_string", () -> new StringType(0xF0F0F0));
+    public static final DeferredHolder<StringType,StringType> WHITE_STRING = REG.register("white_string", () -> new StringType(0xFFF0F0F0));
 }

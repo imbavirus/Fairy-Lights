@@ -15,15 +15,21 @@ public final class DyeableItem {
     private DyeableItem() {
     }
 
+    /** Force opaque ARGB — 1.21 ItemColor treats alpha 0 as fully transparent. */
+    public static int opaque(final int rgb) {
+        return (rgb & 0x00FFFFFF) | 0xFF000000;
+    }
+
     public static Component getColorName(final int color) {
-        final int r = color >> 16 & 0xFF;
-        final int g = color >> 8 & 0xFF;
-        final int b = color & 0xFF;
+        final int rgb = color & 0xFFFFFF;
+        final int r = rgb >> 16 & 0xFF;
+        final int g = rgb >> 8 & 0xFF;
+        final int b = rgb & 0xFF;
         DyeColor closest = DyeColor.WHITE;
         int closestDist = Integer.MAX_VALUE;
         for (final DyeColor dye : DyeColor.values()) {
-            final int dyeColor = getColor(dye);
-            if (dyeColor == color) {
+            final int dyeColor = getColor(dye) & 0xFFFFFF;
+            if (dyeColor == rgb) {
                 closest = dye;
                 closestDist = 0;
                 break;
@@ -47,20 +53,17 @@ public final class DyeableItem {
 
     public static int getColor(final DyeColor color) {
         if (color == DyeColor.BLACK) {
-            return 0x323232;
+            return opaque(0x323232);
         }
         if (color == DyeColor.GRAY) {
-            return 0x606060;
+            return opaque(0x606060);
         }
-        // DyeColor.getTextureDiffuseColors() removed in 1.21.1 - use
-        // getTextureDiffuseColor() which returns int
-        final int textureColor = color.getTextureDiffuseColor();
-        return textureColor;
+        return opaque(color.getTextureDiffuseColor());
     }
 
     public static Optional<DyeColor> getDyeColor(final ItemStack stack) {
-        final int color = getColor(stack);
-        return Arrays.stream(DyeColor.values()).filter(dye -> getColor(dye) == color).findFirst();
+        final int color = getColor(stack) & 0xFFFFFF;
+        return Arrays.stream(DyeColor.values()).filter(dye -> (getColor(dye) & 0xFFFFFF) == color).findFirst();
     }
 
     public static ItemStack setColor(final ItemStack stack, final DyeColor dye) {
@@ -68,7 +71,7 @@ public final class DyeableItem {
     }
 
     public static ItemStack setColor(final ItemStack stack, final int color) {
-        stack.set(FLDataComponents.COLOR.get(), color);
+        stack.set(FLDataComponents.COLOR.get(), opaque(color));
         return stack;
     }
 
@@ -77,44 +80,46 @@ public final class DyeableItem {
     }
 
     public static CompoundTag setColor(final CompoundTag tag, final int color) {
-        tag.putInt("color", color);
+        tag.putInt("color", opaque(color));
         return tag;
     }
 
     public static int getColor(final ItemStack stack) {
-        // Primary source: Data Component
         if (stack.has(FLDataComponents.COLOR.get())) {
-            int color = stack.get(FLDataComponents.COLOR.get());
-           //  // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from COMPONENT: " + Integer.toHexString(color) + " stack: " + stack);
-            return color;
+            return opaque(stack.get(FLDataComponents.COLOR.get()));
         }
-        
-        // Fallback: Check "color" or "fl_backup_color" in CustomData (vanilla NBT attachment)
+
         final CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         if (customData != null) {
             final CompoundTag tag = customData.getUnsafe();
             if (tag.contains("color", Tag.TAG_ANY_NUMERIC)) {
-                int color = tag.getInt("color");
-               //  // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from CUSTOM_DATA 'color': " + Integer.toHexString(color) + " stack: " + stack);
-                return color;
+                return opaque(tag.getInt("color"));
             }
             if (tag.contains("fl_backup_color", Tag.TAG_ANY_NUMERIC)) {
-                int color = tag.getInt("fl_backup_color");
-               //  // System.err.println("FL_DEBUG: DyeableItem.getColor(Stack) from CUSTOM_DATA 'fl_backup_color': " + Integer.toHexString(color) + " stack: " + stack);
-                return color;
+                return opaque(tag.getInt("fl_backup_color"));
             }
         }
-        
-        return 0xFFFFFF;
+
+        final CompoundTag logic = stack.get(FLDataComponents.CONNECTION_LOGIC.get());
+        if (logic != null) {
+            if (logic.contains("color", Tag.TAG_ANY_NUMERIC)) {
+                return opaque(logic.getInt("color"));
+            }
+            if (logic.contains("fl_backup_color", Tag.TAG_ANY_NUMERIC)) {
+                return opaque(logic.getInt("fl_backup_color"));
+            }
+        }
+
+        return 0xFFFFFFFF;
     }
 
     public static int getColor(final CompoundTag tag) {
         if (tag.contains("color", Tag.TAG_ANY_NUMERIC)) {
-            return tag.getInt("color");
+            return opaque(tag.getInt("color"));
         }
         if (tag.contains("fl_backup_color", Tag.TAG_ANY_NUMERIC)) {
-            return tag.getInt("fl_backup_color");
+            return opaque(tag.getInt("fl_backup_color"));
         }
-        return 0xFFFFFF;
+        return 0xFFFFFFFF;
     }
 }

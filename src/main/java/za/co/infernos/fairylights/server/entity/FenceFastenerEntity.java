@@ -118,7 +118,14 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
 
     @Override
     public void remove(final RemovalReason reason) {
-        this.getFastener().ifPresent(Fastener::remove);
+        // Soft teardown: intentional drops happen via dropItem()/hurt() first (which noDrops).
+        // Unload/discard must not rain items or force-load chunks from connection cleanup.
+        this.getFastener().ifPresent(f -> {
+            for (final za.co.infernos.fairylights.server.connection.Connection c : f.getOwnConnections()) {
+                c.noDrop();
+            }
+            f.remove();
+        });
         super.remove(reason);
     }
 

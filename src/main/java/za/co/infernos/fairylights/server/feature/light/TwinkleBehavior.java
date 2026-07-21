@@ -1,8 +1,8 @@
 package za.co.infernos.fairylights.server.feature.light;
 
+import za.co.infernos.fairylights.server.item.FLDataComponents;
 import za.co.infernos.fairylights.util.CubicBezier;
 import za.co.infernos.fairylights.util.FLMth;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -38,8 +38,6 @@ public class TwinkleBehavior implements BrightnessLightBehavior {
     }
 
     public static boolean exists(final ItemStack stack) {
-        // getTag() removed in 1.21.1 - use data components instead
-        final CompoundTag tag = new CompoundTag();
-        return !tag.isEmpty() && tag.getBoolean("twinkle");
+        return Boolean.TRUE.equals(stack.get(FLDataComponents.TWINKLE.get()));
     }
 }

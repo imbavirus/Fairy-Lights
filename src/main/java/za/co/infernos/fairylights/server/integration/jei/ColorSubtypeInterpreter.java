@@ -7,14 +7,10 @@ import net.minecraft.world.item.ItemStack;
 import java.util.Optional;
 
 public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpreter<ItemStack> {
-    private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger();
-
     @Override
     public String apply(final ItemStack stack, final UidContext context) {
         StringBuilder sb = new StringBuilder();
 
-        // 1. Base Item Color
-        // 1. Base Item Color
         // Only check color if there is no connection logic, as connection items use logic for identity
         // and the base color tag is often just for the creative tab icon.
         if (stack.has(FLDataComponents.COLOR.get()) && !stack.has(FLDataComponents.CONNECTION_LOGIC.get())) {
@@ -61,11 +57,7 @@ public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpre
         }
         
         if (sb.length() > 0) {
-            String result = sb.toString();
-            if (net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath().equals("hanging_lights")) {
-                 LOGGER.info("ColorSubtypeInterpreter: " + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()) + " -> " + result);
-            }
-            return result;
+            return sb.toString();
         }
         
         return IIngredientSubtypeInterpreter.NONE;
