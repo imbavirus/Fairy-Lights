@@ -3,63 +3,45 @@ package za.co.infernos.fairylights.server.integration.jei;
 import za.co.infernos.fairylights.server.item.FLDataComponents;
 import mezz.jei.api.ingredients.subtypes.IIngredientSubtypeInterpreter;
 import mezz.jei.api.ingredients.subtypes.UidContext;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
-import java.util.Optional;
+import net.minecraft.world.item.component.CustomData;
+
+import java.util.List;
 
 public final class ColorSubtypeInterpreter implements IIngredientSubtypeInterpreter<ItemStack> {
     @Override
     public String apply(final ItemStack stack, final UidContext context) {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
 
-        // Only check color if there is no connection logic, as connection items use logic for identity
-        // and the base color tag is often just for the creative tab icon.
-        if (stack.has(FLDataComponents.COLOR.get()) && !stack.has(FLDataComponents.CONNECTION_LOGIC.get())) {
+        // Twinkle / color-changing must stay distinct for recipe matching, or JEI links the
+        // twinkle craft to plain lights and then drops glowstone from the focused layout.
+        if (stack.getOrDefault(FLDataComponents.TWINKLE.get(), false)) {
+            sb.append("T");
+        }
+        final List<Integer> colors = stack.get(FLDataComponents.COLORS.get());
+        if (colors != null && !colors.isEmpty()) {
+            sb.append("CC");
+        } else {
+            final CustomData custom = stack.get(DataComponents.CUSTOM_DATA);
+            if (custom != null && custom.copyTag().contains("colors", Tag.TAG_LIST)) {
+                sb.append("CC");
+            }
+        }
+
+        // Dye color only for the ingredient list — ignore in Recipe context so upgrades still
+        // appear for any dyed light of the matching variant.
+        if (context != UidContext.Recipe
+                && stack.has(FLDataComponents.COLOR.get())
+                && !stack.has(FLDataComponents.CONNECTION_LOGIC.get())) {
             sb.append(String.format("C:%06x", stack.get(FLDataComponents.COLOR.get())));
         }
 
-        // 2. Connection Logic (String type & Pattern)
-        if (stack.has(FLDataComponents.CONNECTION_LOGIC.get())) {
-             net.minecraft.nbt.CompoundTag logic = stack.get(FLDataComponents.CONNECTION_LOGIC.get());
-             
-             // String Type
-             // if (logic.contains("string", net.minecraft.nbt.Tag.TAG_STRING)) {
-             //     sb.append("_S:").append(logic.getString("string"));
-             // }
-             
-             // Pattern List
-             /*
-             if (logic.contains("pattern", net.minecraft.nbt.Tag.TAG_LIST)) {
-                 net.minecraft.nbt.ListTag pattern = logic.getList("pattern", net.minecraft.nbt.Tag.TAG_COMPOUND);
-                 sb.append("_P:[");
-                 final net.minecraft.core.RegistryAccess registryAccess = net.minecraft.client.Minecraft.getInstance().level != null ? 
-                         net.minecraft.client.Minecraft.getInstance().level.registryAccess() : 
-                         net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
-                 
-                 for (int i = 0; i < pattern.size(); i++) {
-                     net.minecraft.nbt.CompoundTag itemTag = pattern.getCompound(i);
-                     // Parse item to be safe/stable, or just read ID if possible. 
-                     // Parsing is safest to normalize data.
-                     Optional<ItemStack> itemOpt = ItemStack.parse(registryAccess, itemTag);
-                     if (itemOpt.isPresent()) {
-                         ItemStack item = itemOpt.get();
-                         sb.append(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item.getItem()));
-                         if (item.has(FLDataComponents.COLOR.get())) {
-                             sb.append(String.format("@%06x", item.get(FLDataComponents.COLOR.get())));
-                         }
-                         sb.append(";");
-                     } else {
-                         sb.append("?;");
-                     }
-                 }
-                 sb.append("]");
-             }
-             */
-        }
-        
         if (sb.length() > 0) {
             return sb.toString();
         }
-        
+
         return IIngredientSubtypeInterpreter.NONE;
     }
 }

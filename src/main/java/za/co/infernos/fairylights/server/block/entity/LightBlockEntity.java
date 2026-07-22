@@ -55,6 +55,7 @@ public class LightBlockEntity extends BlockEntity {
             variant = SimpleLightVariant.FAIRY_LIGHT; // Fallback
         }
         this.light = new Light<>(0, Vec3.ZERO, 0.0F, 0.0F, stack, variant, 0.0F);
+        this.light.power(this.on, true);
         this.setChanged();
     }
 
@@ -106,7 +107,10 @@ public class LightBlockEntity extends BlockEntity {
                 matrix.translate(0.0F, -(float) this.light.getVariant().getBounds().minY - 0.5F, 0.0F);
             }
         }
-        this.light.getBehavior().animateTick(this.level, Vec3.atLowerCornerOf(this.worldPosition).add(matrix.transform(Vec3.ZERO)), this.light);
+        final Vec3 origin = Vec3.atLowerCornerOf(this.worldPosition).add(matrix.transform(Vec3.ZERO));
+        // Twinkle / meteor behaviors advance in tick(), not animateTick().
+        this.light.tick(this.level, origin);
+        this.light.getBehavior().animateTick(this.level, origin, this.light);
     }
 
     @Override

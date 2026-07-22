@@ -16,8 +16,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.RecipeType;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,22 +34,22 @@ public final class FairyLightsJEIPlugin implements IModPlugin {
     }
 
     @Override
-    public void registerRecipes(IRecipeRegistration registration) {
+    public void registerRecipes(final IRecipeRegistration registration) {
         final ClientLevel world = Minecraft.getInstance().level;
         if (world == null) {
             return;
         }
 
         final RecipeManager recipeManager = world.getRecipeManager();
-        List<RecipeHolder<?>> allRecipes = new ArrayList<>(recipeManager.getRecipes());
-
-        List<RecipeHolder<CraftingRecipe>> fairylightsRecipes = allRecipes.stream()
-                .filter(holder -> holder.id().getNamespace().equals(FairyLights.ID))
-                .filter(holder -> holder.value() instanceof GenericRecipe)
-                .map(holder -> (RecipeHolder<CraftingRecipe>) holder)
+        // Vanilla JEI skips Recipe#isSpecial(); twinkle / color-changing are special
+        // (empty fixed output). Register them explicitly so they appear in the crafting
+        // category and in item recipe lookups.
+        final List<RecipeHolder<CraftingRecipe>> specials = recipeManager.getAllRecipesFor(RecipeType.CRAFTING).stream()
+                .filter(holder -> holder.value() instanceof GenericRecipe generic && generic.isSpecial())
+                .map(holder -> (RecipeHolder<CraftingRecipe>) (RecipeHolder<?>) holder)
                 .collect(Collectors.toList());
 
-        registration.addRecipes(RecipeTypes.CRAFTING, fairylightsRecipes);
+        registration.addRecipes(RecipeTypes.CRAFTING, specials);
     }
 
     @Override

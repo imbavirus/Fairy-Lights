@@ -323,7 +323,7 @@ public final class FLCraftingRecipes {
                 .withShape("I")
                 .withIngredient('I', DYEABLE).withOutput('I')
                 .withAuxiliaryIngredient(
-                        new BasicAuxiliaryIngredient<Blender>(Ingredient.of(OreDictUtils.getAllDyes().stream()), true, 8) {
+                        new BasicAuxiliaryIngredient<Blender>(LazyTagIngredient.of(Tags.Items.DYES), true, 8) {
                             @Override
                             public Blender accumulator() {
                                 return new Blender();
@@ -336,14 +336,9 @@ public final class FLCraftingRecipes {
 
                             @Override
                             public boolean finish(final Blender data, final CompoundTag nbt) {
-                                // Update: using GenericRecipe logic, we need to ensure component is set.
-                                // Assuming GenericRecipeBuilder applies 'nbt' to stack components.
-                                // To do this properly, we need to know how 'nbt' is used.
-                                // For now, we will construct the component structure in 'nbt' if possible?
-                                // No, components are not NBT.
-                                DyeableItem.setColor(nbt, data.blend()); // Helper sets "color" int in NBT.
-                                // We need to map this NBT "color" to Component later or rely on item loading
-                                // it.
+                                DyeableItem.setColor(nbt, data.blend());
+                                // Recolor must never leave a color-changing list behind.
+                                nbt.remove("colors");
                                 return false;
                             }
                         })
@@ -354,7 +349,13 @@ public final class FLCraftingRecipes {
             CraftingBookCategory craftingBookCategory) {
         return new GenericRecipeBuilder(name, LIGHT_TWINKLE)
                 .withShape("L")
-                .withIngredient('L', TWINKLING_LIGHTS).withOutput('L')
+                .withIngredient('L', new BasicRegularIngredient(LazyTagIngredient.of(TWINKLING_LIGHTS)) {
+                    @Override
+                    public boolean dictatesOutputType() {
+                        // So JEI lists the upgrade for every light type, not only the first tag entry.
+                        return true;
+                    }
+                }).withOutput('L')
                 .withAuxiliaryIngredient(
                         new InertBasicAuxiliaryIngredient(LazyTagIngredient.of(Tags.Items.DUSTS_GLOWSTONE), true, 1) {
                             @Override
@@ -385,10 +386,16 @@ public final class FLCraftingRecipes {
             CraftingBookCategory craftingBookCategory) {
         return new GenericRecipeBuilder(name, COLOR_CHANGING_LIGHT)
                 .withShape("IG")
-                .withIngredient('I', DYEABLE_LIGHTS).withOutput('I')
-                .withIngredient('G', Tags.Items.NUGGETS_GOLD)
+                .withIngredient('I', new BasicRegularIngredient(LazyTagIngredient.of(DYEABLE_LIGHTS)) {
+                    @Override
+                    public boolean dictatesOutputType() {
+                        // So JEI lists the upgrade for every light type, not only the first tag entry.
+                        return true;
+                    }
+                }).withOutput('I')
+                .withIngredient('G', Ingredient.of(Items.GOLD_NUGGET))
                 .withAuxiliaryIngredient(
-                        new BasicAuxiliaryIngredient<ListTag>(Ingredient.of(OreDictUtils.getAllDyes().stream()), true, 8) {
+                        new BasicAuxiliaryIngredient<ListTag>(LazyTagIngredient.of(Tags.Items.DYES), true, 8) {
                             @Override
                             public ListTag accumulator() {
                                 return new ListTag();

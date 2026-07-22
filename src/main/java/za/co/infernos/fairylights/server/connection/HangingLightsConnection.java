@@ -300,16 +300,11 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
 
     @Override
     protected void onAfterUpdateFeatures() {
-        // Only apply power state on server side
-        // Client will get it via deserialize() - don't override with stale state here
-        if (!this.world.isClientSide()) {
-            final boolean on = !this.isDynamic() && this.isOn;
-            // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: onAfterUpdateFeatures (SERVER) - isOn=" + this.isOn + " on=" + on + " features.length=" + this.features.length);
-            for (final Light<?> light : this.features) {
-                light.power(on, true); // Use 'now=true' to ensure immediate update
-            }
-        } else {
-            // com.mojang.logging.LogUtils.getLogger().info("FL_DEBUG: onAfterUpdateFeatures (CLIENT) - skipping power state update, will be set via deserialize() - isOn=" + this.isOn + " features.length=" + this.features.length);
+        // Apply on both sides. Skipping the client left Light#powered false after feature
+        // rebuilds, so twinkle/emissive rendering never saw a powered light.
+        final boolean on = !this.isDynamic() && this.isOn;
+        for (final Light<?> light : this.features) {
+            light.power(on, true);
         }
         this.oldLitBlocks.removeAll(this.litBlocks);
         final Iterator<BlockPos> oldIter = this.oldLitBlocks.iterator();
@@ -502,10 +497,31 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
             // ItemStack.save() API changed in 1.21.1 - use RegistryAccess from world
             Tag savedTag = light.save(this.world.registryAccess());
             
-            // Manual fallback: Save color directly to NBT because DataComponents seem to be failing persistence
+            // Manual fallbacks: DataComponents have been unreliable across pattern sync.
             if (savedTag instanceof CompoundTag compoundTag) {
                 int color = za.co.infernos.fairylights.server.item.DyeableItem.getColor(light);
                 compoundTag.putInt("fl_backup_color", color);
+                if (Boolean.TRUE.equals(light.get(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE))) {
+                    compoundTag.putBoolean("fl_backup_twinkle", true);
+                }
+                final java.util.List<Integer> colors =
+                        light.get(za.co.infernos.fairylights.server.item.FLDataComponents.COLORS.get());
+                if (colors != null && !colors.isEmpty()) {
+                    final ListTag backupColors = new ListTag();
+                    for (final int c : colors) {
+                        backupColors.add(net.minecraft.nbt.IntTag.valueOf(c));
+                    }
+                    compoundTag.put("fl_backup_colors", backupColors);
+                } else {
+                    final net.minecraft.world.item.component.CustomData custom =
+                            light.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+                    if (custom != null) {
+                        final CompoundTag customTag = custom.copyTag();
+                        if (customTag.contains("colors", Tag.TAG_LIST)) {
+                            compoundTag.put("fl_backup_colors", customTag.getList("colors", Tag.TAG_INT));
+                        }
+                    }
+                }
             }
             
             tagList.add(savedTag);
@@ -525,10 +541,30 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
             // Use the passed provider for registry access during deserialization
             ItemStack stack = ItemStack.parse(provider, lightCompound).orElse(ItemStack.EMPTY);
             
-            // Manual fallback: Restore color from NBT if present
+            // Manual fallbacks: restore color / twinkle / color-changing list if components were dropped
             if (lightCompound.contains("fl_backup_color", Tag.TAG_ANY_NUMERIC)) {
                 int color = lightCompound.getInt("fl_backup_color");
                 za.co.infernos.fairylights.server.item.DyeableItem.setColor(stack, color);
+            }
+            if (lightCompound.getBoolean("fl_backup_twinkle")) {
+                stack.set(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE, true);
+            }
+            if (lightCompound.contains("fl_backup_colors", Tag.TAG_LIST)) {
+                final ListTag colorsTag = lightCompound.getList("fl_backup_colors", Tag.TAG_INT);
+                final java.util.List<Integer> colors = new java.util.ArrayList<>(colorsTag.size());
+                for (int j = 0; j < colorsTag.size(); j++) {
+                    colors.add(colorsTag.getInt(j));
+                }
+                if (!colors.isEmpty()) {
+                    stack.set(za.co.infernos.fairylights.server.item.FLDataComponents.COLORS.get(), colors);
+                    final CompoundTag custom = stack
+                            .getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                                    net.minecraft.world.item.component.CustomData.EMPTY)
+                            .copyTag();
+                    custom.put("colors", colorsTag.copy());
+                    stack.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                            net.minecraft.world.item.component.CustomData.of(custom));
+                }
             }
             
             this.pattern.add(stack);

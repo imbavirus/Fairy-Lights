@@ -64,7 +64,6 @@ public final class GenericRecipe extends CustomRecipe {
         // CustomRecipe constructor signature changed in 1.21.1 - may need different
         // parameters
         super(CraftingBookCategory.MISC);
-        com.mojang.logging.LogUtils.getLogger().info("Constructing GenericRecipe: " + id);
         Preconditions.checkArgument(width > 0, "width must be greater than zero");
         Preconditions.checkArgument(height > 0, "height must be greater than zero");
         this.serializer = Objects.requireNonNull(serializer, "serializer");
@@ -222,9 +221,24 @@ public final class GenericRecipe extends CustomRecipe {
                         inputTag.put("text",
                                 stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.STYLED_STRING));
                     }
-                    if (stack.has(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE)) {
-                        inputTag.putBoolean("twinkle",
-                                stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE));
+                    // Only preserve an active twinkle; a false component must not stick around
+                    // or later crafts/tooltips treat the stack as twinkle-capable incorrectly.
+                    if (Boolean.TRUE.equals(stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE))) {
+                        inputTag.putBoolean("twinkle", true);
+                    }
+                    final java.util.List<Integer> inputColors =
+                            stack.get(za.co.infernos.fairylights.server.item.FLDataComponents.COLORS.get());
+                    if (inputColors != null && !inputColors.isEmpty()) {
+                        final net.minecraft.nbt.ListTag colorsTag = new net.minecraft.nbt.ListTag();
+                        for (final int color : inputColors) {
+                            colorsTag.add(net.minecraft.nbt.IntTag.valueOf(color));
+                        }
+                        inputTag.put("colors", colorsTag);
+                    } else if (stack.has(net.minecraft.core.component.DataComponents.CUSTOM_DATA)) {
+                        final CompoundTag custom = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag();
+                        if (custom.contains("colors", net.minecraft.nbt.Tag.TAG_LIST)) {
+                            inputTag.put("colors", custom.getList("colors", net.minecraft.nbt.Tag.TAG_INT).copy());
+                        }
                     }
 
                     if (tag.isEmpty()) {
@@ -274,16 +288,35 @@ public final class GenericRecipe extends CustomRecipe {
         if (!tag.isEmpty()) {
             if (tag.contains("color", net.minecraft.nbt.Tag.TAG_INT)) {
                 za.co.infernos.fairylights.server.item.DyeableItem.setColor(output, tag.getInt("color"));
+                // Solid recolor replaces any prior color-changing list.
+                if (!tag.contains("colors", net.minecraft.nbt.Tag.TAG_LIST)) {
+                    output.remove(za.co.infernos.fairylights.server.item.FLDataComponents.COLORS.get());
+                }
             }
             if (tag.contains("twinkle")) {
-                output.set(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE, tag.getBoolean("twinkle"));
+                if (tag.getBoolean("twinkle")) {
+                    output.set(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE, true);
+                } else {
+                    output.remove(za.co.infernos.fairylights.server.item.FLDataComponents.TWINKLE);
+                }
             }
             if (tag.contains("colors", net.minecraft.nbt.Tag.TAG_LIST)) {
-                final CompoundTag custom = output.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                        net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
-                custom.put("colors", tag.getList("colors", net.minecraft.nbt.Tag.TAG_INT));
-                output.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                        net.minecraft.world.item.component.CustomData.of(custom));
+                final net.minecraft.nbt.ListTag colorsTag = tag.getList("colors", net.minecraft.nbt.Tag.TAG_INT);
+                final java.util.List<Integer> colors = new java.util.ArrayList<>(colorsTag.size());
+                for (int i = 0; i < colorsTag.size(); i++) {
+                    colors.add(colorsTag.getInt(i));
+                }
+                if (!colors.isEmpty()) {
+                    output.set(za.co.infernos.fairylights.server.item.FLDataComponents.COLORS.get(), colors);
+                    // Keep a solid tint fallback for UIs that only read COLOR.
+                    za.co.infernos.fairylights.server.item.DyeableItem.setColor(output, colors.get(0));
+                    // Legacy CUSTOM_DATA copy for older readers / backups.
+                    final CompoundTag custom = output.getOrDefault(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                            net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
+                    custom.put("colors", colorsTag.copy());
+                    output.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                            net.minecraft.world.item.component.CustomData.of(custom));
+                }
             }
             CompoundTag logic = output
                     .getOrDefault(za.co.infernos.fairylights.server.item.FLDataComponents.CONNECTION_LOGIC, new CompoundTag())
@@ -336,7 +369,55 @@ public final class GenericRecipe extends CustomRecipe {
     // getResultItem() signature changed in 1.21.1 - now uses Provider
     @Override
     public ItemStack getResultItem(final net.minecraft.core.HolderLookup.Provider provider) {
-        return this.output;
+        if (!this.output.isEmpty()) {
+            return this.output;
+        }
+        // Twinkle / color-changing recipes derive output from inputs (isSpecial). Assemble a
+        // sample with required auxiliaries so JEI indexes the real result (e.g. twinkle=true).
+        final ItemStack assembled = this.assembleSample(provider);
+        if (!assembled.isEmpty()) {
+            return assembled;
+        }
+        if (this.outputIngredient >= 0 && this.outputIngredient < this.ingredients.length) {
+            final ImmutableList<ItemStack> samples = this.ingredients[this.outputIngredient].getInputs();
+            if (!samples.isEmpty()) {
+                return samples.get(0).copy();
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private ItemStack assembleSample(final net.minecraft.core.HolderLookup.Provider provider) {
+        final java.util.List<ItemStack> stacks = new java.util.ArrayList<>(java.util.Collections.nCopies(9, ItemStack.EMPTY));
+        for (int i = 0; i < this.ingredients.length; i++) {
+            final ImmutableList<ItemStack> inputs = this.ingredients[i].getInputs();
+            if (inputs.isEmpty()) {
+                continue;
+            }
+            final int x = i % this.width;
+            final int y = i / this.width;
+            stacks.set(x + y * 3, inputs.get(0).copy());
+        }
+        int slot = 0;
+        for (final AuxiliaryIngredient<?> aux : this.auxiliaryIngredients) {
+            if (!aux.isRequired()) {
+                continue;
+            }
+            final ImmutableList<ItemStack> inputs = aux.getInputs();
+            if (inputs.isEmpty()) {
+                continue;
+            }
+            while (slot < 9 && !stacks.get(slot).isEmpty()) {
+                slot++;
+            }
+            if (slot >= 9) {
+                break;
+            }
+            stacks.set(slot++, inputs.get(0).copy());
+        }
+        final net.minecraft.world.item.crafting.CraftingInput input =
+                net.minecraft.world.item.crafting.CraftingInput.of(3, 3, stacks);
+        return this.matches(input, null) ? this.assemble(input, provider) : ItemStack.EMPTY;
     }
 
     public interface MatchResult<I extends GenericIngredient<I, M>, M extends MatchResult<I, M>> {

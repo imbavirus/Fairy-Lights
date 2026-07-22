@@ -8,6 +8,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import com.mojang.serialization.Codec;
 
+import java.util.List;
+
 public class FLDataComponents {
         public static final DeferredRegister<DataComponentType<?>> REG = DeferredRegister
                         .create(Registries.DATA_COMPONENT_TYPE, FairyLights.ID);
@@ -15,6 +17,12 @@ public class FLDataComponents {
         public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> COLOR = REG
                         .register("color", () -> DataComponentType.<Integer>builder().persistent(Codec.INT)
                                         .networkSynchronized(ByteBufCodecs.INT).build());
+
+        public static final DeferredHolder<DataComponentType<?>, DataComponentType<List<Integer>>> COLORS = REG
+                        .register("colors", () -> DataComponentType.<List<Integer>>builder()
+                                        .persistent(Codec.INT.listOf())
+                                        .networkSynchronized(ByteBufCodecs.INT.apply(ByteBufCodecs.list()))
+                                        .build());
 
         public static final DeferredHolder<DataComponentType<?>, DataComponentType<net.minecraft.nbt.CompoundTag>> CONNECTION_LOGIC = REG
                         .register("connection_logic",

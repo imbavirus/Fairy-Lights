@@ -37,13 +37,20 @@ public class LightItem extends BlockItem {
             tooltip.add(Component.translatable("item.fairyLights.twinkle").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
         }
         if (ColorChangingBehavior.exists(stack)) {
-            final CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-            if (customData != null) {
-                final CompoundTag tag = customData.getUnsafe();
-                if (tag.contains("colors", Tag.TAG_LIST)) {
-                    final ListTag colors = tag.getList("colors", Tag.TAG_INT);
-                    for (int i = 0; i < colors.size(); i++) {
-                        tooltip.add(DyeableItem.getColorName(colors.getInt(i)).copy().withStyle(ChatFormatting.GRAY));
+            final java.util.List<Integer> colors = stack.get(FLDataComponents.COLORS.get());
+            if (colors != null && !colors.isEmpty()) {
+                for (final int color : colors) {
+                    tooltip.add(DyeableItem.getColorName(color).copy().withStyle(ChatFormatting.GRAY));
+                }
+            } else {
+                final CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+                if (customData != null) {
+                    final CompoundTag tag = customData.getUnsafe();
+                    if (tag.contains("colors", Tag.TAG_LIST)) {
+                        final ListTag colorList = tag.getList("colors", Tag.TAG_INT);
+                        for (int i = 0; i < colorList.size(); i++) {
+                            tooltip.add(DyeableItem.getColorName(colorList.getInt(i)).copy().withStyle(ChatFormatting.GRAY));
+                        }
                     }
                 }
             }

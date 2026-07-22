@@ -320,6 +320,19 @@ public final class ClientProxy extends ServerProxy {
             } else if (compound.contains("color", Tag.TAG_ANY_NUMERIC) && !item.has(FLDataComponents.COLOR.get())) {
                 DyeableItem.setColor(item, compound.getInt("color"));
             }
+            if (compound.getBoolean("fl_backup_twinkle")) {
+                item.set(FLDataComponents.TWINKLE.get(), true);
+            }
+            if (compound.contains("fl_backup_colors", Tag.TAG_LIST)) {
+                final ListTag colorsTag = compound.getList("fl_backup_colors", Tag.TAG_INT);
+                final java.util.List<Integer> colors = new java.util.ArrayList<>(colorsTag.size());
+                for (int i = 0; i < colorsTag.size(); i++) {
+                    colors.add(colorsTag.getInt(i));
+                }
+                if (!colors.isEmpty()) {
+                    item.set(FLDataComponents.COLORS.get(), colors);
+                }
+            }
         }
         return item;
     }

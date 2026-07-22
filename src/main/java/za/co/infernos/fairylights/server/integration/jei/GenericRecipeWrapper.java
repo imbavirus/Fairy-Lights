@@ -57,8 +57,9 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
                 inputStacks.add(stacks.isEmpty() ? ItemStack.EMPTY : stacks.get(0));
             }
             CraftingInput input = CraftingInput.of(this.getWidth(), this.getHeight(), inputStacks);
+            final net.minecraft.core.HolderLookup.Provider registries = registryAccess();
             if (this.recipe.matches(input, null)) {
-                outputConsumer.accept(ItemStack.EMPTY, this.recipe.assemble(input, null));
+                outputConsumer.accept(ItemStack.EMPTY, this.recipe.assemble(input, registries));
             }
         } else {
             final List<ItemStack> dictators = this.minimalInputStacks.get(this.subtypeIndex);
@@ -73,11 +74,21 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
                     }
                 }
                 CraftingInput input = CraftingInput.of(this.getWidth(), this.getHeight(), inputStacks);
+                final net.minecraft.core.HolderLookup.Provider registries = registryAccess();
                 if (this.recipe.matches(input, null)) {
-                    outputConsumer.accept(subtype, this.recipe.assemble(input, null));
+                    outputConsumer.accept(subtype, this.recipe.assemble(input, registries));
                 }
             }
         }
+    }
+
+    private static net.minecraft.core.HolderLookup.Provider registryAccess() {
+        final net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.level != null) {
+            return mc.level.registryAccess();
+        }
+        return net.minecraft.core.RegistryAccess
+                .fromRegistryOfRegistries(net.minecraft.core.registries.BuiltInRegistries.REGISTRY);
     }
 
     @Override
@@ -148,7 +159,23 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
             }
         } catch (Exception e) {
              LOGGER.error("GenericRecipeWrapper: Exception deriving inputs for " + BuiltInRegistries.RECIPE_SERIALIZER.getKey(this.recipe.getSerializer()), e);
-             return new Input(Collections.emptyList(), new GenericIngredient<?, ?>[9]);
+             return null;
+        }
+        // If a required aux was omitted (e.g. glowstone when the focused light is not twinkling),
+        // bail out so setRecipe can show the full default layout instead of an empty output.
+        for (final AuxiliaryIngredient<?> ingredientAux : aux) {
+            if (ingredientAux.isRequired()) {
+                boolean present = false;
+                for (final GenericIngredient<?, ?> placed : ingredientMat) {
+                    if (placed == ingredientAux) {
+                        present = true;
+                        break;
+                    }
+                }
+                if (!present) {
+                    return null;
+                }
+            }
         }
         return new Input(inputs, ingredientMat);
     }
@@ -203,9 +230,10 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
                 inputStacks.add(stacks.isEmpty() ? ItemStack.EMPTY : stacks.get(n % stacks.size()));
             }
             CraftingInput input = CraftingInput.of(this.getWidth(), this.getHeight(), inputStacks);
+            final net.minecraft.core.HolderLookup.Provider registries = registryAccess();
 
             if (this.recipe.matches(input, null)) {
-                outputs.add(this.recipe.assemble(input, null));
+                outputs.add(this.recipe.assemble(input, registries));
             }
         }
         return outputs;
@@ -238,7 +266,7 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
                     this.ingredientMatrix[i] = ingredient;
                     allInputs.add(ingInputs);
                     isEmpty = false;
-                } else {
+                } else if (!(ingredient instanceof za.co.infernos.fairylights.util.crafting.ingredient.EmptyRegularIngredient)) {
                      LOGGER.warn("GenericRecipeWrapper: Ingredient at " + i + " returned empty inputs! " + ingredient);
                 }
             }
@@ -291,7 +319,12 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
             }
             return Stream.ofNullable(input);
         }).findFirst().ifPresentOrElse(input -> {
-            craftingGridHelper.createAndSetOutputs(builder, VanillaTypes.ITEM_STACK, this.getOutput(input.inputs));
+            final List<ItemStack> focusedOutputs = this.getOutput(input.inputs);
+            if (focusedOutputs.isEmpty() || focusedOutputs.stream().allMatch(ItemStack::isEmpty)) {
+                this.setDefaultRecipe(builder, craftingGridHelper);
+                return;
+            }
+            craftingGridHelper.createAndSetOutputs(builder, VanillaTypes.ITEM_STACK, focusedOutputs);
             List<IRecipeSlotBuilder> slots = craftingGridHelper.createAndSetInputs(builder, VanillaTypes.ITEM_STACK, input.inputs, this.getWidth(), this.getHeight());
             for (int i = 0; i < 9; i++) {
                 GenericIngredient<?, ?> ingredient = input.ingredients[i];
@@ -304,10 +337,12 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
                     });
                 }
             }
-        }, () -> {
-            craftingGridHelper.createAndSetOutputs(builder, VanillaTypes.ITEM_STACK, this.outputs);
-            craftingGridHelper.createAndSetInputs(builder, VanillaTypes.ITEM_STACK, this.allInputs, this.getWidth(), this.getHeight());
-        });
+        }, () -> this.setDefaultRecipe(builder, craftingGridHelper));
+    }
+
+    private void setDefaultRecipe(final IRecipeLayoutBuilder builder, final ICraftingGridHelper craftingGridHelper) {
+        craftingGridHelper.createAndSetOutputs(builder, VanillaTypes.ITEM_STACK, this.outputs);
+        craftingGridHelper.createAndSetInputs(builder, VanillaTypes.ITEM_STACK, this.allInputs, this.getWidth(), this.getHeight());
     }
 
     private static final class Input {

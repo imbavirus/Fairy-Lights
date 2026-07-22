@@ -14,6 +14,8 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.List;
+
 public class ColorChangingBehavior implements ColorLightBehavior {
     private final float[] red;
 
@@ -63,6 +65,14 @@ public class ColorChangingBehavior implements ColorLightBehavior {
     }
 
     private static ListTag getColors(final ItemStack stack) {
+        final List<Integer> componentColors = stack.get(FLDataComponents.COLORS.get());
+        if (componentColors != null && !componentColors.isEmpty()) {
+            final ListTag list = new ListTag();
+            for (final int color : componentColors) {
+                list.add(net.minecraft.nbt.IntTag.valueOf(color));
+            }
+            return list;
+        }
         final CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         if (customData != null) {
             final CompoundTag tag = customData.getUnsafe();
