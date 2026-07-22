@@ -7,6 +7,7 @@ import za.co.infernos.fairylights.util.FLMth;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -25,9 +26,10 @@ public final class PlayerFastener extends EntityFastener<Player> {
         final double angle = (this.entity.yBodyRot - 90) * FLMth.DEG_TO_RAD;
         final double perpAngle = angle - Math.PI / 2;
         final boolean sneaking = this.entity.isCrouching();
-        // Handedness: main hand should use positive offset, offhand should use negative offset
-        // This aligns the rope with the actual held hand in 1.21.1
-        final double perpDist = 0.4 * (this.matchesStack(this.entity.getMainHandItem()) ? 1 : -1);
+        // Prefer the hand actually holding a ConnectionItem. Do not require getFirstConnection() —
+        // PlayerFastener is not synced to the client, so that check always failed client-side and
+        // forced the left-hand offset.
+        final double perpDist = 0.4 * (this.holdingOnRightSide() ? 1 : -1);
         final double forwardDist;
         final double dy;
         if (sneaking) {
@@ -60,15 +62,15 @@ public final class PlayerFastener extends EntityFastener<Player> {
     }
 
     private boolean matchesStack(final ItemStack stack) {
-        if (!(stack.getItem() instanceof ConnectionItem)) {
-            return false;
-        }
-        final ConnectionItem item = (ConnectionItem) stack.getItem();
-        return this.getFirstConnection().map(connection -> {
-            // Old (1.12) logic: hand selection is based on connection type matching the held connection item.
-            // Data components/NBT equality checks are not reliable in this 1.21.1 port yet, so ignore them here.
-            return connection.getType() == item.getConnectionType();
-        }).orElse(false);
+        return stack.getItem() instanceof ConnectionItem;
+    }
+
+    private boolean holdingOnRightSide() {
+        final boolean mainIsConnection = this.matchesStack(this.entity.getMainHandItem());
+        final boolean offIsConnection = this.matchesStack(this.entity.getOffhandItem());
+        final boolean useMainHand = mainIsConnection || !offIsConnection;
+        final boolean mainIsRight = this.entity.getMainArm() == HumanoidArm.RIGHT;
+        return useMainHand == mainIsRight;
     }
 
     @Override

@@ -44,8 +44,7 @@ import java.util.Optional;
 
 public final class FenceFastenerEntity extends HangingEntity implements IEntityWithComplexSpawn {
     private final FenceFastener fastener;
-    private int surfaceCheckTime;
-    
+
     public FenceFastenerEntity(final EntityType<? extends FenceFastenerEntity> type, final Level world) {
         super(type, world);
         this.fastener = new FenceFastener(this);
@@ -198,7 +197,9 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
     @Override
     public void tick() {
         this.getFastener().ifPresent(fastener -> {
-            if (!this.level().isClientSide() && (fastener.hasNoConnections() || this.checkSurface())) {
+            if (!this.level().isClientSide() && (fastener.hasNoConnections() || !this.survives())) {
+                // Check fence presence every tick (not every 100) so breaking the post
+                // immediately tears the rope down instead of leaving a ghost strand.
                 this.dropItem(null);
                 this.remove(RemovalReason.DISCARDED);
             } else if (fastener.update() && !this.level().isClientSide()) {
@@ -206,14 +207,6 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
                 ServerProxy.sendToPlayersWatchingEntity(msg, this);
             }
         });
-    }
-
-    private boolean checkSurface() {
-        if (this.surfaceCheckTime++ == 100) {
-            this.surfaceCheckTime = 0;
-            return !this.survives();
-        }
-        return false;
     }
 
     @Override

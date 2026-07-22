@@ -40,32 +40,17 @@ public class ServerProxy {
         if (!(entity.level() instanceof net.minecraft.server.level.ServerLevel serverLevel)) {
             return;
         }
-        
-        // Get the network builder
-        final za.co.infernos.fairylights.server.net.NetBuilder network = (za.co.infernos.fairylights.server.net.NetBuilder) FairyLights.NETWORK;
-        if (network == null) {
+        if (!(message instanceof net.minecraft.network.protocol.common.custom.CustomPacketPayload payload)) {
             return;
         }
-        
-        // Send to all players tracking the entity (including the entity itself if it's a player)
-        for (net.minecraft.server.level.ServerPlayer player : serverLevel.getPlayers(p -> {
-            // Check if player is tracking the entity (within reasonable distance)
-            return p.distanceToSqr(entity) < 64 * 64 || p.equals(entity);
-        })) {
-            try {
-                // Prefer our message path first (UpdateEntityFastenerMessage implements Message + CustomPacketPayload)
-                if (message instanceof za.co.infernos.fairylights.server.net.Message) {
-                    network.sendToClient((za.co.infernos.fairylights.server.net.Message) message, player);
-                    continue;
-                }
 
-                // Vanilla fallback: wrap payload into a packet and send
-                if (message instanceof net.minecraft.network.protocol.common.custom.CustomPacketPayload payload) {
-                    player.connection.send(new net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket(payload));
-                }
-            } catch (Exception e) {
-                // Networking API not available - message won't be sent
-                // Connection will sync on next tick via regular update mechanism
+        // Must send a real ClientboundCustomPayloadPacket. NetBuilder.sendToClient only invokes
+        // handlers in-process and never reaches the client (fence tether rope stayed invisible).
+        for (net.minecraft.server.level.ServerPlayer player : serverLevel.getPlayers(p ->
+                p.distanceToSqr(entity) < 64 * 64 || p.equals(entity))) {
+            try {
+                player.connection.send(new net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket(payload));
+            } catch (Exception ignored) {
             }
         }
     }

@@ -18,6 +18,7 @@ import za.co.infernos.fairylights.server.jingle.JingleLibrary;
 import za.co.infernos.fairylights.server.jingle.JingleManager;
 import net.minecraft.world.level.Level;
 import java.util.Optional;
+import java.util.UUID;
 
 @EventBusSubscriber(modid = FairyLights.ID)
 public class ServerEventHandler {
@@ -38,8 +39,11 @@ public class ServerEventHandler {
                 final Connection conn = connection.get();
                 // Placing tethers are non-drop; ensure abort never rains items.
                 conn.noDrop();
-                // Fully abort: removeConnection on incoming now tears down owner outgoing too.
-                fastener.removeConnection(conn);
+                final UUID id = conn.getUUID();
+                // Player only holds INCOMING during place — destroy the real outgoing on the owner.
+                conn.getFastener().removeConnection(id);
+                // Clear stale incoming on the player (incoming remove does not peer-teardown).
+                fastener.removeConnection(id);
             }
         });
     }

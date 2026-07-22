@@ -162,6 +162,11 @@ public class FastenerRenderer {
 
     @SuppressWarnings("deprecation")
     public static void renderBakedModel(final BakedModel model, final ItemDisplayContext type, final PoseStack matrix, final VertexConsumer buf, final float r, final float g, final float b, final int packedLight, final int packedOverlay) {
+        // Apply display transform (fence_fastener FIXED is -8,-8,-8 = center on entity).
+        // Without this the grey cube renders a half-block off and looks like a floating Fastener.
+        matrix.pushPose();
+        model.getTransforms().getTransform(type).apply(false, matrix);
+
         final PoseStack.Pose pose = matrix.last();
         final RandomSource randSource = RandomSource.create(42L);
 
@@ -178,5 +183,6 @@ public class FastenerRenderer {
         for (final BakedQuad quad : model.getQuads(null, null, randSource, ModelData.EMPTY, null)) {
             buf.putBulkData(pose, quad, r, g, b, 1.0F, packedLight, packedOverlay);
         }
+        matrix.popPose();
     }
 }

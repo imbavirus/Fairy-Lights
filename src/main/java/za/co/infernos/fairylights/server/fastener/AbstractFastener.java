@@ -206,7 +206,25 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
     @Override
     public void remove() {
         synchronized (CONNECTION_MAP_LOCK) {
-            this.outgoing.values().forEach(Connection::remove);
+            // Tear down both ends. Connection::remove alone leaves the peer's map entry and a
+            // floating rope until that fastener is broken too.
+            final UUID[] outgoingIds = this.outgoing.keySet().toArray(new UUID[0]);
+            for (final UUID id : outgoingIds) {
+                final Connection connection = this.outgoing.get(id);
+                if (connection != null && this.world != null) {
+                    connection.getDestination().get(this.world, false)
+                            .ifPresent(dest -> dest.removeConnection(id));
+                }
+                this.removeConnection(id);
+            }
+            final UUID[] incomingIds = this.incoming.keySet().toArray(new UUID[0]);
+            for (final UUID id : incomingIds) {
+                final Incoming incoming = this.incoming.remove(id);
+                if (incoming != null && this.world != null) {
+                    incoming.fastener.get(this.world, false)
+                            .ifPresent(owner -> owner.removeConnection(id));
+                }
+            }
         }
     }
 
@@ -246,12 +264,11 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
             }
             final Incoming incoming = this.incoming.remove(uuid);
             if (incoming != null) {
+                // Incoming-only: detach this end's reference. Do NOT tear down the owner's
+                // outgoing here — reconnect() clears the player tether via this path, and
+                // peer-teardown would destroy the connection mid-place (lights vanish).
+                // Hotbar abort must remove via the owner fastener (see ServerEventHandler).
                 this.setDirty();
-                // Incoming-only entries used to leave the owner's outgoing tethered (hotbar abort
-                // fling). Tear down the real connection on the other fastener.
-                if (this.world != null) {
-                    incoming.fastener.get(this.world, false).ifPresent(owner -> owner.removeConnection(uuid));
-                }
                 return true;
             }
             return false;

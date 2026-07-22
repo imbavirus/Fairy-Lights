@@ -77,7 +77,7 @@ public abstract class EntityFastenerAccessor<E extends Entity> implements Fasten
                 }
             }
         }
-        if (this.entity != null && this.entity.level() == world) {
+        if (this.entity != null && !this.entity.isRemoved() && this.entity.level() == world) {
             this.pos = this.entity.position();
             return CapabilityHandler.getFastenerCapability(this.entity);
         }
@@ -86,7 +86,15 @@ public abstract class EntityFastenerAccessor<E extends Entity> implements Fasten
 
     @Override
     public boolean isGone(final Level world) {
-        return !world.isClientSide() && this.entity != null && (!CapabilityHandler.getFastenerCapability(this.entity).isPresent() || this.entity.level() != world);
+        if (world.isClientSide() || this.entity == null) {
+            return false;
+        }
+        // FenceFastenerEntity keeps returning a Fastener after discard; treat removed entities as gone
+        // so the other end tears down instead of hanging forever.
+        if (this.entity.isRemoved() || this.entity.level() != world) {
+            return true;
+        }
+        return CapabilityHandler.getFastenerCapability(this.entity).isEmpty();
     }
 
     @Override

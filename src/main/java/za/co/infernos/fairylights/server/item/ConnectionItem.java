@@ -6,8 +6,11 @@ import za.co.infernos.fairylights.server.capability.CapabilityHandler;
 import za.co.infernos.fairylights.server.connection.Connection;
 import za.co.infernos.fairylights.server.connection.ConnectionType;
 import za.co.infernos.fairylights.server.entity.FenceFastenerEntity;
+import za.co.infernos.fairylights.server.ServerProxy;
 import za.co.infernos.fairylights.server.fastener.BlockFastener;
 import za.co.infernos.fairylights.server.fastener.Fastener;
+import za.co.infernos.fairylights.server.fastener.FenceFastener;
+import za.co.infernos.fairylights.server.net.clientbound.UpdateEntityFastenerMessage;
 import za.co.infernos.fairylights.server.sound.FLSounds;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +35,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public abstract class ConnectionItem extends Item {
     private final DeferredHolder<ConnectionType<?>, ? extends ConnectionType<?>> type;
@@ -72,12 +76,11 @@ public abstract class ConnectionItem extends Item {
                 this.connect(stack, user, world, clickPos);
             }
             return InteractionResult.SUCCESS;
-        } else if (blockContext.canPlace() && fastenerState.canSurvive(world, placePos)) {
-            if (!world.isClientSide()) {
-                this.connect(stack, user, world, placePos, fastenerState);
-            }
-            return InteractionResult.SUCCESS;
-        } else if (isFence(currentBlockState)) {
+        }
+        // Fences must win over wall FastenerBlock placement: clicking a fence face almost always
+        // has a placeable neighbor, which previously spawned a grey cube (and fence-connect rails)
+        // instead of an invisible FenceFastenerEntity on the post.
+        if (isFence(currentBlockState)) {
             final HangingEntity entity = FenceFastenerEntity.findHanging(world, clickPos);
             if (entity == null || entity instanceof FenceFastenerEntity) {
                 if (!world.isClientSide()) {
@@ -85,6 +88,12 @@ public abstract class ConnectionItem extends Item {
                 }
                 return InteractionResult.SUCCESS;
             }
+        }
+        if (blockContext.canPlace() && fastenerState.canSurvive(world, placePos)) {
+            if (!world.isClientSide()) {
+                this.connect(stack, user, world, placePos, fastenerState);
+            }
+            return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;
     }
@@ -308,9 +317,11 @@ public abstract class ConnectionItem extends Item {
                     }
                 } else {
                     // Old destination no longer exists (e.g., block was broken)
-                    // Remove the old connection and create a new one
-                    // org.apache.logging.log4j.LogManager.getLogger().info("FL_DEBUG: connect - old destination gone, removing old connection and creating new");
-                    attacher.removeConnection(conn);
+                    // Remove via owner outgoing — player incoming-only remove does not destroy it.
+                    conn.noDrop();
+                    final UUID id = conn.getUUID();
+                    conn.getFastener().removeConnection(id);
+                    attacher.removeConnection(id);
                     // Fall through to create new connection
                     final CompoundTag data = getData(stack);
                     final ConnectionType<? extends Connection> type = this.getConnectionType();
@@ -356,34 +367,52 @@ public abstract class ConnectionItem extends Item {
         if (world == null || world.isClientSide() || fastener == null) {
             return;
         }
-        // Only block fasteners have a BE we can block-update.
-        if (!(fastener instanceof BlockFastener)) {
+        if (fastener instanceof BlockFastener) {
+            final BlockPos pos = fastener.getPos();
+            final BlockState state = world.getBlockState(pos);
+            final BlockEntity be = world.getBlockEntity(pos);
+            if (be != null) {
+                be.setChanged();
+            }
+            world.sendBlockUpdated(pos, state, state, 3);
             return;
         }
-        final BlockPos pos = fastener.getPos();
-        final BlockState state = world.getBlockState(pos);
-        final BlockEntity be = world.getBlockEntity(pos);
-        if (be != null) {
-            be.setChanged();
+        // Fence entity fasteners need an explicit payload sync (BE block updates don't apply).
+        if (fastener instanceof FenceFastener fenceFastener) {
+            final FenceFastenerEntity entity = fenceFastener.getEntity();
+            if (entity != null) {
+                fenceFastener.setDirty();
+                ServerProxy.sendToPlayersWatchingEntity(
+                        new UpdateEntityFastenerMessage(entity, fastener.serializeNBT()), entity);
+            }
         }
-        world.sendBlockUpdated(pos, state, state, 3);
     }
 
     private void connectFence(final ItemStack stack, final Player user, final Level world, final BlockPos pos,
             FenceFastenerEntity fastener) {
         final boolean playConnectSound;
         if (fastener == null) {
-            fastener = FenceFastenerEntity.create(world, pos);
+            // Connect BEFORE addFreshEntity so writeSpawnData includes the placing tether.
+            fastener = new FenceFastenerEntity(world, pos);
             playConnectSound = false;
+            this.connect(stack, user, world,
+                    CapabilityHandler.getFastenerCapability(fastener).orElseThrow(IllegalStateException::new),
+                    false);
+            world.addFreshEntity(fastener);
+            fastener.playPlacementSound();
         } else {
             playConnectSound = true;
+            this.connect(stack, user, world,
+                    CapabilityHandler.getFastenerCapability(fastener).orElseThrow(IllegalStateException::new),
+                    playConnectSound);
         }
-        this.connect(stack, user, world,
-                CapabilityHandler.getFastenerCapability(fastener).orElseThrow(IllegalStateException::new),
-                playConnectSound);
+        syncFastenerBlock(world,
+                CapabilityHandler.getFastenerCapability(fastener).orElseThrow(IllegalStateException::new));
     }
 
     public static boolean isFence(final BlockState state) {
-        return state.isSolid() && state.is(BlockTags.FENCES);
+        // Tag alone is enough; isSolid() is not required for fence attachment and can reject
+        // modded fence-like blocks that still belong in #minecraft:fences.
+        return state.is(BlockTags.FENCES);
     }
 }
