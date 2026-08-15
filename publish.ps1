@@ -506,6 +506,16 @@ function Resolve-CurseForgeGameVersionIds([hashtable]$cf, [string]$minecraftVers
 function Pick-MainArtifact([array]$artifacts) {
   if ($artifacts.Count -eq 1) { return $artifacts[0] }
 
+  # Prefer the jar whose name contains the current gradle mod_version.
+  # Otherwise Get-ChildItem order can pick an older leftover (8.0.14 before 8.0.15).
+  $gp = Get-Content -Path "gradle.properties" -ErrorAction SilentlyContinue
+  $verLine = $gp | Where-Object { $_ -match '^mod_version=(.+)$' } | Select-Object -First 1
+  if ($verLine -and ($verLine -match '^mod_version=(.+)$')) {
+    $ver = $Matches[1].Trim()
+    $versioned = $artifacts | Where-Object { $_.Name -like "*$ver*" } | Select-Object -First 1
+    if ($versioned) { return $versioned }
+  }
+
   # Prefer non-sources/non-javadoc already filtered; now prefer the 'plain' jar.
   # Heuristic: avoid "all" or "dev" jars if present.
   $preferred = $artifacts | Where-Object { $_.Name -notmatch '(-all|-dev|-shadow)' } | Select-Object -First 1
