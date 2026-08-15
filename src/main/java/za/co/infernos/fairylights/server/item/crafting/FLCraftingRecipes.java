@@ -739,7 +739,9 @@ public final class FLCraftingRecipes {
 
     private static class LightIngredient extends BasicAuxiliaryIngredient<ListTag> {
         private LightIngredient(final boolean isRequired) {
-            super(Ingredient.of(FLItems.lights().map(ItemStack::new)), isRequired, 8);
+            // Tag match ignores dye/twinkle components so JEI + and a manual grid
+            // accept colored lights, not only a bare ItemStack prototype.
+            super(LazyTagIngredient.of(LIGHTS), isRequired, 8);
         }
 
         @Override
@@ -804,12 +806,7 @@ public final class FLCraftingRecipes {
 
     private static class PennantIngredient extends BasicAuxiliaryIngredient<ListTag> {
         private PennantIngredient() {
-            super(Ingredient.of(java.util.stream.Stream.of(
-                    FLItems.TRIANGLE_PENNANT.get(),
-                    FLItems.SPEARHEAD_PENNANT.get(),
-                    FLItems.SWALLOWTAIL_PENNANT.get(),
-                    FLItems.SQUARE_PENNANT.get()
-            ).map(ItemStack::new)), true, 8);
+            super(LazyTagIngredient.of(PENNANTS), true, 8);
         }
 
         @Override

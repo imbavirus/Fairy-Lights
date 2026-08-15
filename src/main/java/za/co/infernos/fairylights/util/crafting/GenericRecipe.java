@@ -154,6 +154,19 @@ public final class GenericRecipe extends CustomRecipe {
         return this.getDisplayIngredients();
     }
 
+    /**
+     * Vanilla {@link Recipe#isIncomplete()} treats {@link Ingredient#EMPTY} as "missing items".
+     * These recipes are shaped and pad a 3x3 display, so empty cells are intentional.
+     * Without this, the recipe book never unlocks the recipe and JEI/recipe-book +
+     * refuse to pull ingredients — and limited crafting then also blocks a manual grid.
+     */
+    @Override
+    public boolean isIncomplete() {
+        final NonNullList<Ingredient> ingredients = this.getIngredients();
+        return ingredients.isEmpty()
+                || ingredients.stream().filter(ingredient -> !ingredient.isEmpty()).anyMatch(Ingredient::hasNoItems);
+    }
+
     @Override
     public boolean canCraftInDimensions(final int width, final int height) {
         return this.width <= width && this.height <= height

@@ -101,6 +101,16 @@ public final class GenericRecipeWrapper implements ICraftingCategoryExtension<Ge
         return 3;
     }
 
+    @Override
+    public int getWidth(final RecipeHolder<GenericRecipe> recipeHolder) {
+        return 3;
+    }
+
+    @Override
+    public int getHeight(final RecipeHolder<GenericRecipe> recipeHolder) {
+        return 3;
+    }
+
     public Input getInputsForOutput(final ItemStack output) {
         final RegularIngredient[] ingredients = this.recipe.getGenericIngredients();
         final List<List<ItemStack>> inputs = new ArrayList<>(9);

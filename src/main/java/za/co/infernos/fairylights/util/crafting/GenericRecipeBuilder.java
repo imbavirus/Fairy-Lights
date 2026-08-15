@@ -110,11 +110,11 @@ public final class GenericRecipeBuilder {
     }
 
     public GenericRecipeBuilder withIngredient(final char key, final Item item) {
-        return this.withIngredient(key, new ItemStack(Objects.requireNonNull(item, "item"), 1));
+        return this.withIngredient(key, Ingredient.of(Objects.requireNonNull(item, "item")));
     }
 
     public GenericRecipeBuilder withIngredient(final char key, final Block block) {
-        return this.withIngredient(key, new ItemStack(Objects.requireNonNull(block, "block"), 1));
+        return this.withIngredient(key, Ingredient.of(Objects.requireNonNull(block, "block")));
     }
 
     public GenericRecipeBuilder withIngredient(final char key, final ItemStack stack) {
