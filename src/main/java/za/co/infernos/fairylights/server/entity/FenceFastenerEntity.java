@@ -123,7 +123,11 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
             for (final za.co.infernos.fairylights.server.connection.Connection c : f.getOwnConnections()) {
                 c.noDrop();
             }
-            f.remove();
+            if (reason.shouldDestroy()) {
+                f.remove();
+            } else {
+                f.detachLocal();
+            }
         });
         super.remove(reason);
     }

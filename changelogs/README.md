@@ -4,6 +4,7 @@ This folder contains user-relevant changelogs for all versions since the NeoForg
 
 ## Available Versions
 
+- [8.0.16](8.0.16.md) - Pennant attach + save hang
 - [8.0.8](8.0.8.md) - Letter & Pennant Bunting Rendering Fix
 - [8.0.7](8.0.7.md) - Connection Placement & Item Drop Fixes
 - [8.0.6](8.0.6.md) - Hanging Lights Interaction & On/Off Toggle Fixes

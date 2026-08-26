@@ -229,6 +229,14 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
     }
 
     @Override
+    public void detachLocal() {
+        synchronized (CONNECTION_MAP_LOCK) {
+            this.outgoing.clear();
+            this.incoming.clear();
+        }
+    }
+
+    @Override
     public boolean hasNoConnections() {
         synchronized (CONNECTION_MAP_LOCK) {
             return this.outgoing.isEmpty() && this.incoming.isEmpty();

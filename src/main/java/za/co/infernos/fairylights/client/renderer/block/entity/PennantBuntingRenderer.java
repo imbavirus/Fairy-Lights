@@ -86,12 +86,9 @@ public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingCon
                 matrix.mulPose(Axis.YP.rotation(-currPennant.getYaw(delta)));
                 matrix.mulPose(Axis.ZP.rotation(currPennant.getPitch(delta)));
                 matrix.mulPose(Axis.XP.rotation(currPennant.getRoll(delta)));
-                matrix.pushPose();
-                // Center the model - matches the "fixed" display transform in the model JSONs
-                // Model transform is [-7.5, -16, -8] in 1/16 units = [-0.46875, -1.0, -0.5] in block units
-                matrix.translate(-0.46875F, -1.0F, -0.5F);
+                // FIXED display is [-7.5, -16, -8] px = hang-from-rope. Do not
+                // pre-translate the same offset — 8.0.8 doubled it (~1 block below).
                 FastenerRenderer.renderBakedModel(model, matrix, buf, r, g, b, packedLight, packedOverlay);
-                matrix.popPose();
                 if (i >= offset && i < offset + text.length()) {
                     this.drawLetter(matrix, source, currPennant, packedLight, font, text, i - offset, 1, delta);
                     this.drawLetter(matrix, source, currPennant, packedLight, font, text, text.length() - 1 - (i - offset), -1, delta);

@@ -133,7 +133,10 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
         if (!state.is(newState.getBlock())) {
             final BlockEntity entity = world.getBlockEntity(pos);
             if (entity instanceof FastenerBlockEntity) {
-                CapabilityHandler.getFastenerCapability(entity).ifPresent(f -> f.dropItems(world, pos));
+                CapabilityHandler.getFastenerCapability(entity).ifPresent(f -> {
+                    f.dropItems(world, pos);
+                    f.remove();
+                });
             }
             super.onRemove(state, world, pos, newState, isMoving);
         }

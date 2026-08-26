@@ -56,6 +56,9 @@ public interface Fastener<F extends FastenerAccessor> {
 
     void remove();
 
+    /** Local maps only. No peer dest.get — world unload / chunk unload. */
+    void detachLocal();
+
     boolean hasNoConnections();
 
     boolean hasConnectionWith(Fastener<?> fastener);

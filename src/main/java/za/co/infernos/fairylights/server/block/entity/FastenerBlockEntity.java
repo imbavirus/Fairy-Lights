@@ -117,13 +117,13 @@ public final class FastenerBlockEntity extends BlockEntity {
 
     @Override
     public void setRemoved() {
-        // Soft teardown on chunk unload / BE clear: never drop items or force-load chunks.
-        // Intentional breaks already called dropItems() from FastenerBlock.onRemove (which noDrops).
+        // Soft teardown on chunk unload / BE clear: never dest.get peers (07:22 Saving worlds hang).
+        // Intentional breaks call dropItems + remove() from FastenerBlock.onRemove first.
         this.getFastener().ifPresent(f -> {
             for (final za.co.infernos.fairylights.server.connection.Connection c : f.getOwnConnections()) {
                 c.noDrop();
             }
-            f.remove();
+            f.detachLocal();
         });
         super.setRemoved();
     }
